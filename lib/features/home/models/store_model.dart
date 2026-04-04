@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class StoreModel {
   final String id;
   final String name;
@@ -42,6 +44,28 @@ class StoreModel {
       minOrder: (json['minOrder'] as num).toDouble(),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
+    );
+  }
+
+  // Tao doi tuong tu Firestore DocumentSnapshot.
+  factory StoreModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>?;
+    if (data == null) {
+      throw Exception('Du lieu Firestore cua StoreModel bi null');
+    }
+    return StoreModel(
+      id: doc.id,
+      name: data['name'] as String? ?? '',
+      address: data['address'] as String? ?? '',
+      rating: (data['rating'] as num?)?.toDouble() ?? 0.0,
+      reviewCount: data['reviewCount'] as int? ?? 0,
+      imageUrl: data['imageUrl'] as String? ?? '',
+      isOpen: data['isOpen'] as bool? ?? false,
+      deliveryTime: data['deliveryTime'] as String? ?? '',
+      deliveryFee: (data['deliveryFee'] as num?)?.toDouble() ?? 0.0,
+      minOrder: (data['minOrder'] as num?)?.toDouble() ?? 0.0,
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 

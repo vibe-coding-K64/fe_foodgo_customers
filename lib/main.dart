@@ -1,36 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
-// Import file cau hinh vua duoc sinh ra
 import 'firebase_options.dart';
+import 'features/main/views/main_view.dart';
+import 'core/localization/language_service.dart';
+import 'core/utils/data_seeder.dart';
 
 void main() async {
-  // Dam bao cac native code duoc khoi tao truoc khi chay
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Tien hanh ket noi voi Firebase
+  // Khoi tao Firebase.
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(const MyApp());
+  // Khoi tao service ngon ngu.
+  await LanguageService.init();
+
+  // Seed du lieu mau vao Firestore (neu chua co).
+  await DataSeeder.seedAll();
+
+  runApp(const FoodGoApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class FoodGoApp extends StatelessWidget {
+  const FoodGoApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'FoodGo',
+      locale: const Locale('vi', 'VN'),
+      supportedLocales: const [
+        Locale('vi', 'VN'),
+        Locale('en', 'US'),
+      ],
+      localizationsDelegates: const [
+        LanguageService.localizationsDelegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
-        useMaterial3: true,
-      ),
-      home: const Scaffold(
-        body: Center(
-          child: Text('Ket noi Firebase thanh cong'),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF2E7D32),
+          brightness: Brightness.light,
         ),
+        useMaterial3: true,
+        fontFamily: 'Roboto',
       ),
+      home: const MainView(),
     );
   }
 }

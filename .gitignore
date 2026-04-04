@@ -43,3 +43,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Bỏ qua các file biến môi trường (nếu sau này dùng)
+.env
+.env.development
+.env.production
+
+# Bỏ qua file cấu hình Firebase
+lib/firebase_options.dart

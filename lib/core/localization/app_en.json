@@ -25,6 +25,9 @@
   "common_none": "None",
 
   "nav_home": "Home",
+  "nav_activity": "Activity",
+  "nav_offers": "Offers",
+  "nav_notifications": "Notifications",
   "nav_search": "Search",
   "nav_cart": "Cart",
   "nav_orders": "Orders",
@@ -54,8 +57,11 @@
   "auth_resend_verification": "Resend verification email",
 
   "home_title": "Home",
+  "home_deliver_to": "Deliver to",
+  "home_default_address": "123 Nguyen Hue, District 1, HCMC",
+  "home_search_placeholder": "Search food, stores...",
   "home_categories": "Categories",
-  "home_near_you": "Near You",
+  "home_near_you": "Great Stores Near You",
   "home_popular_stores": "Popular Stores",
   "home_promotions": "Promotions",
   "home_new_stores": "New Stores",
@@ -63,6 +69,9 @@
   "home_free_delivery": "Free Delivery",
   "home_flash_sale": "Flash Sale",
   "home_view_all": "View All",
+  "home_out_of_stock": "Out of Stock",
+  "home_open": "Open",
+  "home_closed": "Closed",
 
   "search_title": "Search",
   "search_hint": "Search food, stores...",
