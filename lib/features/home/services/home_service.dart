@@ -62,6 +62,29 @@ class HomeService {
     });
   }
 
+  /// Lay danh sach quan noi bat (featured).
+  /// Sap xep theo rating giam dan trong bo nho (khong dung orderBy vi khong co index).
+  static Stream<List<StoreModel>> getFeaturedStoresStream({int limit = 10}) {
+    debugPrint('HomeService: Dang lay Stream quan noi bat tu Firestore');
+    return _firestore
+        .collection('stores')
+        .where('deletedAt', isNull: true)
+        .where('isOpen', isEqualTo: true)
+        .limit(limit * 2)
+        .snapshots()
+        .handleError((error) {
+      debugPrint('HomeService[Loi Stream quan noi bat]: $error');
+    })
+        .map((snapshot) {
+      final stores = snapshot.docs
+          .map((doc) => StoreModel.fromFirestore(doc))
+          .toList();
+      stores.sort((a, b) => b.rating.compareTo(a.rating));
+      debugPrint('HomeService: Da nhan ${stores.length} quan noi bat (sau sort)');
+      return stores.take(limit).toList();
+    });
+  }
+
   /// Lay danh sach quan gan day (dang mo cua).
   /// Sap xep theo rating giam dan trong bo nho (khong dung orderBy vi khong co index).
   static Stream<List<StoreModel>> getNearbyStoresStream({int limit = 10}) {

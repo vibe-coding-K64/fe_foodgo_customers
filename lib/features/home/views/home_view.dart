@@ -3,6 +3,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../../search/views/search_view.dart';
 import '../../search/views/search_result_view.dart';
+import '../../product/views/product_detail_bottom_sheet.dart';
 import '../services/home_service.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_search_bar.dart';
@@ -86,21 +87,50 @@ class HomeView extends StatelessWidget {
                   ),
                 ),
               ),
-              // 6. Nhom goi y - Mon ngon noi bat.
+              // 6. Mon noi bat - Danh sach mon an theo chieu doc.
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.only(top: 24),
-                  child: HomeSuggestionSection(
-                    title: LanguageService.translate('home_recommended'),
-                    productsStream: HomeService.getFeaturedProductsStream(),
-                    onSeeAllTap: () {
-                      debugPrint(
-                          'HomeView: Nguoi dung bam xem tat ca san pham');
-                    },
-                    onProductTap: (product) {
-                      debugPrint(
-                          'HomeView: Nguoi dung bam san pham [${product.name}]');
-                    },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              LanguageService.translate('home_featured_stores'),
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                debugPrint(
+                                    'HomeView: Nguoi dung bam xem tat ca mon noi bat');
+                              },
+                              child: Text(
+                                LanguageService.translate('common_see_all'),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      HomeVerticalFeed(
+                        productsStream: HomeService.getFeaturedProductsStream(),
+                        onProductTap: (product) {
+                          showProductDetailSheet(context, product);
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -123,6 +153,10 @@ class HomeView extends StatelessWidget {
                   onStoreTap: (store) {
                     debugPrint(
                         'HomeView: Nguoi dung bam quan [${store.name}]');
+                  },
+                  productsStream: HomeService.getProductsStream(),
+                  onProductTap: (product) {
+                    showProductDetailSheet(context, product);
                   },
                 ),
               ),
