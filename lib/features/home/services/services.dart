@@ -1,1 +1,1 @@
-// Services barrel file
+export 'home_service.dart';
