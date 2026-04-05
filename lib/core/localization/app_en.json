@@ -168,6 +168,14 @@
   "profile_change_avatar": "Change Avatar",
   "profile_member_since": "Member since",
 
+  "profile_spending": "Spending Management",
+  "profile_default_address": "Default Address",
+  "profile_payment": "Payment",
+  "profile_become_seller": "Become a Seller",
+  "profile_become_driver": "Become a Driver",
+  "profile_support": "Support",
+  "profile_terms_policy": "Terms & Policies",
+
   "address_title": "Addresses",
   "address_add_new": "Add New Address",
   "address_edit": "Edit Address",

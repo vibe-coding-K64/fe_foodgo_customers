@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/localization/language_service.dart';
 import '../../home/views/home_view.dart';
+import '../../profile/views/profile_view.dart';
 
 class MainView extends StatefulWidget {
   const MainView({super.key});
@@ -21,8 +22,8 @@ class _MainViewState extends State<MainView> {
     _PlaceholderTab(label: 'Ưu đãi'),
     // Tab Thong bao - tam thoi la container rong.
     _PlaceholderTab(label: 'Thông báo'),
-    // Tab Tai khoan - tam thoi la container rong.
-    _PlaceholderTab(label: 'Tài khoản'),
+    // Tab Tai khoan - su dung ProfileView thuc te.
+    ProfileView(),
   ];
 
   @override

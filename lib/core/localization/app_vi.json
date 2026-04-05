@@ -168,6 +168,14 @@
   "profile_change_avatar": "Đổi ảnh đại diện",
   "profile_member_since": "Thành viên từ",
 
+  "profile_spending": "Quản lý chi tiêu",
+  "profile_default_address": "Địa chỉ mặc định",
+  "profile_payment": "Thanh toán",
+  "profile_become_seller": "Trở thành người bán",
+  "profile_become_driver": "Trở thành tài xế",
+  "profile_support": "Hỗ trợ",
+  "profile_terms_policy": "Điều khoản và chính sách",
+
   "address_title": "Địa chỉ",
   "address_add_new": "Thêm địa chỉ mới",
   "address_edit": "Sửa địa chỉ",
