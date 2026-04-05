@@ -39,6 +39,11 @@ class DataSeeder {
     return allSuccess;
   }
 
+  /// Seed rieng voucher (goi duoc tu ben ngoai).
+  static Future<bool> seedVouchers() async {
+    return await _seedWithLog('vouchers', _buildVouchers());
+  }
+
   /// Seed mot collection voi log chi tiet.
   static Future<bool> _seedWithLog(
       String collectionName, List<Map<String, dynamic>> documents) async {
@@ -170,14 +175,15 @@ class DataSeeder {
           'description': 'Burger thit bo nuong that ngon, tuyet voi.',
           'address': '123 Nguyen Hue, Quan 1, TP.HCM',
           'location': {'latitude': 10.7765, 'longitude': 106.7009},
-          'imageUrl':
+          'avtUrl':
+              'https://images.unsplash.com/photo-1550547660-d9450f859349?w=400&q=80',
+          'backUrl':
               'https://images.unsplash.com/photo-1550547660-d9450f859349?w=800&q=80',
           'isOpen': true,
           'rating': 4.7,
           'reviewCount': 120,
           'deliveryTime': '15 - 25 phut',
           'deliveryFee': 15000.0,
-          'minOrder': 50000.0,
           'categoryIds': ['cate_001'],
           'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
           'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
@@ -190,14 +196,15 @@ class DataSeeder {
           'description': 'Pizza that phong, pho mai nguyen chat tu My.',
           'address': '45 Le Duan, Quan 3, TP.HCM',
           'location': {'latitude': 10.7795, 'longitude': 106.6950},
-          'imageUrl':
+          'avtUrl':
+              'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&q=80',
+          'backUrl':
               'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&q=80',
           'isOpen': true,
           'rating': 4.5,
           'reviewCount': 85,
           'deliveryTime': '20 - 30 phut',
           'deliveryFee': 20000.0,
-          'minOrder': 100000.0,
           'categoryIds': ['cate_008'],
           'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
           'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
@@ -210,14 +217,15 @@ class DataSeeder {
           'description': 'Tra sua thom ngon, hanh trang tu Thai Lan.',
           'address': '78 Pasteur, Quan 1, TP.HCM',
           'location': {'latitude': 10.7815, 'longitude': 106.6980},
-          'imageUrl':
+          'avtUrl':
+              'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400&q=80',
+          'backUrl':
               'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=800&q=80',
           'isOpen': true,
           'rating': 4.8,
           'reviewCount': 200,
           'deliveryTime': '10 - 20 phut',
           'deliveryFee': 10000.0,
-          'minOrder': 30000.0,
           'categoryIds': ['cate_002', 'cate_007'],
           'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
           'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
@@ -230,14 +238,15 @@ class DataSeeder {
           'description': 'Banh mi nhan that ngon, chat luong hang dau.',
           'address': '90 Dong Khoi, Quan 1, TP.HCM',
           'location': {'latitude': 10.7775, 'longitude': 106.7015},
-          'imageUrl':
+          'avtUrl':
+              'https://images.unsplash.com/photo-1509722747041-616f39b57569?w=400&q=80',
+          'backUrl':
               'https://images.unsplash.com/photo-1509722747041-616f39b57569?w=800&q=80',
           'isOpen': false,
           'rating': 4.6,
           'reviewCount': 150,
           'deliveryTime': '15 - 25 phut',
           'deliveryFee': 12000.0,
-          'minOrder': 25000.0,
           'categoryIds': ['cate_003'],
           'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
           'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
@@ -250,14 +259,15 @@ class DataSeeder {
           'description': 'Com tam Saigon truyen thong, ngon tuyet pham.',
           'address': '210 Vo Van Kiet, Quan 5, TP.HCM',
           'location': {'latitude': 10.7510, 'longitude': 106.6850},
-          'imageUrl':
+          'avtUrl':
+              'https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=400&q=80',
+          'backUrl':
               'https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=800&q=80',
           'isOpen': true,
           'rating': 4.4,
           'reviewCount': 65,
           'deliveryTime': '20 - 30 phut',
           'deliveryFee': 18000.0,
-          'minOrder': 40000.0,
           'categoryIds': ['cate_004'],
           'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
           'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
@@ -270,14 +280,15 @@ class DataSeeder {
           'description': 'Lau Thai chua cay, hau sac Thai Lan chinh hang.',
           'address': '55 Truong Chinh, Quan 12, TP.HCM',
           'location': {'latitude': 10.8020, 'longitude': 106.6750},
-          'imageUrl':
+          'avtUrl':
+              'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=400&q=80',
+          'backUrl':
               'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=800&q=80',
           'isOpen': true,
           'rating': 4.9,
           'reviewCount': 95,
           'deliveryTime': '25 - 35 phut',
           'deliveryFee': 25000.0,
-          'minOrder': 200000.0,
           'categoryIds': ['cate_005'],
           'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
           'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
@@ -290,14 +301,15 @@ class DataSeeder {
           'description': 'Ga ran, muc chien, snack các loai hap dan.',
           'address': '88 Pham Viet Chanh, Quan 1, TP.HCM',
           'location': {'latitude': 10.7750, 'longitude': 106.7020},
-          'imageUrl':
+          'avtUrl':
+              'https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?w=400&q=80',
+          'backUrl':
               'https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?w=800&q=80',
           'isOpen': true,
           'rating': 4.3,
           'reviewCount': 78,
           'deliveryTime': '15 - 25 phut',
           'deliveryFee': 10000.0,
-          'minOrder': 30000.0,
           'categoryIds': ['cate_006'],
           'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
           'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
@@ -310,14 +322,15 @@ class DataSeeder {
           'description': 'Fast food My, pho mai que, hotdog ngon gia re.',
           'address': '150 Nam Ky Khoi Nghia, Quan 3, TP.HCM',
           'location': {'latitude': 10.7800, 'longitude': 106.6900},
-          'imageUrl':
+          'avtUrl':
+              'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=400&q=80',
+          'backUrl':
               'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=800&q=80',
           'isOpen': true,
           'rating': 4.2,
           'reviewCount': 42,
           'deliveryTime': '15 - 20 phut',
           'deliveryFee': 12000.0,
-          'minOrder': 35000.0,
           'categoryIds': ['cate_001', 'cate_006'],
           'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
           'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
@@ -781,6 +794,7 @@ class DataSeeder {
           'imageUrl':
               'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=80',
           'storeId': null,
+          'storeName': null,
           'isActive': true,
           'order': 1,
           'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
@@ -793,6 +807,7 @@ class DataSeeder {
           'imageUrl':
               'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&q=80',
           'storeId': null,
+          'storeName': null,
           'isActive': true,
           'order': 2,
           'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
@@ -805,6 +820,7 @@ class DataSeeder {
           'imageUrl':
               'https://images.unsplash.com/photo-1543353071-873f17a7a088?w=800&q=80',
           'storeId': null,
+          'storeName': null,
           'isActive': true,
           'order': 3,
           'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),

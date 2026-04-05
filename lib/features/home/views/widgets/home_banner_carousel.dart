@@ -5,8 +5,13 @@ import '../../models/banner_model.dart';
 /// Nhan Stream<List<BannerModel>> va tu dong xu ly 3 trang thai.
 class HomeBannerCarousel extends StatelessWidget {
   final Stream<List<BannerModel>> bannersStream;
+  final void Function(BannerModel banner)? onBannerTap;
 
-  const HomeBannerCarousel({super.key, required this.bannersStream});
+  const HomeBannerCarousel({
+    super.key,
+    required this.bannersStream,
+    this.onBannerTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +34,10 @@ class HomeBannerCarousel extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        return _BannerCarouselContent(banners: banners);
+        return _BannerCarouselContent(
+          banners: banners,
+          onBannerTap: onBannerTap,
+        );
       },
     );
   }
@@ -37,8 +45,12 @@ class HomeBannerCarousel extends StatelessWidget {
 
 class _BannerCarouselContent extends StatefulWidget {
   final List<BannerModel> banners;
+  final void Function(BannerModel banner)? onBannerTap;
 
-  const _BannerCarouselContent({required this.banners});
+  const _BannerCarouselContent({
+    required this.banners,
+    this.onBannerTap,
+  });
 
   @override
   State<_BannerCarouselContent> createState() => _BannerCarouselContentState();
@@ -72,16 +84,44 @@ class _BannerCarouselContentState extends State<_BannerCarouselContent> {
               final banner = widget.banners[index];
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    banner.imageUrl,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: Colors.grey[200],
-                      child: const Icon(Icons.image, size: 40),
-                    ),
+                child: GestureDetector(
+                  onTap: () => widget.onBannerTap?.call(banner),
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          banner.imageUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: Colors.grey[200],
+                            child: const Icon(Icons.image, size: 40),
+                          ),
+                        ),
+                      ),
+                      if (banner.storeName != null && banner.storeName!.isNotEmpty)
+                        Positioned(
+                          bottom: 8,
+                          left: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              banner.storeName!,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               );
