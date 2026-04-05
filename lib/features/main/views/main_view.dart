@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/localization/language_service.dart';
 import '../../home/views/home_view.dart';
 import '../../profile/views/profile_view.dart';
+import '../../rewards/views/rewards_view.dart';
 
 class MainView extends StatefulWidget {
   const MainView({super.key});
@@ -18,8 +19,8 @@ class _MainViewState extends State<MainView> {
     HomeView(),
     // Tab Hoat dong - tam thoi la container rong.
     _PlaceholderTab(label: 'Hoạt động'),
-    // Tab Uu dai - tam thoi la container rong.
-    _PlaceholderTab(label: 'Ưu đãi'),
+    // Tab Uu dai - su dung RewardsView thuc te.
+    RewardsView(),
     // Tab Thong bao - tam thoi la container rong.
     _PlaceholderTab(label: 'Thông báo'),
     // Tab Tai khoan - su dung ProfileView thuc te.

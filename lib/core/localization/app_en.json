@@ -196,6 +196,16 @@
   "notification_system": "System",
   "notification_mark_all_read": "Mark all as read",
 
+  "rewards_title": "Offers",
+  "rewards_my_points": "Your Points",
+  "rewards_points": "pts",
+  "rewards_next_tier": "Next tier",
+  "rewards_exchange": "Redeem points for rewards",
+  "rewards_my_vouchers": "Your Vouchers",
+  "rewards_expires": "Expires",
+  "rewards_use_now": "Use Now",
+  "rewards_vouchers_available": "Vouchers available",
+
   "error_network": "Network error. Please check your connection.",
   "error_server": "Server error. Please try again later.",
   "error_unknown": "Something went wrong. Please try again.",

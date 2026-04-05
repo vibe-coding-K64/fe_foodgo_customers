@@ -196,6 +196,16 @@
   "notification_system": "Hệ thống",
   "notification_mark_all_read": "Đánh dấu đã đọc",
 
+  "rewards_title": "Ưu đãi",
+  "rewards_my_points": "Điểm của bạn",
+  "rewards_points": "điểm",
+  "rewards_next_tier": "Hạng tiếp theo",
+  "rewards_exchange": "Đổi điểm nhận ưu đãi",
+  "rewards_my_vouchers": "Voucher của bạn",
+  "rewards_expires": "Hết hạn",
+  "rewards_use_now": "Dùng ngay",
+  "rewards_vouchers_available": "Voucher sẵn sàng",
+
   "error_network": "Lỗi mạng. Vui lòng kiểm tra kết nối.",
   "error_server": "Lỗi server. Vui lòng thử lại sau.",
   "error_unknown": "Đã xảy ra lỗi. Vui lòng thử lại.",
