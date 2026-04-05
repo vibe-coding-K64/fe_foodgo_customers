@@ -144,6 +144,12 @@
   "cart_quantity": "Số lượng",
   "cart_note": "Ghi chú cho cửa hàng",
   "cart_note_hint": "Thêm hướng dẫn đặc biệt...",
+  "cart_select_all": "Chọn tất cả",
+  "cart_estimated_total": "Tạm tính",
+  "cart_buy_btn": "Mua hàng ({count})",
+  "cart_item_removed": "Đã xóa món khỏi giỏ hàng",
+  "cart_empty_title": "Giỏ hàng trống",
+  "cart_empty_desc": "Hãy xem thực đơn và thêm món vào giỏ hàng",
 
   "checkout_title": "Thanh toán",
   "checkout_delivery_info": "Thông tin giao hàng",
@@ -252,6 +258,9 @@
   "address_set_default": "Đặt làm địa chỉ mặc định",
   "address_delete": "Xóa địa chỉ",
   "address_delete_confirm": "Xóa địa chỉ này?",
+  "address_my_addresses": "Địa chỉ của tôi",
+  "address_set_default_success": "Đặt làm mặc định",
+  "address_deleted": "Đã xóa địa chỉ",
 
   "notification_title": "Thông báo",
   "notification_order_update": "Cập nhật đơn hàng",

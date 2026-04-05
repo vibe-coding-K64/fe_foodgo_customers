@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../cart/views/cart_view.dart';
 import 'search_result_view.dart';
 
 /// Man hinh tim kiem chinh.
@@ -79,6 +80,20 @@ class _SearchViewState extends State<SearchView> {
         ),
         titleSpacing: 0,
         title: _buildSearchField(),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.shopping_cart_outlined),
+            onPressed: () {
+              debugPrint('SearchView: Nguoi dung bam icon gio hang');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CartView(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: _buildRecentSearches(),
     );

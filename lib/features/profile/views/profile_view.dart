@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/localization/language_service.dart';
+import '../../address/views/address_management_view.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/profile_menu_list.dart';
 
@@ -29,7 +30,15 @@ class ProfileView extends StatelessWidget {
       ProfileMenuItem(
         titleKey: 'profile_default_address',
         icon: Icons.location_on_outlined,
-        onTap: () => _navigateTo(context, '/profile/address'),
+        onTap: () {
+          debugPrint('ProfileView: Mo man hinh quan ly dia chi');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddressManagementView(),
+            ),
+          );
+        },
       ),
       // Thanh toan.
       ProfileMenuItem(

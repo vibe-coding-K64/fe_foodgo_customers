@@ -144,6 +144,12 @@
   "cart_quantity": "Quantity",
   "cart_note": "Note for store",
   "cart_note_hint": "Add special instructions...",
+  "cart_select_all": "Select all",
+  "cart_estimated_total": "Estimated total",
+  "cart_buy_btn": "Buy ({count})",
+  "cart_item_removed": "Item removed from cart",
+  "cart_empty_title": "Your cart is empty",
+  "cart_empty_desc": "Browse our menu and add items to your cart",
 
   "checkout_title": "Checkout",
   "checkout_delivery_info": "Delivery information",
@@ -252,6 +258,9 @@
   "address_set_default": "Set as default address",
   "address_delete": "Delete Address",
   "address_delete_confirm": "Delete this address?",
+  "address_my_addresses": "My Addresses",
+  "address_set_default_success": "Set as default",
+  "address_deleted": "Address deleted",
 
   "notification_title": "Notifications",
   "notification_order_update": "Order Update",

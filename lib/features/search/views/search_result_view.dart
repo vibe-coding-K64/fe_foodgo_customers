@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../cart/views/cart_view.dart';
 import '../models/search_result_item.dart';
 import 'widgets/search_filter_bar.dart';
 import 'widgets/search_result_card.dart';
@@ -252,7 +253,13 @@ class _SearchResultViewState extends State<SearchResultView> {
           // Nut gio hang.
           IconButton(
             onPressed: () {
-              debugPrint('Mở giỏ hàng');
+              debugPrint('SearchResultView: Nguoi dung bam icon gio hang');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CartView(),
+                ),
+              );
             },
             icon: Icon(
               Icons.shopping_cart_outlined,
