@@ -3,6 +3,7 @@ import '../../../core/localization/language_service.dart';
 import '../../address/views/address_management_view.dart';
 import '../../payment/views/payment_methods_view.dart';
 import '../../partner/views/partner_registration_view.dart';
+import '../../support/views/support_view.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/profile_menu_list.dart';
 
@@ -76,7 +77,15 @@ class ProfileView extends StatelessWidget {
       ProfileMenuItem(
         titleKey: 'profile_support',
         icon: Icons.support_agent_outlined,
-        onTap: () => _navigateTo(context, '/profile/support'),
+        onTap: () {
+          debugPrint('ProfileView: Mo trang tro giup');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SupportView(),
+            ),
+          );
+        },
       ),
       // Cai dat.
       ProfileMenuItem(
