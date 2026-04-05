@@ -5,6 +5,7 @@ import '../../payment/views/payment_methods_view.dart';
 import '../../partner/views/partner_registration_view.dart';
 import '../../settings/views/settings_view.dart';
 import '../../support/views/support_view.dart';
+import '../../terms/views/terms_view.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/profile_menu_list.dart';
 
@@ -106,7 +107,15 @@ class ProfileView extends StatelessWidget {
       ProfileMenuItem(
         titleKey: 'profile_terms_policy',
         icon: Icons.description_outlined,
-        onTap: () => _navigateTo(context, '/profile/terms'),
+        onTap: () {
+          debugPrint('ProfileView: Mo trang dieu khoan va chinh sach');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const TermsView(),
+            ),
+          );
+        },
       ),
       // Dang xuat (mau do, o cuoi).
       ProfileMenuItem(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import 'change_password_view.dart';
 
 /// Man hinh Cai dat.
 ///
@@ -58,13 +59,11 @@ class _SettingsViewState extends State<SettingsView> {
 
   /// Xu ly bam muc "Doi mat khau".
   void _onChangePasswordTap() {
-    debugPrint('Settings: Nguoi dung bam muc Doi mat khau');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(LanguageService.translate('settings_change_password')),
-        backgroundColor: AppColors.primary,
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
+    debugPrint('Settings: Mo trang doi mat khau');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ChangePasswordView(),
       ),
     );
   }
