@@ -7,6 +7,7 @@ import 'widgets/checkout_cart_item.dart';
 import 'widgets/checkout_cart_items.dart';
 import 'widgets/checkout_promotions.dart';
 import 'widgets/checkout_summary.dart';
+import '../../address/views/address_management_view.dart';
 
 /// Trang checkout (Thanh toan) - buoc cuoi cung cua luong mua hang.
 /// Giao dien gom: thong tin giao hang, danh sach mon, uu dai,
@@ -183,8 +184,22 @@ class _CheckoutViewState extends State<CheckoutView> {
                   CheckoutDeliveryInfo(
                     address: _deliveryAddress,
                     estimatedTime: '15-20 ${LanguageService.translate('unit_min')}',
-                    onChangeAddressTap: () {
+                    onChangeAddressTap: () async {
                       debugPrint('Checkout: Mo man hinh doi dia chi');
+                      final selected = await Navigator.push<AddressModel>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const AddressManagementView(isFromCheckout: true),
+                        ),
+                      );
+                      if (selected != null) {
+                        setState(() {
+                          _deliveryAddress = selected;
+                        });
+                        debugPrint(
+                            'Checkout: Da cap nhat dia chi thanh [${selected.name}] - ${selected.address}');
+                      }
                     },
                   ),
                   const SizedBox(height: 20),

@@ -4,7 +4,7 @@ import '../../../core/localization/language_service.dart';
 import '../../search/views/search_view.dart';
 import '../../search/views/search_result_view.dart';
 import '../../product/views/product_detail_bottom_sheet.dart';
-import '../../checkout/views/checkout_view.dart';
+import '../../cart/views/cart_view.dart';
 import '../services/home_service.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_search_bar.dart';
@@ -189,7 +189,7 @@ class _CartFab extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const CheckoutView(),
+            builder: (context) => const CartView(),
           ),
         );
       },
