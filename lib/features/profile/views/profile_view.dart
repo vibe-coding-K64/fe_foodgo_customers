@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/localization/language_service.dart';
 import '../../address/views/address_management_view.dart';
 import '../../payment/views/payment_methods_view.dart';
+import '../../partner/views/partner_registration_view.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/profile_menu_list.dart';
 
@@ -57,15 +58,19 @@ class ProfileView extends StatelessWidget {
       ),
       // Tro thanh nguoi ban.
       ProfileMenuItem(
-        titleKey: 'profile_become_seller',
-        icon: Icons.storefront_outlined,
-        onTap: () => _navigateTo(context, '/profile/become-seller'),
-      ),
-      // Tro thanh tai xe.
-      ProfileMenuItem(
-        titleKey: 'profile_become_driver',
-        icon: Icons.delivery_dining_outlined,
-        onTap: () => _navigateTo(context, '/profile/become-driver'),
+        titleKey: 'profile_become_seller_or_driver',
+        icon: Icons.content_paste_rounded,
+        onTap: () {
+          debugPrint('ProfileView: Mo trang dang ky doi tac (Nguoi ban)');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PartnerRegistrationView(
+                initialRole: PartnerRole.seller,
+              ),
+            ),
+          );
+        },
       ),
       // Ho tro.
       ProfileMenuItem(
