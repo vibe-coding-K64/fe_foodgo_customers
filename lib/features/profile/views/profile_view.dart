@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/localization/language_service.dart';
 import '../../address/views/address_management_view.dart';
+import '../../payment/views/payment_methods_view.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/profile_menu_list.dart';
 
@@ -44,7 +45,15 @@ class ProfileView extends StatelessWidget {
       ProfileMenuItem(
         titleKey: 'profile_payment',
         icon: Icons.payment_outlined,
-        onTap: () => _navigateTo(context, '/profile/payment'),
+        onTap: () {
+          debugPrint('ProfileView: Mo man hinh quan ly thanh toan');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PaymentMethodsView(),
+            ),
+          );
+        },
       ),
       // Tro thanh nguoi ban.
       ProfileMenuItem(
