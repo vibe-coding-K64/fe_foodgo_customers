@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../models/payment_method_model.dart';
+import 'add_payment_method_view.dart';
 import 'widgets/payment_method_card.dart';
 
 /// Man hinh Quan ly Phuong thuc Thanh toan.
@@ -147,144 +148,27 @@ class _PaymentMethodsViewState extends State<PaymentMethodsView> {
     );
   }
 
-  /// Mo trang them moi phuong thuc (placeholder).
-  void _onAddNew() {
+  /// Mo trang them moi phuong thuc thanh toan.
+  Future<void> _onAddNew() async {
     debugPrint('PaymentMethods: Mo trang them phuong thuc thanh toan');
-    // TODO: Mo bottom sheet hoac trang chon them the / lien ket vi.
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => _buildAddBottomSheet(ctx),
-    );
-  }
-
-  /// Bottom sheet chon loai phuong thuc de them.
-  Widget _buildAddBottomSheet(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-    return Container(
-      padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + bottomPadding),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Thanh ke de kéo.
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            LanguageService.translate('payment_add_new'),
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 20),
-          // Nut them the moi.
-          _buildAddOption(
-            icon: Icons.credit_card,
-            iconColor: const Color(0xFF1A1F71),
-            iconBg: const Color(0xFF1A1F71).withAlpha(15),
-            title: LanguageService.translate('payment_add_card'),
-            subtitle: 'Visa, Mastercard, JCB...',
-            onTap: () {
-              Navigator.pop(context);
-              debugPrint('PaymentMethods: Chon them the moi');
-              // TODO: Mo trang nhap thong tin the.
-            },
-          ),
-          const SizedBox(height: 12),
-          // Nut lien ket vi.
-          _buildAddOption(
-            icon: Icons.savings_outlined,
-            iconColor: const Color(0xFFA50064),
-            iconBg: const Color(0xFFA50064).withAlpha(15),
-            title: LanguageService.translate('payment_add_wallet'),
-            subtitle: 'MoMo, ZaloPay, VNPay',
-            onTap: () {
-              Navigator.pop(context);
-              debugPrint('PaymentMethods: Chon lien ket vi dien tu');
-              // TODO: Mo quy trinh lien ket vi.
-            },
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAddOption({
-    required IconData icon,
-    required Color iconColor,
-    required Color iconBg,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border, width: 1),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: iconBg,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: iconColor, size: 24),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(
-              Icons.chevron_right,
-              color: AppColors.textHint,
-              size: 22,
-            ),
-          ],
+    final created = await Navigator.push<PaymentMethodModel>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddPaymentMethodView(
+          onConfirm: (method) {
+            debugPrint(
+                'PaymentMethods: Da them phuong thuc [${method.id}]');
+            setState(() {
+              _methods.add(method);
+            });
+          },
         ),
       ),
     );
+    if (created != null) {
+      debugPrint(
+          'PaymentMethods: Quay ve sau khi them [${created.id}]');
+    }
   }
 
   @override
