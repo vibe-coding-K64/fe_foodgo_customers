@@ -14,6 +14,10 @@ class AppColors {
   static const Color secondaryLight = Color(0xFF5DD9CD);
   static const Color secondaryDark = Color(0xFF23A897);
 
+  // Màu nền gradient xanh lá (cho Hoat dong va Uu dai)
+  static const Color greenGradientStart = Color(0xFF81C784);
+  static const Color greenGradientEnd = Color(0xFF2E7D32);
+
   // Màu nền
   static const Color background = Color(0xFFFAFAFA);
   static const Color surface = Color(0xFFFFFFFF);

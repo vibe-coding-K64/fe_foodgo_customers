@@ -97,6 +97,18 @@ class RewardsView extends StatelessWidget {
             pinned: true,
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    AppColors.greenGradientStart,
+                    AppColors.greenGradientEnd,
+                  ],
+                ),
+              ),
+            ),
             title: Text(
               LanguageService.translate('nav_offers'),
             ),

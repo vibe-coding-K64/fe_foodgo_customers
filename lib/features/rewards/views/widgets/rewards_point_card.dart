@@ -25,14 +25,14 @@ class RewardsPointCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFFFF6B35),
-            Color(0xFFFF8C00),
+            AppColors.greenGradientStart,
+            AppColors.greenGradientEnd,
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFF6B35).withOpacity(0.4),
+            color: AppColors.greenGradientEnd.withOpacity(0.4),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),

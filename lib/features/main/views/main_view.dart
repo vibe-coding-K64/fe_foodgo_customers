@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../core/localization/language_service.dart';
 import '../../home/views/home_view.dart';
-import '../../profile/views/profile_view.dart';
+import '../../activity/views/activity_view.dart';
+import '../../notifications/views/notifications_view.dart';
 import '../../rewards/views/rewards_view.dart';
+import '../../profile/views/profile_view.dart';
 
 class MainView extends StatefulWidget {
   const MainView({super.key});
@@ -17,12 +19,12 @@ class _MainViewState extends State<MainView> {
   // Danh sach cac tab.
   static const List<Widget> _pages = [
     HomeView(),
-    // Tab Hoat dong - tam thoi la container rong.
-    _PlaceholderTab(label: 'Hoạt động'),
+    // Tab Hoat dong - su dung ActivityView thuc te.
+    ActivityView(),
     // Tab Uu dai - su dung RewardsView thuc te.
     RewardsView(),
-    // Tab Thong bao - tam thoi la container rong.
-    _PlaceholderTab(label: 'Thông báo'),
+    // Tab Thong bao - su dung NotificationsView thuc te.
+    NotificationsView(),
     // Tab Tai khoan - su dung ProfileView thuc te.
     ProfileView(),
   ];
@@ -72,25 +74,6 @@ class _MainViewState extends State<MainView> {
             label: LanguageService.translate('nav_profile'),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Widget placeholder tam thoi cho cac tab chua co giao dien.
-class _PlaceholderTab extends StatelessWidget {
-  final String label;
-
-  const _PlaceholderTab({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(label),
-      ),
-      body: Center(
-        child: Text('Man hinh $label (dang phat trien)'),
       ),
     );
   }
