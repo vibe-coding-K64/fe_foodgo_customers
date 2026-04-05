@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'features/main/views/main_view.dart';
 import 'core/localization/language_service.dart';
+import 'core/theme/app_theme.dart';
 import 'core/utils/data_seeder.dart';
 
 void main() async {
@@ -42,14 +43,7 @@ class FoodGoApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2E7D32),
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        fontFamily: 'Roboto',
-      ),
+      theme: AppTheme.lightTheme,
       home: const MainView(),
     );
   }
