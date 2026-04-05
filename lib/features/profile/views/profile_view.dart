@@ -3,6 +3,7 @@ import '../../../core/localization/language_service.dart';
 import '../../address/views/address_management_view.dart';
 import '../../payment/views/payment_methods_view.dart';
 import '../../partner/views/partner_registration_view.dart';
+import '../../settings/views/settings_view.dart';
 import '../../support/views/support_view.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/profile_menu_list.dart';
@@ -91,7 +92,15 @@ class ProfileView extends StatelessWidget {
       ProfileMenuItem(
         titleKey: 'profile_settings',
         icon: Icons.settings_outlined,
-        onTap: () => _navigateTo(context, '/profile/settings'),
+        onTap: () {
+          debugPrint('ProfileView: Mo trang cai dat');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SettingsView(),
+            ),
+          );
+        },
       ),
       // Dieu khoan va chinh sach.
       ProfileMenuItem(
