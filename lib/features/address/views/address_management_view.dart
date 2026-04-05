@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../../profile/models/address_model.dart';
+import 'address_form_view.dart';
 import 'widgets/address_card_widget.dart';
 
 /// Man hinh Quan ly Dia chi (Address Management).
@@ -134,16 +135,40 @@ class _AddressManagementViewState extends State<AddressManagementView> {
   }
 
   /// Mo trang sua dia chi.
-  void _onEdit(AddressModel address) {
-    debugPrint(
-        'AddressManagement: Mo trang sua dia chi [${address.id}]');
-    // TODO: Chuyen huong sang trang sua dia chi.
+  Future<void> _onEdit(AddressModel address) async {
+    debugPrint('AddressManagement: Mo trang sua dia chi [${address.id}]');
+    final updated = await Navigator.push<AddressModel>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddressFormView(address: address),
+      ),
+    );
+    if (updated != null) {
+      setState(() {
+        final index = _addresses.indexWhere((a) => a.id == updated.id);
+        if (index != -1) {
+          _addresses[index] = updated;
+        }
+      });
+      debugPrint('AddressManagement: Da cap nhat dia chi [${updated.id}]');
+    }
   }
 
   /// Mo trang them dia chi moi.
-  void _onAddNew() {
+  Future<void> _onAddNew() async {
     debugPrint('AddressManagement: Mo trang them dia chi moi');
-    // TODO: Chuyen huong sang trang them dia chi / ban do.
+    final created = await Navigator.push<AddressModel>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AddressFormView(),
+      ),
+    );
+    if (created != null) {
+      setState(() {
+        _addresses.add(created);
+      });
+      debugPrint('AddressManagement: Da them dia chi [${created.id}]');
+    }
   }
 
   @override
