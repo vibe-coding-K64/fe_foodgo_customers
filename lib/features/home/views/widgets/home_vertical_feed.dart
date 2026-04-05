@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/store_model.dart';
 import '../../models/product_model.dart';
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
 
 /// Widget feed danh sach san pham/quan an cuon doc.
@@ -374,8 +375,8 @@ class _VerticalProductItem extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     '${product.basePrice.toStringAsFixed(0)} ${LanguageService.translate('unit_currency')}',
-                    style: const TextStyle(
-                      color: Color(0xFF2E7D32),
+                    style: TextStyle(
+                      color: AppColors.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),

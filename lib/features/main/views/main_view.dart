@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../../home/views/home_view.dart';
 import '../../activity/views/activity_view.dart';
@@ -44,7 +45,7 @@ class _MainViewState extends State<MainView> {
           });
         },
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF2E7D32),
+        selectedItemColor: AppColors.primary,
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,
         items: [

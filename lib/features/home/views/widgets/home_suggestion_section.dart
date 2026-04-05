@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/store_model.dart';
 import '../../models/product_model.dart';
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
 
 /// Widget nhom goi y voi tieu de va danh sach san pham/quan an.
@@ -48,9 +49,9 @@ class HomeSuggestionSection extends StatelessWidget {
                   onTap: onSeeAllTap,
                   child: Text(
                     LanguageService.translate('common_see_all'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: Color(0xFF2E7D32),
+                      color: AppColors.primary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -369,8 +370,8 @@ class _ProductCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     '${product.basePrice.toStringAsFixed(0)} ${LanguageService.translate('unit_currency')}',
-                    style: const TextStyle(
-                      color: Color(0xFF2E7D32),
+                    style: TextStyle(
+                      color: AppColors.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),

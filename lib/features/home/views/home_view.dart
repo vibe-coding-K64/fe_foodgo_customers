@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../search/views/search_view.dart';
+import '../../search/views/search_result_view.dart';
 import '../services/home_service.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_search_bar.dart';
@@ -25,7 +28,16 @@ class HomeView extends StatelessWidget {
               ),
               // 2. Thanh tim kiem.
               SliverToBoxAdapter(
-                child: HomeSearchBar(onTap: () {}),
+                child: HomeSearchBar(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SearchView(),
+                      ),
+                    );
+                  },
+                ),
               ),
               // 3. Danh muc mon an.
               SliverToBoxAdapter(
@@ -36,6 +48,14 @@ class HomeView extends StatelessWidget {
                     onCategoryTap: (category) {
                       debugPrint(
                           'HomeView: Nguoi dung bam danh muc [${category.name}]');
+                      // Chuyen sang man hinh ket qua tim kiem voi ten danh muc.
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              SearchResultView(query: category.name),
+                        ),
+                      );
                     },
                   ),
                 ),
@@ -132,7 +152,7 @@ class _CartFab extends StatelessWidget {
       onPressed: () {
         debugPrint('HomeView: Nguoi dung bam vao gio hang');
       },
-      backgroundColor: const Color(0xFF2E7D32),
+      backgroundColor: AppColors.primary,
       elevation: 4,
       shape: const CircleBorder(),
       child: const Icon(

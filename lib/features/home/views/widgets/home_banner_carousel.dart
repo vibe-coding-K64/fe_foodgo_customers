@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/banner_model.dart';
+import '../../../../core/constants/app_colors.dart';
 
 /// Widget hien thi banner quang cao duoi dang carousel.
 /// Nhan Stream<List<BannerModel>> va tu dong xu ly 3 trang thai.
@@ -140,7 +141,7 @@ class _BannerCarouselContentState extends State<_BannerCarouselContent> {
               height: 8,
               decoration: BoxDecoration(
                 color: _currentPage == index
-                    ? const Color(0xFF2E7D32)
+                    ? AppColors.primaryDark
                     : Colors.grey[300],
                 borderRadius: BorderRadius.circular(4),
               ),
