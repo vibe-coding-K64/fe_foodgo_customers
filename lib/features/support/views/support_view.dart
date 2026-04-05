@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import 'support_chat_view.dart';
 
 /// Model mot cau hoi FAQ.
 class FaqItem {
@@ -75,13 +76,11 @@ class _SupportViewState extends State<SupportView> {
 
   /// Xu ly bam nut Chat.
   void _onChatTap() {
-    debugPrint('SupportView: Nguoi dung bam nut Chat voi nhan vien');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(LanguageService.translate('support_chat_btn')),
-        backgroundColor: AppColors.primary,
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
+    debugPrint('SupportView: Mo man hinh chat voi nhan vien');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SupportChatView(),
       ),
     );
   }

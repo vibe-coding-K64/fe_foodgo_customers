@@ -327,6 +327,16 @@
   "support_faq_payment": "What payment methods are accepted?",
   "support_faq_payment_answer": "FoodGo accepts cash on delivery (COD), credit/debit cards (Visa, Mastercard), and e-wallets such as MoMo and ZaloPay.",
 
+  "chat_staff_name": "CSKH - Ngoc Mai",
+  "chat_status_online": "Online now",
+  "chat_staff_greeting": "Hello! I am Ngoc Mai, FoodGo support staff. How can I help you today?",
+  "chat_input_hint": "Type a message...",
+  "chat_send": "Send",
+  "chat_attachment": "Attach",
+  "chat_typing": "Typing...",
+  "chat_today": "Today",
+  "chat_yesterday": "Yesterday",
+
   "address_title": "Addresses",
   "address_add_new": "Add New Address",
   "address_edit": "Edit Address",

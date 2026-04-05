@@ -327,6 +327,16 @@
   "support_faq_payment": "Các phương thức thanh toán được chấp nhận?",
   "support_faq_payment_answer": "FoodGo chấp nhận thanh toán bằng tiền mặt (COD), thẻ tín dụng/ghi nợ (Visa, Mastercard) và các ví điện tử như MoMo, ZaloPay.",
 
+  "chat_staff_name": "CSKH - Ngọc Mai",
+  "chat_status_online": "Đang hoạt động",
+  "chat_staff_greeting": "Xin chào bạn! Mình là Ngọc Mai, nhân viên hỗ trợ của FoodGo. Bạn cần mình giúp gì hôm nay?",
+  "chat_input_hint": "Nhập tin nhắn...",
+  "chat_send": "Gửi",
+  "chat_attachment": "Đính kèm",
+  "chat_typing": "Đang nhập...",
+  "chat_today": "Hôm nay",
+  "chat_yesterday": "Hôm qua",
+
   "address_title": "Địa chỉ",
   "address_add_new": "Thêm địa chỉ mới",
   "address_edit": "Sửa địa chỉ",
