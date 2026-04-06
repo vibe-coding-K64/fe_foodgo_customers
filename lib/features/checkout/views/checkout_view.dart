@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../../../features/profile/models/address_model.dart';
+import '../../activity/views/order_detail_view.dart';
 import 'widgets/checkout_delivery_info.dart';
 import 'widgets/checkout_cart_item.dart';
 import 'widgets/checkout_cart_items.dart';
@@ -12,8 +13,18 @@ import '../../address/views/address_management_view.dart';
 /// Trang checkout (Thanh toan) - buoc cuoi cung cua luong mua hang.
 /// Giao dien gom: thong tin giao hang, danh sach mon, uu dai,
 /// chi tiet hoa don, va sticky bottom bar.
+///
+/// Thuoc tinh [initialOrder] cho phep dat lai don hang cu:
+///   - Neu la [OrderDetailModel]: hien thi san danh sach mon cu trong gio hang.
+///   - Neu la null: su dung gio hang mac dinh (mock data).
 class CheckoutView extends StatefulWidget {
-  const CheckoutView({super.key});
+  /// Don hang cu de dat lai. Neu null, su dung gio hang mac dinh.
+  final OrderDetailModel? initialOrder;
+
+  const CheckoutView({
+    super.key,
+    this.initialOrder,
+  });
 
   @override
   State<CheckoutView> createState() => _CheckoutViewState();
@@ -56,7 +67,7 @@ class _CheckoutViewState extends State<CheckoutView> {
     return _subtotal + _deliveryFee - _discount;
   }
 
-  /// Khoi tao du lieu gia.
+  /// Khoi tao du lieu.
   @override
   void initState() {
     super.initState();
@@ -72,40 +83,64 @@ class _CheckoutViewState extends State<CheckoutView> {
       updatedAt: DateTime.now(),
     );
 
-    _cartItems = [
-      CheckoutCartItem(
-        id: 'item_001',
-        name: 'Tra Sua Tran Chau Duong',
-        imageUrl: 'https://picsum.photos/seed/milktea1/200',
-        unitPrice: 35000,
-        quantity: 2,
-        toppings: [
-          CheckoutTopping(name: 'Tran chau', price: 5000),
-          CheckoutTopping(name: 'Thach ca phe', price: 8000),
-        ],
-      ),
-      CheckoutCartItem(
-        id: 'item_002',
-        name: 'Ca phe sua da',
-        imageUrl: 'https://picsum.photos/seed/coffee2/200',
-        unitPrice: 29000,
-        quantity: 1,
-        toppings: [
-          CheckoutTopping(name: 'Da', price: 0),
-        ],
-      ),
-      CheckoutCartItem(
-        id: 'item_003',
-        name: 'Tra vai Thach Vuive',
-        imageUrl: 'https://picsum.photos/seed/greentea3/200',
-        unitPrice: 42000,
-        quantity: 1,
-        toppings: [
-          CheckoutTopping(name: 'Trai cay', price: 12000),
-          CheckoutTopping(name: 'Pudding', price: 6000),
-        ],
-      ),
-    ];
+    // Neu co don hang cu thi chuyen doi sang gio hang, nguoc lai su dung mock.
+    if (widget.initialOrder != null) {
+      debugPrint('Checkout: Dat lai don hang [${widget.initialOrder!.id}], ten quan [${widget.initialOrder!.storeName}]');
+      _cartItems = _convertOrderToCartItems(widget.initialOrder!);
+    } else {
+      debugPrint('Checkout: Khoi tao gio hang mac dinh');
+      _cartItems = [
+        CheckoutCartItem(
+          id: 'item_001',
+          name: 'Tra Sua Tran Chau Duong',
+          imageUrl: 'https://picsum.photos/seed/milktea1/200',
+          unitPrice: 35000,
+          quantity: 2,
+          toppings: [
+            CheckoutTopping(name: 'Tran chau', price: 5000),
+            CheckoutTopping(name: 'Thach ca phe', price: 8000),
+          ],
+        ),
+        CheckoutCartItem(
+          id: 'item_002',
+          name: 'Ca phe sua da',
+          imageUrl: 'https://picsum.photos/seed/coffee2/200',
+          unitPrice: 29000,
+          quantity: 1,
+          toppings: [
+            CheckoutTopping(name: 'Da', price: 0),
+          ],
+        ),
+        CheckoutCartItem(
+          id: 'item_003',
+          name: 'Tra vai Thach Vuive',
+          imageUrl: 'https://picsum.photos/seed/greentea3/200',
+          unitPrice: 42000,
+          quantity: 1,
+          toppings: [
+            CheckoutTopping(name: 'Trai cay', price: 12000),
+            CheckoutTopping(name: 'Pudding', price: 6000),
+          ],
+        ),
+      ];
+    }
+  }
+
+  /// Chuyen doi danh sach mon cua don hang cu sang dinh dang gio hang checkout.
+  List<CheckoutCartItem> _convertOrderToCartItems(OrderDetailModel order) {
+    return order.items.map((item) {
+      return CheckoutCartItem(
+        id: 'reorder_${order.id}_${item.name.hashCode}',
+        name: item.name,
+        imageUrl: '',
+        unitPrice: item.unitPrice,
+        quantity: item.quantity,
+        toppings: item.toppings.map((t) => CheckoutTopping(
+          name: t.name,
+          price: t.price,
+        )).toList(),
+      );
+    }).toList();
   }
 
   String _formatPrice(double price) {

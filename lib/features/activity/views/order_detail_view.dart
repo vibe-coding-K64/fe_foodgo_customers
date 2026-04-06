@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../../features/checkout/views/checkout_view.dart';
+import '../../support/views/support_view.dart';
 import 'driver_chat_view.dart';
 import 'order_tracking_map_view.dart';
 
@@ -610,8 +612,13 @@ class OrderDetailView extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: OutlinedButton.icon(
         onPressed: () {
-          debugPrint('OrderDetailView: Nguoi dung bam Tro giup, chuyen sang trang Tro giup');
-          // Navigator.push(context, MaterialPageRoute(...));
+          debugPrint('OrderDetailView: Nguoi dung bam Tro giup, chuyen sang trang Tro giop voi ma don [${order.id}]');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SupportView(orderId: order.id),
+            ),
+          );
         },
         icon: const Icon(Icons.support_agent_outlined, size: 20),
         label: Text(LanguageService.translate('order_need_help')),
@@ -638,7 +645,7 @@ class OrderDetailView extends StatelessWidget {
       case OrderDetailStatus.received:
         return _buildReceivedSection(context);
       case OrderDetailStatus.cancelled:
-        return _buildCancelledSection();
+        return _buildCancelledSection(context);
     }
   }
 
@@ -929,7 +936,7 @@ class OrderDetailView extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
-              // Nút đánh giá tài xế.
+              // Nut danh gia tai xe.
               if (driver != null)
                 SizedBox(
                   width: double.infinity,
@@ -950,6 +957,33 @@ class OrderDetailView extends StatelessWidget {
                     ),
                   ),
                 ),
+              const SizedBox(height: 12),
+              // Nut Dat lai don hang.
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    debugPrint('OrderDetailView: Nguoi dung bam Dat lai, chuyen sang Checkout voi ma don [${order.id}]');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CheckoutView(initialOrder: order),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.replay_outlined, size: 18),
+                  label: Text(LanguageService.translate('order_reorder_btn')),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -957,8 +991,8 @@ class OrderDetailView extends StatelessWidget {
     );
   }
 
-  /// Giao diện khi đã hủy: dòng text đỏ nổi bật + lý do hủy.
-  Widget _buildCancelledSection() {
+  /// Giao dien khi da huy: dong text do noi bat + ly do huy + nut Dat lai.
+  Widget _buildCancelledSection(BuildContext context) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -995,6 +1029,33 @@ class OrderDetailView extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ],
+          const SizedBox(height: 16),
+          // Nut Dat lai don hang.
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                debugPrint('OrderDetailView: Nguoi dung bam Dat lai tu man hinh da huy, chuyen sang Checkout voi ma don [${order.id}]');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CheckoutView(initialOrder: order),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.replay_outlined, size: 18),
+              label: Text(LanguageService.translate('order_reorder_btn')),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
         ],
       ),
     );

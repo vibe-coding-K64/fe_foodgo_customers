@@ -529,6 +529,7 @@
   "order_cancel_order": "Cancel Order",
   "order_rate_food": "Rate Food",
   "order_rate_driver": "Rate Driver",
+  "order_reorder_btn": "Reorder",
   "order_cancelled_title": "Order has been cancelled",
   "order_rating_title": "Your Rating",
   "order_rating_food_title": "How would you rate the food?",

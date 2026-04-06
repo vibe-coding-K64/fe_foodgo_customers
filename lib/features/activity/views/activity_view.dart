@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../../../core/utils/order_converter.dart';
+import '../../../../features/checkout/views/checkout_view.dart';
 import 'order_detail_view.dart';
 import 'widgets/activity_order_card.dart';
 
@@ -171,7 +172,14 @@ class _OrderList extends StatelessWidget {
             );
           },
           onReorder: () {
-            debugPrint('Dat lai don hang: ${order.id}');
+            debugPrint('ActivityView: Nguoi dung bam Dat lai don hang [${order.id}]');
+            final orderDetail = orderModelToDetail(order);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CheckoutView(initialOrder: orderDetail),
+              ),
+            );
           },
           onCancel: () {
             debugPrint('Huy don hang: ${order.id}');
