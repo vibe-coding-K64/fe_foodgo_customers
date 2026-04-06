@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/localization/language_service.dart';
 import '../../address/views/address_management_view.dart';
+import '../../expense/views/expense_management_view.dart';
 import '../../payment/views/payment_methods_view.dart';
 import '../../partner/views/partner_registration_view.dart';
 import '../../settings/views/settings_view.dart';
@@ -29,7 +30,15 @@ class ProfileView extends StatelessWidget {
       ProfileMenuItem(
         titleKey: 'profile_spending',
         icon: Icons.account_balance_wallet_outlined,
-        onTap: () => _navigateTo(context, '/profile/spending'),
+        onTap: () {
+          debugPrint('ProfileView: Mo trang quan ly chi tieu');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ExpenseManagementView(),
+            ),
+          );
+        },
       ),
       // Dia chi mac dinh.
       ProfileMenuItem(
@@ -145,12 +154,6 @@ class ProfileView extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  /// Di chuyen den man hinh khi chon menu item.
-  void _navigateTo(BuildContext context, String route) {
-    debugPrint('Dang di chuyen den: $route');
-    // TODO: Tich hop voi router khi da cau hinh AppRoutes.
   }
 
   /// Hien thi hop thoai xac nhan dang xuat.
