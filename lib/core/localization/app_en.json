@@ -1,7 +1,6 @@
 {
   "app_name": "FoodGo",
   "app_slogan": "Safe - Fast - Convenient",
-
   "common_confirm": "Confirm",
   "common_cancel": "Cancel",
   "common_save": "Save",
@@ -23,7 +22,6 @@
   "common_no": "No",
   "common_all": "All",
   "common_none": "None",
-
   "nav_home": "Home",
   "nav_activity": "Activity",
   "nav_offers": "Offers",
@@ -32,7 +30,6 @@
   "nav_cart": "Cart",
   "nav_orders": "Orders",
   "nav_profile": "Account",
-
   "auth_login": "Log In",
   "auth_register": "Sign Up",
   "auth_logout": "Log Out",
@@ -55,7 +52,6 @@
   "auth_verification_email_sent": "Verification email sent to",
   "auth_verify_email": "Verify Email",
   "auth_resend_verification": "Resend verification email",
-
   "home_title": "Home",
   "home_deliver_to": "Deliver to",
   "home_default_address": "123 Nguyen Hue, District 1, HCMC",
@@ -73,7 +69,6 @@
   "home_out_of_stock": "Out of Stock",
   "home_open": "Open",
   "home_closed": "Closed",
-
   "search_title": "Search",
   "search_hint": "Search food, stores...",
   "search_recent": "Recent Searches",
@@ -91,7 +86,6 @@
   "search_price_to": "To",
   "search_price_hint_min": "Ex: 10000",
   "search_price_hint_max": "Ex: 100000",
-
   "store_detail": "Store Details",
   "store_menu": "Menu",
   "store_reviews": "Reviews",
@@ -107,7 +101,6 @@
   "store_about": "About",
   "store_photos": "Photos",
   "store_write_review": "Write a Review",
-
   "product_size": "Size",
   "product_size_small": "Small",
   "product_size_medium": "Medium",
@@ -125,7 +118,6 @@
   "product_note_hint": "Note for store (Example: Less spicy, no onion...)",
   "product_quantity": "Quantity",
   "product_add_to_cart": "Add to Cart",
-
   "cart_title": "Cart",
   "cart_empty": "Your cart is empty",
   "cart_empty_subtitle": "Add items to get started",
@@ -150,7 +142,6 @@
   "cart_item_removed": "Item removed from cart",
   "cart_empty_title": "Your cart is empty",
   "cart_empty_desc": "Browse our menu and add items to your cart",
-
   "checkout_title": "Checkout",
   "checkout_delivery_info": "Delivery information",
   "checkout_estimated_time": "Estimated delivery time",
@@ -171,7 +162,6 @@
   "checkout_total": "Total",
   "checkout_total_payment": "Total payment",
   "checkout_order_btn": "PLACE ORDER",
-
   "order_title": "Orders",
   "order_history": "Order History",
   "order_detail": "Order Details",
@@ -203,7 +193,6 @@
   "order_payment_vnpay": "VNPay",
   "order_payment_zalopay": "ZaloPay",
   "order_payment_momo": "MoMo",
-
   "activity_tab_ordered": "Ordered",
   "activity_tab_received": "Received",
   "activity_tab_cancelled": "Cancelled",
@@ -216,7 +205,6 @@
   "activity_empty_ordered": "You have no orders in progress",
   "activity_empty_received": "You have no completed orders",
   "activity_empty_cancelled": "You have no cancelled orders",
-
   "profile_title": "Account",
   "profile_edit": "Edit Profile",
   "edit_profile_title": "Edit Profile",
@@ -239,7 +227,6 @@
   "edit_error_pwd_empty": "Please enter your password",
   "edit_error_otp_empty": "Please enter the full OTP code",
   "profile_settings": "Settings",
-
   "settings_title": "Settings",
   "settings_push_noti": "Push Notifications",
   "settings_push_noti_desc": "Receive order and promotion notifications",
@@ -262,7 +249,6 @@
   "settings_version": "Version",
   "settings_section_general": "General",
   "settings_section_other": "Other",
-
   "profile_favorites": "Favorites",
   "profile_addresses": "Saved Addresses",
   "profile_add_address": "Add Address",
@@ -323,7 +309,6 @@
   "profile_logout_confirm": "Are you sure you want to log out?",
   "profile_change_avatar": "Change Avatar",
   "profile_member_since": "Member since",
-
   "profile_spending": "Spending Management",
   "expense_title": "Spending Management",
   "expense_filter_this_month": "This month",
@@ -344,7 +329,6 @@
   "profile_become_driver": "Become a Driver",
   "profile_support": "Support",
   "profile_terms_policy": "Terms & Policies",
-
   "terms_title": "Terms & Policies",
   "terms_section_1_title": "1. General Introduction",
   "terms_section_1_content": "Welcome to FoodGo - your online food ordering app. By using FoodGo's services, you agree to our terms, conditions, and privacy policy. Please read carefully before using.\n\nFoodGo provides a platform connecting users with stores and menus, supporting delivery and payment throughout the ordering process. We are committed to delivering the best experience for our users.",
@@ -354,7 +338,6 @@
   "terms_section_3_content": "FoodGo accepts multiple payment methods: cash on delivery (COD), credit/debit cards (Visa, Mastercard), and e-wallets (MoMo, ZaloPay, VNPay).\n\nAll payment transactions are processed through a secure system. We do not store your bank card information on our servers. All information is encrypted according to international standards.",
   "terms_section_4_title": "4. Refund Policy",
   "terms_section_4_content": "In case your order is cancelled or not delivered due to errors from the store/driver, you will receive a 100% refund within 3-5 business days.\n\nIf a product does not match its description, please contact support within 24 hours of receiving the order for prompt assistance.",
-
   "partner_title": "Partner Registration",
   "partner_banner_title": "Partner with FoodGo - Increase your income daily",
   "partner_benefit_1": "Reach millions of customers",
@@ -377,7 +360,6 @@
   "partner_phone_required": "Please enter phone number",
   "partner_idcard_required": "Please enter ID card number",
   "partner_area_required": "Please enter operating area",
-
   "support_title": "Help Center",
   "support_search_hint": "Search for your issue...",
   "support_faq_title": "Frequently Asked Questions",
@@ -392,7 +374,6 @@
   "support_faq_change_address_answer": "You can change the address before staff confirms the order. If the order has already been confirmed, please contact staff for prompt assistance.",
   "support_faq_payment": "What payment methods are accepted?",
   "support_faq_payment_answer": "FoodGo accepts cash on delivery (COD), credit/debit cards (Visa, Mastercard), and e-wallets such as MoMo and ZaloPay.",
-
   "chat_staff_name": "CSKH - Ngoc Mai",
   "chat_status_online": "Online now",
   "chat_staff_greeting": "Hello! I am Ngoc Mai, FoodGo support staff. How can I help you today?",
@@ -402,7 +383,6 @@
   "chat_typing": "Typing...",
   "chat_today": "Today",
   "chat_yesterday": "Yesterday",
-
   "address_title": "Addresses",
   "address_add_new": "Add New Address",
   "address_edit": "Edit Address",
@@ -445,7 +425,6 @@
   "address_form_district_required": "Please enter district",
   "address_form_city_required": "Please enter city / province",
   "address_form_saved": "Address saved",
-
   "notification_title": "Notifications",
   "notification_order_update": "Order Update",
   "notification_promotion": "Promotion",
@@ -457,17 +436,26 @@
   "notif_action_go_home": "Go to home",
   "notif_action_view_detail": "View details",
   "notif_action_dismiss": "Got it",
-
   "rewards_title": "Offers",
   "rewards_my_points": "Your Points",
   "rewards_points": "pts",
   "rewards_next_tier": "Next tier",
   "rewards_exchange": "Redeem points for rewards",
+  "reward_action_exchange_now": "Redeem now",
   "rewards_my_vouchers": "Your Vouchers",
   "rewards_expires": "Expires",
   "rewards_use_now": "Use Now",
   "rewards_vouchers_available": "Vouchers available",
-
+  "rewards_all_vouchers_title": "Your Vouchers",
+  "reward_detail_title": "Offer Details",
+  "reward_terms": "Terms and conditions",
+  "reward_min_order": "Minimum order",
+  "reward_valid_until": "Valid until",
+  "reward_points_required": "points",
+  "reward_exchange_confirm_title": "Confirm Points Exchange",
+  "reward_exchange_confirm_body": "Are you sure you want to use $1 points to redeem this voucher?",
+  "reward_exchange_success": "Redeemed successfully! Voucher has been added to your account.",
+  "reward_no_vouchers": "You don't have any vouchers yet",
   "error_network": "Network error. Please check your connection.",
   "error_server": "Server error. Please try again later.",
   "error_unknown": "Something went wrong. Please try again.",
@@ -485,7 +473,6 @@
   "error_image_upload": "Image upload failed. Please try again.",
   "error_location_permission": "Location permission denied.",
   "error_location_service": "Please enable location services.",
-
   "success_login": "Login successful!",
   "success_register": "Registration successful!",
   "success_logout": "Logout successful!",
@@ -497,7 +484,6 @@
   "success_delete_address": "Address deleted.",
   "success_cancel_order": "Order cancelled.",
   "success_submit_review": "Review submitted!",
-
   "validation_email_required": "Email is required",
   "validation_password_required": "Password is required",
   "validation_name_required": "Name is required",
@@ -506,12 +492,17 @@
   "validation_min_length": "Must be at least {length} characters",
   "validation_max_length": "Must be at most {length} characters",
   "validation_invalid_format": "Invalid format",
-
   "unit_currency": "VND",
   "unit_km": "km",
   "unit_min": "min",
   "unit_rating": "rating",
   "unit_items": "items",
   "unit_person": "person",
-  "unit_people": "people"
+  "unit_people": "people",
+  "voucher_apply_title": "Apply: $1",
+  "voucher_auto_apply_note": "Voucher will be automatically applied at Checkout step",
+  "activity_status_preparing": "Seller is preparing",
+  "activity_status_driver_coming": "Driver is coming to the restaurant",
+  "activity_status_delivering": "Driver is delivering",
+  "activity_btn_cancel": "Cancel order"
 }

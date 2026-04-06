@@ -163,6 +163,16 @@ class _OrderList extends StatelessWidget {
           onReorder: () {
             debugPrint('Dat lai don hang: ${order.id}');
           },
+          onCancel: () {
+            debugPrint('Huy don hang: ${order.id}');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Huy don hang ${order.id}'),
+                backgroundColor: AppColors.error,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          },
         );
       },
     );
@@ -217,6 +227,7 @@ class _OrderList extends StatelessWidget {
         totalPrice: 85000,
         orderDate: now.subtract(const Duration(hours: 2)),
         status: OrderStatus.ordered,
+        subStatus: SubOrderStatus.preparing,
       ),
       OrderModel(
         id: 'ORD002',
@@ -226,6 +237,7 @@ class _OrderList extends StatelessWidget {
         totalPrice: 55000,
         orderDate: now.subtract(const Duration(days: 1)),
         status: OrderStatus.ordered,
+        subStatus: SubOrderStatus.driverComing,
       ),
       OrderModel(
         id: 'ORD003',

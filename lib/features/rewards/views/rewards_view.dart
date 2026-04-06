@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import 'my_vouchers_view.dart';
+import 'reward_detail_view.dart';
 import 'widgets/rewards_point_card.dart';
 import 'widgets/rewards_exchange_section.dart';
 import 'widgets/rewards_my_vouchers.dart';
+import '../models/rewards_model.dart';
 
 /// Man hinh Uu dai (Rewards).
 ///
@@ -20,7 +23,7 @@ class RewardsView extends StatelessWidget {
 
     // Mock data voucher doi diem.
     final exchangeVouchers = [
-      const ExchangeVoucher(
+      const ExchangeVoucherModel(
         id: 'ev1',
         title: 'Giam 10K',
         subtitle: 'Cho don hang bat ky',
@@ -28,7 +31,7 @@ class RewardsView extends StatelessWidget {
         imageUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=200&q=80',
         remaining: 50,
       ),
-      const ExchangeVoucher(
+      const ExchangeVoucherModel(
         id: 'ev2',
         title: 'Giam 20%',
         subtitle: 'Giao hang mien phi',
@@ -36,7 +39,7 @@ class RewardsView extends StatelessWidget {
         imageUrl: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=200&q=80',
         remaining: 20,
       ),
-      const ExchangeVoucher(
+      const ExchangeVoucherModel(
         id: 'ev3',
         title: 'Giam 30K',
         subtitle: 'Cho don tu 100K',
@@ -44,7 +47,7 @@ class RewardsView extends StatelessWidget {
         imageUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200&q=80',
         remaining: 10,
       ),
-      const ExchangeVoucher(
+      const ExchangeVoucherModel(
         id: 'ev4',
         title: 'Giam 50%',
         subtitle: 'Giam toi da 25K',
@@ -56,7 +59,7 @@ class RewardsView extends StatelessWidget {
 
     // Mock data voucher cua nguoi dung.
     final myVouchers = [
-      MyVoucher(
+      MyVoucherModel(
         id: 'mv1',
         name: 'Giam 15% cho mon an',
         code: 'EAT15',
@@ -66,7 +69,7 @@ class RewardsView extends StatelessWidget {
         isPercentage: true,
         minOrderValue: 100000,
       ),
-      MyVoucher(
+      MyVoucherModel(
         id: 'mv2',
         name: 'Mien phi giao hang',
         code: 'FREESHIP',
@@ -76,7 +79,7 @@ class RewardsView extends StatelessWidget {
         isPercentage: false,
         minOrderValue: 50000,
       ),
-      MyVoucher(
+      MyVoucherModel(
         id: 'mv3',
         name: 'Giam 20K cho cua hang',
         code: 'SAVE20K',
@@ -125,7 +128,18 @@ class RewardsView extends StatelessWidget {
           ),
           // Section doi diem.
           SliverToBoxAdapter(
-            child: RewardsExchangeSection(vouchers: exchangeVouchers),
+            child: RewardsExchangeSection(
+              vouchers: exchangeVouchers,
+              onVoucherTap: (voucher) {
+                debugPrint('RewardsView: Mo trang chi tiet voucher doi diem [${voucher.id}]');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => RewardDetailView(voucher: voucher),
+                  ),
+                );
+              },
+            ),
           ),
           // Khoang cach.
           const SliverToBoxAdapter(
@@ -133,7 +147,18 @@ class RewardsView extends StatelessWidget {
           ),
           // Section voucher cua toi.
           SliverToBoxAdapter(
-            child: RewardsMyVouchers(vouchers: myVouchers),
+            child: RewardsMyVouchers(
+              vouchers: myVouchers,
+              onViewAll: () {
+                debugPrint('RewardsView: Mo trang tat ca voucher');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MyVouchersView(vouchers: myVouchers),
+                  ),
+                );
+              },
+            ),
           ),
           // Khoang cach cuoi.
           const SliverToBoxAdapter(

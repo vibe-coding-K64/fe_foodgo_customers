@@ -1,7 +1,6 @@
 {
   "app_name": "FoodGo",
   "app_slogan": "An toàn - Nhanh chóng - Tiện lợi",
-
   "common_confirm": "Xác nhận",
   "common_cancel": "Hủy",
   "common_save": "Lưu",
@@ -23,7 +22,6 @@
   "common_no": "Không",
   "common_all": "Tất cả",
   "common_none": "Không có",
-
   "nav_home": "Trang chủ",
   "nav_activity": "Hoạt động",
   "nav_offers": "Ưu đãi",
@@ -32,7 +30,6 @@
   "nav_cart": "Giỏ hàng",
   "nav_orders": "Đơn hàng",
   "nav_profile": "Tài khoản",
-
   "auth_login": "Đăng nhập",
   "auth_register": "Đăng ký",
   "auth_logout": "Đăng xuất",
@@ -55,7 +52,6 @@
   "auth_verification_email_sent": "Email xác thực đã gửi đến",
   "auth_verify_email": "Xác thực email",
   "auth_resend_verification": "Gửi lại email xác thực",
-
   "home_title": "Trang chủ",
   "home_deliver_to": "Giao đến",
   "home_default_address": "123 Nguyen Hue, Quan 1, TP.HCM",
@@ -73,7 +69,6 @@
   "home_out_of_stock": "Hết hàng",
   "home_open": "Đang mở",
   "home_closed": "Đóng cửa",
-
   "search_title": "Tìm kiếm",
   "search_hint": "Tìm kiếm món ăn, cửa hàng...",
   "search_recent": "Tìm kiếm gần đây",
@@ -91,7 +86,6 @@
   "search_price_to": "Đến",
   "search_price_hint_min": "VD: 10000",
   "search_price_hint_max": "VD: 100000",
-
   "store_detail": "Chi tiết cửa hàng",
   "store_menu": "Thực đơn",
   "store_reviews": "Đánh giá",
@@ -107,7 +101,6 @@
   "store_about": "Giới thiệu",
   "store_photos": "Hình ảnh",
   "store_write_review": "Viết đánh giá",
-
   "product_size": "Kích thước",
   "product_size_small": "Nhỏ",
   "product_size_medium": "Vừa",
@@ -125,7 +118,6 @@
   "product_note_hint": "Ghi chú cho quán (Ví dụ: Ít cay, không hành...)",
   "product_quantity": "Số lượng",
   "product_add_to_cart": "Thêm vào giỏ hàng",
-
   "cart_title": "Giỏ hàng",
   "cart_empty": "Giỏ hàng trống",
   "cart_empty_subtitle": "Hãy thêm món ăn để bắt đầu",
@@ -150,7 +142,6 @@
   "cart_item_removed": "Đã xóa món khỏi giỏ hàng",
   "cart_empty_title": "Giỏ hàng trống",
   "cart_empty_desc": "Hãy xem thực đơn và thêm món vào giỏ hàng",
-
   "checkout_title": "Thanh toán",
   "checkout_delivery_info": "Thông tin giao hàng",
   "checkout_estimated_time": "Thời gian giao hàng dự kiến",
@@ -171,7 +162,6 @@
   "checkout_total": "Tổng",
   "checkout_total_payment": "Tổng thanh toán",
   "checkout_order_btn": "ĐẶT HÀNG",
-
   "order_title": "Đơn hàng",
   "order_history": "Lịch sử đơn hàng",
   "order_detail": "Chi tiết đơn hàng",
@@ -203,7 +193,6 @@
   "order_payment_vnpay": "VNPay",
   "order_payment_zalopay": "ZaloPay",
   "order_payment_momo": "MoMo",
-
   "activity_tab_ordered": "Đã đặt",
   "activity_tab_received": "Đã nhận",
   "activity_tab_cancelled": "Đã hủy",
@@ -216,7 +205,6 @@
   "activity_empty_ordered": "Ban chua co don hang nao dang xu ly",
   "activity_empty_received": "Ban chua co don hang nao hoan thanh",
   "activity_empty_cancelled": "Ban chua huy don hang nao",
-
   "profile_title": "Tài khoản",
   "profile_edit": "Chỉnh sửa hồ sơ",
   "edit_profile_title": "Chỉnh sửa hồ sơ",
@@ -239,7 +227,6 @@
   "edit_error_pwd_empty": "Vui lòng nhập mật khẩu",
   "edit_error_otp_empty": "Vui lòng nhập mã OTP đầy đủ",
   "profile_settings": "Cài đặt",
-
   "settings_title": "Cài đặt",
   "settings_push_noti": "Thông báo đẩy",
   "settings_push_noti_desc": "Nhận thông báo về đơn hàng và khuyến mãi",
@@ -262,7 +249,6 @@
   "settings_version": "Phiên bản",
   "settings_section_general": "Chung",
   "settings_section_other": "Khác",
-
   "profile_favorites": "Yêu thích",
   "profile_addresses": "Địa chỉ đã lưu",
   "profile_add_address": "Thêm địa chỉ",
@@ -323,7 +309,6 @@
   "profile_logout_confirm": "Bạn có chắc chắn muốn đăng xuất?",
   "profile_change_avatar": "Đổi ảnh đại diện",
   "profile_member_since": "Thành viên từ",
-
   "profile_spending": "Quản lý chi tiêu",
   "expense_title": "Quản lý chi tiêu",
   "expense_filter_this_month": "Tháng này",
@@ -344,7 +329,6 @@
   "profile_become_driver": "Trở thành tài xế",
   "profile_support": "Hỗ trợ",
   "profile_terms_policy": "Điều khoản và chính sách",
-
   "terms_title": "Điều khoản và Chính sách",
   "terms_section_1_title": "1. Giới thiệu chung",
   "terms_section_1_content": "Chào mừng bạn đến với FoodGo - ứng dụng đặt món ăn trực tuyến. Khi sử dụng dịch vụ của FoodGo, bạn đồng ý với các điều khoản, điều kiện và chính sách bảo mật của chúng tôi. Vui lòng đọc kỹ trước khi sử dụng.\n\nFoodGo cung cấp nền tảng kết nối giữa người dùng và các cửa hàng/thực đơn, hỗ trợ vận chuyển và thanh toán trong quá trình đặt hàng. Chúng tôi luôn cam kết mang lại trải nghiệm tốt nhất cho người dùng.",
@@ -354,7 +338,6 @@
   "terms_section_3_content": "FoodGo chấp nhận nhiều phương thức thanh toán: tiền mặt (COD), thẻ tín dụng/ghi nợ (Visa, Mastercard) và các ví điện tử (MoMo, ZaloPay, VNPay).\n\nToàn bộ giao dịch thanh toán được xử lý thông qua hệ thống bảo mật. Chúng tôi không lưu trữ thông tin thẻ ngân hàng của bạn trên máy chủ. Mọi thông tin đều được mã hóa theo tiêu chuẩn quốc tế.",
   "terms_section_4_title": "4. Chính sách hoàn tiền",
   "terms_section_4_content": "Trường hợp đơn hàng bị hủy hoặc không nhận được hàng do lỗi từ phía cửa hàng/tài xế, bạn sẽ được hoàn tiền 100% trong vòng 3-5 ngày làm việc.\n\nNếu có sản phẩm không đúng với mô tả, vui lòng liên hệ nhân viên hỗ trợ trong vòng 24 giờ kể từ khi nhận hàng để được xử lý kịp thời.",
-
   "partner_title": "Đăng ký đối tác",
   "partner_banner_title": "Hợp tác cùng FoodGo - Tăng thu nhập mỗi ngày",
   "partner_benefit_1": "Tiếp cận hàng triệu khách hàng",
@@ -377,7 +360,6 @@
   "partner_phone_required": "Vui lòng nhập số điện thoại",
   "partner_idcard_required": "Vui lòng nhập số CCCD/CMND",
   "partner_area_required": "Vui lòng nhập khu vực hoạt động",
-
   "support_title": "Trung tâm trợ giúp",
   "support_search_hint": "Tìm kiếm vấn đề của bạn...",
   "support_faq_title": "Câu hỏi thường gặp",
@@ -392,7 +374,6 @@
   "support_faq_change_address_answer": "Bạn có thể đổi địa chỉ trước khi nhân viên xác nhận đơn. Nếu đơn hàng đã được xác nhận, vui lòng liên hệ nhân viên để được hỗ trợ kịp thời.",
   "support_faq_payment": "Các phương thức thanh toán được chấp nhận?",
   "support_faq_payment_answer": "FoodGo chấp nhận thanh toán bằng tiền mặt (COD), thẻ tín dụng/ghi nợ (Visa, Mastercard) và các ví điện tử như MoMo, ZaloPay.",
-
   "chat_staff_name": "CSKH - Ngọc Mai",
   "chat_status_online": "Đang hoạt động",
   "chat_staff_greeting": "Xin chào bạn! Mình là Ngọc Mai, nhân viên hỗ trợ của FoodGo. Bạn cần mình giúp gì hôm nay?",
@@ -402,7 +383,6 @@
   "chat_typing": "Đang nhập...",
   "chat_today": "Hôm nay",
   "chat_yesterday": "Hôm qua",
-
   "address_title": "Địa chỉ",
   "address_add_new": "Thêm địa chỉ mới",
   "address_edit": "Sửa địa chỉ",
@@ -445,7 +425,6 @@
   "address_form_district_required": "Vui lòng nhập Quận / Huyện",
   "address_form_city_required": "Vui lòng nhập Tỉnh / Thành phố",
   "address_form_saved": "Đã lưu địa chỉ",
-
   "notification_title": "Thông báo",
   "notification_order_update": "Cập nhật đơn hàng",
   "notification_promotion": "Khuyến mãi",
@@ -458,17 +437,26 @@
   "notif_action_view_detail": "Xem chi tiết",
   "notif_action_dismiss": "Đã hiểu",
   "notif_time_ago_format": "$1 giờ trước",
-
   "rewards_title": "Ưu đãi",
   "rewards_my_points": "Điểm của bạn",
   "rewards_points": "điểm",
   "rewards_next_tier": "Hạng tiếp theo",
   "rewards_exchange": "Đổi điểm nhận ưu đãi",
+  "reward_action_exchange_now": "Đổi điểm ngay",
   "rewards_my_vouchers": "Voucher của bạn",
   "rewards_expires": "Hết hạn",
   "rewards_use_now": "Dùng ngay",
   "rewards_vouchers_available": "Voucher sẵn sàng",
-
+  "rewards_all_vouchers_title": "Voucher của bạn",
+  "reward_detail_title": "Chi tiết ưu đãi",
+  "reward_terms": "Điều kiện áp dụng",
+  "reward_min_order": "Đơn hàng tối thiểu",
+  "reward_valid_until": "Hiệu lực đến",
+  "reward_points_required": "điểm",
+  "reward_exchange_confirm_title": "Xác nhận đổi điểm",
+  "reward_exchange_confirm_body": "Bạn có chắc chắn muốn dùng $1 điểm để đổi voucher này không?",
+  "reward_exchange_success": "Đổi điểm thành công! Voucher đã được thêm vào tài khoản.",
+  "reward_no_vouchers": "Bạn chưa có voucher nào",
   "error_network": "Lỗi mạng. Vui lòng kiểm tra kết nối.",
   "error_server": "Lỗi server. Vui lòng thử lại sau.",
   "error_unknown": "Đã xảy ra lỗi. Vui lòng thử lại.",
@@ -493,7 +481,6 @@
   "error_image_upload": "Tải ảnh thất bại. Vui lòng thử lại.",
   "error_location_permission": "Quyền truy cập vị trí bị từ chối.",
   "error_location_service": "Vui lòng bật dịch vụ vị trí.",
-
   "success_login": "Đăng nhập thành công!",
   "success_register": "Đăng ký thành công!",
   "success_logout": "Đăng xuất thành công!",
@@ -505,7 +492,6 @@
   "success_delete_address": "Đã xóa địa chỉ.",
   "success_cancel_order": "Đã hủy đơn hàng.",
   "success_submit_review": "Gửi đánh giá thành công!",
-
   "validation_email_required": "Email là bắt buộc",
   "validation_password_required": "Mật khẩu là bắt buộc",
   "validation_name_required": "Tên là bắt buộc",
@@ -514,12 +500,17 @@
   "validation_min_length": "Phải ít nhất {length} ký tự",
   "validation_max_length": "Phải ít nhất {length} ký tự",
   "validation_invalid_format": "Định dạng không hợp lệ",
-
   "unit_currency": "VND",
   "unit_km": "km",
   "unit_min": "phút",
   "unit_rating": "đánh giá",
   "unit_items": "món",
   "unit_person": "người",
-  "unit_people": "người"
+  "unit_people": "người",
+  "voucher_apply_title": "Ap dung: $1",
+  "voucher_auto_apply_note": "Voucher se duoc tu dong ap dung tai buoc Thanh toan",
+  "activity_status_preparing": "Nguoi ban dang chuan bi",
+  "activity_status_driver_coming": "Tai xe dang toi nha hang",
+  "activity_status_delivering": "Tai xe dang giao",
+  "activity_btn_cancel": "Huỷ đơn"
 }
