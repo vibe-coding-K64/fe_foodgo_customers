@@ -5,6 +5,7 @@ import '../../search/views/search_view.dart';
 import '../../search/views/search_result_view.dart';
 import '../../product/views/product_detail_bottom_sheet.dart';
 import '../../cart/views/cart_view.dart';
+import '../../restaurant/views/restaurant_detail_view.dart';
 import '../services/home_service.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_search_bar.dart';
@@ -84,6 +85,13 @@ class HomeView extends StatelessWidget {
                     onStoreTap: (store) {
                       debugPrint(
                           'HomeView: Nguoi dung bam quan [${store.name}]');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              RestaurantDetailView(storeId: store.id),
+                        ),
+                      );
                     },
                   ),
                 ),
@@ -154,6 +162,13 @@ class HomeView extends StatelessWidget {
                   onStoreTap: (store) {
                     debugPrint(
                         'HomeView: Nguoi dung bam quan [${store.name}]');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            RestaurantDetailView(storeId: store.id),
+                      ),
+                    );
                   },
                   productsStream: HomeService.getProductsStream(),
                   onProductTap: (product) {

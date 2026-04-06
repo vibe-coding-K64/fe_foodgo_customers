@@ -7,6 +7,7 @@ import '../../../../core/localization/language_service.dart';
 class CheckoutPromotions extends StatelessWidget {
   final VoidCallback? onVoucherTap;
   final VoidCallback? onPaymentMethodTap;
+  final ValueChanged<bool>? onPointsToggle;
   final bool isPointsEnabled;
   final String? selectedVoucher;
   final String selectedPaymentMethod;
@@ -15,6 +16,7 @@ class CheckoutPromotions extends StatelessWidget {
     super.key,
     this.onVoucherTap,
     this.onPaymentMethodTap,
+    this.onPointsToggle,
     this.isPointsEnabled = false,
     this.selectedVoucher,
     this.selectedPaymentMethod = 'cash',
@@ -70,9 +72,7 @@ class CheckoutPromotions extends StatelessWidget {
         // DONG 2: Diem tich luy (Switch).
         _PointsRow(
           isEnabled: isPointsEnabled,
-          onToggle: (value) {
-            debugPrint('Checkout: Nguoi dung ${value ? 'bat' : 'tat'} diem tich luy');
-          },
+          onToggle: onPointsToggle,
         ),
         const SizedBox(height: 10),
         // DONG 3: Phuong thuc thanh toan.
