@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/utils/order_converter.dart';
+import 'order_detail_view.dart';
 import 'widgets/activity_order_card.dart';
 
 /// Man hinh Hoat dong (Quan ly don hang).
@@ -159,6 +161,14 @@ class _OrderList extends StatelessWidget {
           order: order,
           onViewDetail: () {
             debugPrint('Xem chi tiet don hang: ${order.id}');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => OrderDetailView(
+                  order: orderModelToDetail(order),
+                ),
+              ),
+            );
           },
           onReorder: () {
             debugPrint('Dat lai don hang: ${order.id}');

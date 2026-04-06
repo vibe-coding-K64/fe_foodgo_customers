@@ -112,7 +112,7 @@ class ActivityOrderCard extends StatelessWidget {
                         _buildSubStatusRow(),
                       ],
                       Text(
-                        '${order.mainItem}${order.itemCount > 1 ? ' + ${order.itemCount - 1} mon' : ''}',
+                        _formatItemCountText(),
                         style: const TextStyle(
                           fontSize: 13,
                           color: AppColors.textSecondary,
@@ -342,10 +342,20 @@ class ActivityOrderCard extends StatelessWidget {
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]}.',
         );
-    return '$formatted VND';
+    return '$formatted ${LanguageService.translate('unit_currency')}';
   }
 
   String _formatDateTime(DateTime dt) {
     return '${dt.day}/${dt.month}/${dt.year} - ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  /// Format text so luong mon an them (VD: "+ 2 mon" hoac "+ 2 items").
+  String _formatItemCountText() {
+    if (order.itemCount <= 1) {
+      return order.mainItem;
+    }
+    final suffix = LanguageService.translate('order_item_count_suffix')
+        .replaceAll('\$1', (order.itemCount - 1).toString());
+    return '${order.mainItem} + $suffix';
   }
 }

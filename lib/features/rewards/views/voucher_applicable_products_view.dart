@@ -105,23 +105,25 @@ class _VoucherApplicableProductsViewState
   /// Tao tieu de dong cho AppBar.
   String get _titleText {
     final discountText = widget.voucher.isPercentage
-        ? 'Giam ${widget.voucher.discountValue.toInt()}%'
-        : 'Giam ${widget.voucher.discountValue.toInt()}K';
+        ? LanguageService.translate('voucher_discount_percent')
+            .replaceAll('\$1', widget.voucher.discountValue.toInt().toString())
+        : LanguageService.translate('voucher_discount_amount')
+            .replaceAll('\$1', widget.voucher.discountValue.toInt().toString());
     final titleTemplate =
         LanguageService.translate('voucher_apply_title').replaceAll('\$1', discountText);
     return titleTemplate;
   }
 
-  /// Format gia thanh chuoi VND (VD: "35.000 đ").
+  /// Format gia thanh chuoi VND (VD: "35.000 VND").
   String _formatPrice(double price) {
     if (price >= 1000) {
       final formatted = price.toStringAsFixed(0).replaceAllMapped(
             RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
             (Match m) => '${m[1]}.',
           );
-      return '$formatted đ';
+      return '$formatted ${LanguageService.translate('unit_currency')}';
     }
-    return '${price.toStringAsFixed(0)} đ';
+    return '${price.toStringAsFixed(0)} ${LanguageService.translate('unit_currency')}';
   }
 
   /// Xu ly khi nguoi dung them san pham vao gio hang.
