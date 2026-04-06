@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import 'driver_chat_view.dart';
 
 ///=============================================================================
 /// SECTION: MODELS
@@ -675,8 +676,9 @@ class OrderDetailView extends StatelessWidget {
                   CircleAvatar(
                     radius: 26,
                     backgroundColor: AppColors.surfaceVariant,
-                    backgroundImage: NetworkImage(driver.avatarUrl),
-                    onBackgroundImageError: (_, __) {},
+                    backgroundImage: driver.avatarUrl.isNotEmpty
+                        ? NetworkImage(driver.avatarUrl)
+                        : null,
                     child: driver.avatarUrl.isEmpty
                         ? const Icon(
                             Icons.person,
@@ -765,6 +767,20 @@ class OrderDetailView extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: () {
                         debugPrint('OrderDetailView: Chat voi tai xe [${driver.name}]');
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DriverChatView(
+                              chat: DriverChatModel(
+                                driverName: driver.name,
+                                vehiclePlate: driver.vehiclePlate,
+                                driverPhone: driver.phone,
+                                driverAvatarUrl: driver.avatarUrl,
+                                messages: const [],
+                              ),
+                            ),
+                          ),
+                        );
                       },
                       icon: const Icon(Icons.chat_bubble_outline, size: 18),
                       label: Text(LanguageService.translate('order_chat_driver')),
@@ -839,7 +855,6 @@ class OrderDetailView extends StatelessWidget {
                   backgroundImage: driver.avatarUrl.isNotEmpty
                       ? NetworkImage(driver.avatarUrl)
                       : null,
-                  onBackgroundImageError: (_, __) {},
                   child: driver.avatarUrl.isEmpty
                       ? const Icon(
                           Icons.person,
