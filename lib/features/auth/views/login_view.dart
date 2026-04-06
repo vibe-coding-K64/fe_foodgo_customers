@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
+import '../../../../features/main/views/main_view.dart';
 import 'register_view.dart';
+import 'forgot_password_view.dart';
 
 /// Man hinh dang nhap (Login).
 ///
@@ -48,19 +50,20 @@ class _LoginViewState extends State<LoginView> {
       debugPrint('LoginView: Nguoi dung bam Dang nhap');
       debugPrint('  So dien thoai/Email: ${_emailController.text}');
       debugPrint('  Mat khau: [${_passwordController.text.replaceAll(RegExp(r'.'), '*')}]');
+      // Chuyen sang man hinh chinh, xoa toan bo lich su Auth ra khoi stack.
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainView()),
+      );
     }
   }
 
   /// Xu ly bam nut Quen mat khau.
   void _onForgotPasswordPressed() {
     debugPrint('LoginView: Nguoi dung bam Quen mat khau');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(LanguageService.translate('auth_forgot_password')),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 1),
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ForgotPasswordView()),
     );
   }
 

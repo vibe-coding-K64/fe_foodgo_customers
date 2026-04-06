@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
+import 'otp_verification_view.dart';
 
 /// Man hinh dang ky tai khoan moi (Register).
 ///
@@ -58,6 +59,16 @@ class _RegisterViewState extends State<RegisterView> {
       debugPrint('  Ho va ten: ${_nameController.text}');
       debugPrint('  So dien thoai: ${_phoneController.text}');
       debugPrint('  Mat khau: [${_passwordController.text.replaceAll(RegExp(r'.'), '*')}]');
+      // Chuyen sang trang xac thuc OTP.
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OtpVerificationView(
+            contactInfo: _phoneController.text.trim(),
+            verifyType: 'register',
+          ),
+        ),
+      );
     }
   }
 

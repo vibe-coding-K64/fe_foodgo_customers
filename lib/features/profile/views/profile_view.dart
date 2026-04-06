@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../auth/views/login_view.dart';
 import '../../address/views/address_management_view.dart';
 import '../../expense/views/expense_management_view.dart';
 import '../../payment/views/payment_methods_view.dart';
@@ -171,12 +173,17 @@ class ProfileView extends StatelessWidget {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              debugPrint('Nguoi dung xac nhan dang xuat');
-              // TODO: goi AuthService.logout()
+              debugPrint('ProfileView: Nguoi dung xac nhan dang xuat');
+              // Xoa toan bo lich su man hinh va chuyen ve man hinh Dang nhap.
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginView()),
+                (route) => false,
+              );
             },
             child: Text(
-              LanguageService.translate('profile_logout'),
-              style: const TextStyle(color: Colors.red),
+              LanguageService.translate('common_yes'),
+              style: const TextStyle(color: AppColors.error),
             ),
           ),
         ],
