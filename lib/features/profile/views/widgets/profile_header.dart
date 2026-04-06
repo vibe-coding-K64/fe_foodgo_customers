@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/localization/language_service.dart';
+import '../edit_profile_view.dart';
 
 /// Widget hien thi phan header cua trang tai khoan.
 /// Background gradient xanh, avatar tron o giua, ten va so dien thoai.
@@ -73,7 +74,13 @@ class ProfileHeader extends StatelessWidget {
               // Nut chinh sua ho so.
               OutlinedButton.icon(
                 onPressed: () {
-                  debugPrint('Nut chinh sua ho so duoc bam');
+                  debugPrint('ProfileHeader: Nguoi dung bam nut chinh sua ho so');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const EditProfileView(),
+                    ),
+                  );
                 },
                 icon: const Icon(Icons.edit, size: 16),
                 label: Text(

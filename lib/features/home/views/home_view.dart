@@ -4,6 +4,7 @@ import '../../../core/localization/language_service.dart';
 import '../../search/views/search_view.dart';
 import '../../search/views/search_result_view.dart';
 import '../../product/views/product_detail_bottom_sheet.dart';
+import '../../cart/views/cart_view.dart';
 import '../services/home_service.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_search_bar.dart';
@@ -100,7 +101,7 @@ class HomeView extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              LanguageService.translate('home_featured_stores'),
+                              LanguageService.translate('home_featured_foods'),
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -185,6 +186,12 @@ class _CartFab extends StatelessWidget {
     return FloatingActionButton(
       onPressed: () {
         debugPrint('HomeView: Nguoi dung bam vao gio hang');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const CartView(),
+          ),
+        );
       },
       backgroundColor: AppColors.primary,
       elevation: 4,

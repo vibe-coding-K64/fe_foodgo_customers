@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../core/localization/language_service.dart';
+import '../../address/views/address_management_view.dart';
+import '../../payment/views/payment_methods_view.dart';
+import '../../partner/views/partner_registration_view.dart';
+import '../../settings/views/settings_view.dart';
+import '../../support/views/support_view.dart';
+import '../../terms/views/terms_view.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/profile_menu_list.dart';
 
@@ -29,43 +35,87 @@ class ProfileView extends StatelessWidget {
       ProfileMenuItem(
         titleKey: 'profile_default_address',
         icon: Icons.location_on_outlined,
-        onTap: () => _navigateTo(context, '/profile/address'),
+        onTap: () {
+          debugPrint('ProfileView: Mo man hinh quan ly dia chi');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddressManagementView(),
+            ),
+          );
+        },
       ),
       // Thanh toan.
       ProfileMenuItem(
         titleKey: 'profile_payment',
         icon: Icons.payment_outlined,
-        onTap: () => _navigateTo(context, '/profile/payment'),
+        onTap: () {
+          debugPrint('ProfileView: Mo man hinh quan ly thanh toan');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PaymentMethodsView(),
+            ),
+          );
+        },
       ),
       // Tro thanh nguoi ban.
       ProfileMenuItem(
-        titleKey: 'profile_become_seller',
-        icon: Icons.storefront_outlined,
-        onTap: () => _navigateTo(context, '/profile/become-seller'),
-      ),
-      // Tro thanh tai xe.
-      ProfileMenuItem(
-        titleKey: 'profile_become_driver',
-        icon: Icons.delivery_dining_outlined,
-        onTap: () => _navigateTo(context, '/profile/become-driver'),
+        titleKey: 'profile_become_seller_or_driver',
+        icon: Icons.content_paste_rounded,
+        onTap: () {
+          debugPrint('ProfileView: Mo trang dang ky doi tac (Nguoi ban)');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PartnerRegistrationView(
+                initialRole: PartnerRole.seller,
+              ),
+            ),
+          );
+        },
       ),
       // Ho tro.
       ProfileMenuItem(
         titleKey: 'profile_support',
         icon: Icons.support_agent_outlined,
-        onTap: () => _navigateTo(context, '/profile/support'),
+        onTap: () {
+          debugPrint('ProfileView: Mo trang tro giup');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SupportView(),
+            ),
+          );
+        },
       ),
       // Cai dat.
       ProfileMenuItem(
         titleKey: 'profile_settings',
         icon: Icons.settings_outlined,
-        onTap: () => _navigateTo(context, '/profile/settings'),
+        onTap: () {
+          debugPrint('ProfileView: Mo trang cai dat');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SettingsView(),
+            ),
+          );
+        },
       ),
       // Dieu khoan va chinh sach.
       ProfileMenuItem(
         titleKey: 'profile_terms_policy',
         icon: Icons.description_outlined,
-        onTap: () => _navigateTo(context, '/profile/terms'),
+        onTap: () {
+          debugPrint('ProfileView: Mo trang dieu khoan va chinh sach');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const TermsView(),
+            ),
+          );
+        },
       ),
       // Dang xuat (mau do, o cuoi).
       ProfileMenuItem(
