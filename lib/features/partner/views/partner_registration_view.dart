@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../address/views/map_picker_view.dart';
 
 /// Loai doi tac dang ky.
 enum PartnerRole {
@@ -197,17 +198,17 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
           children: [
             // PHAN 1: Landing Page - Gioi thieu quyen loi.
             _buildBannerSection(),
-            const SizedBox(height: 24),
+            const             SizedBox(height: 24),
 
             // PHAN 2: Form dang ky.
             _buildFormSection(),
-            const SizedBox(height: 24),
-
-            SizedBox(height: 80 + MediaQuery.of(context).padding.bottom),
           ],
         ),
       ),
-      bottomSheet: _buildStickyBottomBar(context),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: _buildStickyBottomBar(),
+      ),
     );
   }
 
@@ -411,20 +412,18 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
     );
   }
 
-  /// Lua chon loai doi tac (Người bán / Tài xế).
+  /// Lua chon loai doi tac (Nguoi ban / Tai xe).
   Widget _buildRoleSelector() {
     final roles = [
       (
         label: LanguageService.translate('partner_role_seller'),
         value: PartnerRole.seller,
         icon: Icons.restaurant_outlined,
-        color: const Color(0xFFE67E22),
       ),
       (
         label: LanguageService.translate('partner_role_driver'),
         value: PartnerRole.driver,
         icon: Icons.delivery_dining_outlined,
-        color: const Color(0xFF2980B9),
       ),
     ];
 
@@ -444,11 +443,11 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? role.color.withAlpha(12)
+                    ? AppColors.primary.withAlpha(12)
                     : AppColors.surface,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: isSelected ? role.color : AppColors.border,
+                  color: isSelected ? AppColors.primary : AppColors.border,
                   width: isSelected ? 1.5 : 1,
                 ),
               ),
@@ -458,12 +457,12 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: role.color.withAlpha(20),
+                      color: AppColors.primary.withAlpha(20),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
                       role.icon,
-                      color: role.color,
+                      color: AppColors.primary,
                       size: 22,
                     ),
                   ),
@@ -476,7 +475,7 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
                         fontWeight:
                             isSelected ? FontWeight.w600 : FontWeight.w400,
                         color: isSelected
-                            ? role.color
+                            ? AppColors.primary
                             : AppColors.textSecondary,
                       ),
                     ),
@@ -487,7 +486,7 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isSelected ? role.color : AppColors.border,
+                        color: isSelected ? AppColors.primary : AppColors.border,
                         width: 2,
                       ),
                     ),
@@ -496,9 +495,9 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
                             child: Container(
                               width: 11,
                               height: 11,
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: role.color,
+                                color: AppColors.primary,
                               ),
                             ),
                           )
@@ -571,28 +570,47 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
       controller: _areaController,
       focusNode: _areaFocus,
       textInputAction: TextInputAction.done,
-      textCapitalization: TextCapitalization.words,
-      onSubmitted: (_) {
-        _areaFocus.unfocus();
-        _onSubmit();
+      readOnly: true,
+      onTap: () {
+        debugPrint('PartnerRegistration: Nguoi dung bam o nhap khu vuc hoat dong');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MapPickerView(
+              onLocationConfirmed: (lat, lng, address) {
+                debugPrint(
+                    'PartnerRegistration: Da chon vi tri - [$lat, $lng] - $address');
+                _areaController.text = address;
+              },
+            ),
+          ),
+        );
       },
       decoration: _buildDecoration(
         labelKey: 'partner_form_area',
         hintKey: 'partner_form_area_hint',
         errorFieldIndex: 3,
+      ).copyWith(
+        suffixIcon: Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: Icon(
+            Icons.location_on,
+            size: 22,
+            color: AppColors.primary,
+          ),
+        ),
+        suffixIconConstraints: const BoxConstraints(
+          minWidth: 0,
+          minHeight: 0,
+        ),
       ),
     );
   }
 
   /// Sticky Bottom Bar.
-  Widget _buildStickyBottomBar(BuildContext context) {
+  Widget _buildStickyBottomBar() {
     return Container(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        12,
-        16,
-        12 + MediaQuery.of(context).padding.bottom,
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: BoxDecoration(
         color: AppColors.surface,
         boxShadow: [

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import 'driver_chat_view.dart';
+import 'order_tracking_map_view.dart';
 
 ///=============================================================================
 /// SECTION: MODELS
@@ -748,7 +749,16 @@ class OrderDetailView extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        debugPrint('OrderDetailView: Mo ban do cho tai xe [${driver.name}]');
+                        debugPrint('OrderDetailView: Mo ban do theo doi tai xe [${driver.name}]');
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => OrderTrackingMapView(
+                              order: order,
+                              etaMinutes: 15,
+                            ),
+                          ),
+                        );
                       },
                       icon: const Icon(Icons.map_outlined, size: 18),
                       label: Text(LanguageService.translate('order_open_map')),
