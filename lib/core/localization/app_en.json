@@ -451,6 +451,12 @@
   "notification_promotion": "Promotion",
   "notification_system": "System",
   "notification_mark_all_read": "Mark all as read",
+  "notif_detail_title": "Notification Detail",
+  "notif_action_view_order": "View order",
+  "notif_action_use_voucher": "Use voucher now",
+  "notif_action_go_home": "Go to home",
+  "notif_action_view_detail": "View details",
+  "notif_action_dismiss": "Got it",
 
   "rewards_title": "Offers",
   "rewards_my_points": "Your Points",

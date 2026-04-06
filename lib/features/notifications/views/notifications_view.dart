@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../models/notification_model.dart';
+import 'notification_detail_view.dart';
 import 'widgets/notification_card.dart';
 
 /// Man hinh Thong bao.
@@ -108,7 +109,13 @@ class _NotificationsViewState extends State<NotificationsView> {
         }
       });
     }
-    debugPrint('Nguoi dung bam vao thong bao: ${notification.id}');
+    debugPrint('NotificationsView: Nguoi dung bam vao thong bao [${notification.id}]');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NotificationDetailView(notification: notification),
+      ),
+    );
   }
 
   @override

@@ -451,6 +451,13 @@
   "notification_promotion": "Khuyến mãi",
   "notification_system": "Hệ thống",
   "notification_mark_all_read": "Đánh dấu đã đọc",
+  "notif_detail_title": "Chi tiết thông báo",
+  "notif_action_view_order": "Xem đơn hàng",
+  "notif_action_use_voucher": "Dùng voucher ngay",
+  "notif_action_go_home": "Về trang chủ",
+  "notif_action_view_detail": "Xem chi tiết",
+  "notif_action_dismiss": "Đã hiểu",
+  "notif_time_ago_format": "$1 giờ trước",
 
   "rewards_title": "Ưu đãi",
   "rewards_my_points": "Điểm của bạn",
