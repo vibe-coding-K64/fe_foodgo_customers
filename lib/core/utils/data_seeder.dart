@@ -33,8 +33,10 @@ class DataSeeder {
     allSuccess &= await _seedWithLog('stores', _buildStores());
     allSuccess &= await _seedWithLog('products', _buildProducts());
     allSuccess &= await _seedWithLog('banners', _buildBanners());
-    allSuccess &= await _seedWithLog('users', _buildUsers());
     allSuccess &= await _seedWithLog('vouchers', _buildVouchers());
+    allSuccess &= await _seedWithLog('reviews', _buildReviews());
+    allSuccess &= await _seedWithLog('orders', _buildOrders());
+    allSuccess &= await _seedUsersCustom();
 
     return allSuccess;
   }
@@ -46,7 +48,9 @@ class DataSeeder {
 
   /// Seed mot collection voi log chi tiet.
   static Future<bool> _seedWithLog(
-      String collectionName, List<Map<String, dynamic>> documents) async {
+    String collectionName,
+    List<Map<String, dynamic>> documents,
+  ) async {
     debugPrint('--- Dang seed collection: $collectionName ---');
     int successCount = 0;
     int failCount = 0;
@@ -68,7 +72,9 @@ class DataSeeder {
       }
     }
 
-    debugPrint('--- $collectionName: $successCount thanh cong, $failCount that bai ---');
+    debugPrint(
+      '--- $collectionName: $successCount thanh cong, $failCount that bai ---',
+    );
     return failCount == 0;
   }
 
@@ -77,869 +83,1728 @@ class DataSeeder {
   // ============================================================
 
   static List<Map<String, dynamic>> _buildCategories() => [
-        {
-          'id': 'cate_001',
-          'name': 'Đồ ăn nhanh',
-          'icon': 'fastfood',
-          'order': 1,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80',
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-        {
-          'id': 'cate_002',
-          'name': 'Đồ uống',
-          'icon': 'local_cafe',
-          'order': 2,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400&q=80',
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-        {
-          'id': 'cate_003',
-          'name': 'Bánh mì',
-          'icon': 'bakery_dining',
-          'order': 3,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1509722747041-616f39b57569?w=400&q=80',
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-        {
-          'id': 'cate_004',
-          'name': 'Cơm tấm',
-          'icon': 'restaurant',
-          'order': 4,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=400&q=80',
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-        {
-          'id': 'cate_005',
-          'name': 'Lẩu & Buffet',
-          'icon': 'soup_kitchen',
-          'order': 5,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=400&q=80',
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-        {
-          'id': 'cate_006',
-          'name': 'Ăn vặt',
-          'icon': 'cookie',
-          'order': 6,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?w=400&q=80',
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-        {
-          'id': 'cate_007',
-          'name': 'Trà sữa',
-          'icon': 'local_drink',
-          'order': 7,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1558857563-b371033873b8?w=400&q=80',
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-        {
-          'id': 'cate_008',
-          'name': 'Pizza',
-          'icon': 'local_pizza',
-          'order': 8,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&q=80',
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-      ];
+    {
+      'id': 'cate_001',
+      'name': 'Com',
+      'icon': 'restaurant',
+      'order': 1,
+      'imageUrl': 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&q=80',
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-01-01T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-01-01T00:00:00Z')),
+      'deletedAt': null,
+    },
+    {
+      'id': 'cate_002',
+      'name': 'Pho/Bun',
+      'icon': 'soup_kitchen',
+      'order': 2,
+      'imageUrl': 'https://images.unsplash.com/photo-1583224964978-2257b960c3f3?w=400&q=80',
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-01-01T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-01-01T00:00:00Z')),
+      'deletedAt': null,
+    },
+    {
+      'id': 'cate_003',
+      'name': 'Tra sua',
+      'icon': 'local_cafe',
+      'order': 3,
+      'imageUrl': 'https://images.unsplash.com/photo-1558857563-b371033873b8?w=400&q=80',
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-01-01T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-01-01T00:00:00Z')),
+      'deletedAt': null,
+    },
+    {
+      'id': 'cate_004',
+      'name': 'An vat',
+      'icon': 'fastfood',
+      'order': 4,
+      'imageUrl': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80',
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-01-01T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-01-01T00:00:00Z')),
+      'deletedAt': null,
+    },
+    {
+      'id': 'cate_005',
+      'name': 'Ga ran',
+      'icon': 'kebab_dining',
+      'order': 5,
+      'imageUrl': 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=400&q=80',
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-01-01T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-01-01T00:00:00Z')),
+      'deletedAt': null,
+    },
+    {
+      'id': 'cate_006',
+      'name': 'Mon Han',
+      'icon': 'ramen_dining',
+      'order': 6,
+      'imageUrl': 'https://images.unsplash.com/photo-1559314809-0d155014e29e?w=400&q=80',
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-01-01T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-01-01T00:00:00Z')),
+      'deletedAt': null,
+    },
+    {
+      'id': 'cate_007',
+      'name': 'Mon Nhat',
+      'icon': 'dinner_dining',
+      'order': 7,
+      'imageUrl': 'https://images.unsplash.com/photo-1611143669185-af224c5e3252?w=400&q=80',
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-01-01T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-01-01T00:00:00Z')),
+      'deletedAt': null,
+    },
+    {
+      'id': 'cate_008',
+      'name': 'Banh mi',
+      'icon': 'bakery_dining',
+      'order': 8,
+      'imageUrl': 'https://images.unsplash.com/photo-1605478371045-0d14b28f8f55?w=400&q=80',
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-01-01T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-01-01T00:00:00Z')),
+      'deletedAt': null,
+    },
+    {
+      'id': 'cate_009',
+      'name': 'Lau/Buffet',
+      'icon': 'soup_kitchen',
+      'order': 9,
+      'imageUrl': 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&q=80',
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-01-01T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-01-01T00:00:00Z')),
+      'deletedAt': null,
+    },
+    {
+      'id': 'cate_010',
+      'name': 'Tra cay',
+      'icon': 'local_drink',
+      'order': 10,
+      'imageUrl': 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&q=80',
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-01-01T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-01-01T00:00:00Z')),
+      'deletedAt': null,
+    },
+  ];
 
   static List<Map<String, dynamic>> _buildStores() => [
-        {
-          'id': 'store_001',
-          'merchantId': 'merchant_001',
-          'name': 'FoodGo Burger',
-          'description': 'Burger thit bo nuong that ngon, tuyet voi.',
-          'address': '123 Nguyen Hue, Quan 1, TP.HCM',
-          'location': {'latitude': 10.7765, 'longitude': 106.7009},
-          'avtUrl':
-              'https://images.unsplash.com/photo-1550547660-d9450f859349?w=400&q=80',
-          'backUrl':
-              'https://images.unsplash.com/photo-1550547660-d9450f859349?w=800&q=80',
-          'isOpen': true,
-          'rating': 4.7,
-          'reviewCount': 120,
-          'deliveryTime': '15 - 25 phut',
-          'deliveryFee': 15000.0,
-          'categoryIds': ['cate_001'],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
+    // Quán Cơm Tấm Phúc Lộc Thọ
+    {
+      'id': 'store_001',
+      'name': 'Com tam Phuc Loc Tho',
+      'address': '123 Le Van Viet, TP. Thu Duc',
+      'rating': 4.8,
+      'reviewCount': 500,
+      'avtUrl': 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&q=80',
+      'backUrl': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=80',
+      'isOpen': true,
+      'deliveryTime': '20-30 phut',
+      'deliveryFee': 15000.0,
+      'categoryIds': ['cate_001', 'cate_004'],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'restaurant_categories': {
+        'rest_cate_001': {
+          'name': 'Mon chinh',
+          'order': 1,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
         },
-        {
-          'id': 'store_002',
-          'merchantId': 'merchant_002',
-          'name': 'FoodGo Pizza',
-          'description': 'Pizza that phong, pho mai nguyen chat tu My.',
-          'address': '45 Le Duan, Quan 3, TP.HCM',
-          'location': {'latitude': 10.7795, 'longitude': 106.6950},
-          'avtUrl':
-              'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&q=80',
-          'backUrl':
-              'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&q=80',
-          'isOpen': true,
-          'rating': 4.5,
-          'reviewCount': 85,
-          'deliveryTime': '20 - 30 phut',
-          'deliveryFee': 20000.0,
-          'categoryIds': ['cate_008'],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
+        'rest_cate_002': {
+          'name': 'Mon phu',
+          'order': 2,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
         },
-        {
-          'id': 'store_003',
-          'merchantId': 'merchant_003',
-          'name': 'FoodGo Trà Sữa',
-          'description': 'Tra sua thom ngon, hanh trang tu Thai Lan.',
-          'address': '78 Pasteur, Quan 1, TP.HCM',
-          'location': {'latitude': 10.7815, 'longitude': 106.6980},
-          'avtUrl':
-              'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400&q=80',
-          'backUrl':
-              'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=800&q=80',
-          'isOpen': true,
-          'rating': 4.8,
-          'reviewCount': 200,
-          'deliveryTime': '10 - 20 phut',
-          'deliveryFee': 10000.0,
-          'categoryIds': ['cate_002', 'cate_007'],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
+        'rest_cate_003': {
+          'name': 'Nuoc uong',
+          'order': 3,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
         },
-        {
-          'id': 'store_004',
-          'merchantId': 'merchant_004',
-          'name': 'FoodGo Bánh Mì',
-          'description': 'Banh mi nhan that ngon, chat luong hang dau.',
-          'address': '90 Dong Khoi, Quan 1, TP.HCM',
-          'location': {'latitude': 10.7775, 'longitude': 106.7015},
-          'avtUrl':
-              'https://images.unsplash.com/photo-1509722747041-616f39b57569?w=400&q=80',
-          'backUrl':
-              'https://images.unsplash.com/photo-1509722747041-616f39b57569?w=800&q=80',
-          'isOpen': false,
-          'rating': 4.6,
-          'reviewCount': 150,
-          'deliveryTime': '15 - 25 phut',
-          'deliveryFee': 12000.0,
-          'categoryIds': ['cate_003'],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
+      },
+    },
+
+    // Quan Tra Sua Tocotoco
+    {
+      'id': 'store_002',
+      'name': 'Tra sua Tocotoco',
+      'address': '456 Nguyen Thai Son, Go Vap',
+      'rating': 4.6,
+      'reviewCount': 800,
+      'avtUrl': 'https://images.unsplash.com/photo-1558857563-b371033873b8?w=400&q=80',
+      'backUrl': 'https://images.unsplash.com/photo-1554744512-d6c603f27c54?w=800&q=80',
+      'isOpen': true,
+      'deliveryTime': '15-25 phut',
+      'deliveryFee': 12000.0,
+      'categoryIds': ['cate_003', 'cate_010'],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'restaurant_categories': {
+        'rest_cate_001': {
+          'name': 'Tra sua',
+          'order': 1,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
         },
-        {
-          'id': 'store_005',
-          'merchantId': 'merchant_005',
-          'name': 'FoodGo Cơm Tấm',
-          'description': 'Com tam Saigon truyen thong, ngon tuyet pham.',
-          'address': '210 Vo Van Kiet, Quan 5, TP.HCM',
-          'location': {'latitude': 10.7510, 'longitude': 106.6850},
-          'avtUrl':
-              'https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=400&q=80',
-          'backUrl':
-              'https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=800&q=80',
-          'isOpen': true,
-          'rating': 4.4,
-          'reviewCount': 65,
-          'deliveryTime': '20 - 30 phut',
-          'deliveryFee': 18000.0,
-          'categoryIds': ['cate_004'],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
+        'rest_cate_002': {
+          'name': 'Tra cay',
+          'order': 2,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
         },
-        {
-          'id': 'store_006',
-          'merchantId': 'merchant_006',
-          'name': 'FoodGo Lẩu',
-          'description': 'Lau Thai chua cay, hau sac Thai Lan chinh hang.',
-          'address': '55 Truong Chinh, Quan 12, TP.HCM',
-          'location': {'latitude': 10.8020, 'longitude': 106.6750},
-          'avtUrl':
-              'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=400&q=80',
-          'backUrl':
-              'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=800&q=80',
-          'isOpen': true,
-          'rating': 4.9,
-          'reviewCount': 95,
-          'deliveryTime': '25 - 35 phut',
-          'deliveryFee': 25000.0,
-          'categoryIds': ['cate_005'],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
+        'rest_cate_003': {
+          'name': 'Topping',
+          'order': 3,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
         },
-        {
-          'id': 'store_007',
-          'merchantId': 'merchant_007',
-          'name': 'FoodGo Ăn Vặt',
-          'description': 'Ga ran, muc chien, snack các loai hap dan.',
-          'address': '88 Pham Viet Chanh, Quan 1, TP.HCM',
-          'location': {'latitude': 10.7750, 'longitude': 106.7020},
-          'avtUrl':
-              'https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?w=400&q=80',
-          'backUrl':
-              'https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?w=800&q=80',
-          'isOpen': true,
-          'rating': 4.3,
-          'reviewCount': 78,
-          'deliveryTime': '15 - 25 phut',
-          'deliveryFee': 10000.0,
-          'categoryIds': ['cate_006'],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
+      },
+    },
+
+    // Quan Ga Ran KFC
+    {
+      'id': 'store_003',
+      'name': 'Ga ran KFC Nguyen Cuu',
+      'address': '789 Nguyen Cuu, Binh Thanh',
+      'rating': 4.5,
+      'reviewCount': 1200,
+      'avtUrl': 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=400&q=80',
+      'backUrl': 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=800&q=80',
+      'isOpen': true,
+      'deliveryTime': '25-35 phut',
+      'deliveryFee': 18000.0,
+      'categoryIds': ['cate_005', 'cate_004'],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'restaurant_categories': {
+        'rest_cate_001': {
+          'name': 'Ga chinh',
+          'order': 1,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
         },
-        {
-          'id': 'store_008',
-          'merchantId': 'merchant_008',
-          'name': 'FoodGo Fast Food',
-          'description': 'Fast food My, pho mai que, hotdog ngon gia re.',
-          'address': '150 Nam Ky Khoi Nghia, Quan 3, TP.HCM',
-          'location': {'latitude': 10.7800, 'longitude': 106.6900},
-          'avtUrl':
-              'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=400&q=80',
-          'backUrl':
-              'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=800&q=80',
-          'isOpen': true,
-          'rating': 4.2,
-          'reviewCount': 42,
-          'deliveryTime': '15 - 20 phut',
-          'deliveryFee': 12000.0,
-          'categoryIds': ['cate_001', 'cate_006'],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
+        'rest_cate_002': {
+          'name': 'Mon an kem',
+          'order': 2,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
         },
-      ];
+        'rest_cate_003': {
+          'name': 'Nuoc uong',
+          'order': 3,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+        },
+      },
+    },
+
+    // Quan Bun Bo Hue Ba Le
+    {
+      'id': 'store_004',
+      'name': 'Bun bo Hue Ba Le',
+      'address': '321 Vo Thi Sau, Quan 3',
+      'rating': 4.7,
+      'reviewCount': 650,
+      'avtUrl': 'https://images.unsplash.com/photo-1583224964978-2257b960c3f3?w=400&q=80',
+      'backUrl': 'https://images.unsplash.com/photo-1569058242567-93de6f36f8eb?w=800&q=80',
+      'isOpen': true,
+      'deliveryTime': '20-30 phut',
+      'deliveryFee': 14000.0,
+      'categoryIds': ['cate_002', 'cate_001'],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'restaurant_categories': {
+        'rest_cate_001': {
+          'name': 'Bun bo',
+          'order': 1,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+        },
+        'rest_cate_002': {
+          'name': 'Hu tieu',
+          'order': 2,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+        },
+        'rest_cate_003': {
+          'name': 'Mon them',
+          'order': 3,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+        },
+      },
+    },
+  ];
 
   static List<Map<String, dynamic>> _buildProducts() => [
-        // FoodGo Burger - store_001
+    // === San pham cua store_001 - Com tam Phuc Loc Tho ===
+
+    {
+      'id': 'prod_001',
+      'storeId': 'store_001',
+      'categoryId': 'cate_001',
+      'categoryName': 'Com',
+      'name': 'Com tam suon bi cha',
+      'description': 'Com tam ngon chuan vi Sai Gon voi suon nuong thom phuc',
+      'basePrice': 45000.0,
+      'imageUrl': 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&q=80',
+      'isOutOfStock': false,
+      'isFeatured': true,
+      'optionGroups': [
         {
-          'id': 'prod_001',
-          'storeId': 'store_001',
-          'categoryId': 'cate_001',
-          'categoryName': 'Đồ ăn nhanh',
-          'name': 'Burger Bò',
-          'description': 'Burger bo nuong that ngon, pho mai tan chay.',
-          'basePrice': 55000.0,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=400&q=80',
-          'isOutOfStock': false,
-          'isFeatured': true,
-          'optionGroups': [
-            {
-              'id': 'optg_001',
-              'name': 'Chọn Size',
-              'isRequired': true,
-              'maxChoices': 1,
-              'options': [
-                {'id': 'opto_001', 'name': 'Size S', 'additionalPrice': 0, 'isOutOfStock': false},
-                {'id': 'opto_002', 'name': 'Size M', 'additionalPrice': 10000, 'isOutOfStock': false},
-                {'id': 'opto_003', 'name': 'Size L', 'additionalPrice': 20000, 'isOutOfStock': false},
-              ],
-            },
-            {
-              'id': 'optg_002',
-              'name': 'Thêm Topping',
-              'isRequired': false,
-              'maxChoices': 5,
-              'options': [
-                {'id': 'opto_004', 'name': 'Them pho mai', 'additionalPrice': 5000, 'isOutOfStock': false},
-                {'id': 'opto_005', 'name': 'Them nam', 'additionalPrice': 5000, 'isOutOfStock': false},
-                {'id': 'opto_006', 'name': 'Them trung', 'additionalPrice': 7000, 'isOutOfStock': false},
-              ],
-            },
+          'name': 'Kich thuoc',
+          'options': [
+            {'name': 'Vua', 'price': 0.0},
+            {'name': 'Lon', 'price': 10000.0},
           ],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
         },
+      ],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+
+    {
+      'id': 'prod_002',
+      'storeId': 'store_001',
+      'categoryId': 'cate_001',
+      'categoryName': 'Com',
+      'name': 'Com tam ga xot',
+      'description': 'Com tam voi ga ran giòn, chan phuot xot bong cai',
+      'basePrice': 50000.0,
+      'imageUrl': 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&q=80',
+      'isOutOfStock': false,
+      'isFeatured': false,
+      'optionGroups': [],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+
+    {
+      'id': 'prod_003',
+      'storeId': 'store_001',
+      'categoryId': 'cate_001',
+      'categoryName': 'Com',
+      'name': 'Com tam ca ke',
+      'description': 'Ca ke cham mam tom, com tam dot tet huu amph',
+      'basePrice': 55000.0,
+      'imageUrl': 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&q=80',
+      'isOutOfStock': false,
+      'isFeatured': true,
+      'optionGroups': [],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+
+    // === San pham cua store_002 - Tra sua Tocotoco ===
+
+    {
+      'id': 'prod_004',
+      'storeId': 'store_002',
+      'categoryId': 'cate_003',
+      'categoryName': 'Tra sua',
+      'name': 'Tra sua trach tang',
+      'description': 'Tra sua thom ngon kem trach tang dai duong',
+      'basePrice': 29000.0,
+      'imageUrl': 'https://images.unsplash.com/photo-1558857563-b371033873b8?w=400&q=80',
+      'isOutOfStock': false,
+      'isFeatured': true,
+      'optionGroups': [
         {
-          'id': 'prod_002',
-          'storeId': 'store_001',
-          'categoryId': 'cate_001',
-          'categoryName': 'Đồ ăn nhanh',
-          'name': 'Burger Gà',
-          'description': 'Burger ga chien gion tan, sot nuoc cham dac biet.',
-          'basePrice': 50000.0,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80',
-          'isOutOfStock': false,
-          'optionGroups': [
-            {
-              'id': 'optg_003',
-              'name': 'Chọn Size',
-              'isRequired': true,
-              'maxChoices': 1,
-              'options': [
-                {'id': 'opto_007', 'name': 'Size S', 'additionalPrice': 0, 'isOutOfStock': false},
-                {'id': 'opto_008', 'name': 'Size M', 'additionalPrice': 10000, 'isOutOfStock': false},
-                {'id': 'opto_009', 'name': 'Size L', 'additionalPrice': 20000, 'isOutOfStock': false},
-              ],
-            },
+          'name': 'Kich thuoc',
+          'options': [
+            {'name': 'M', 'price': 0.0},
+            {'name': 'L', 'price': 5000.0},
           ],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
         },
         {
-          'id': 'prod_003',
-          'storeId': 'store_001',
-          'categoryId': 'cate_001',
-          'categoryName': 'Đồ ăn nhanh',
-          'name': 'Khoai tây chiên',
-          'description': 'Khoai tay chien gion rum, vi man vua phai.',
-          'basePrice': 25000.0,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?w=400&q=80',
-          'isOutOfStock': false,
-          'optionGroups': [],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-        // FoodGo Pizza - store_002
-        {
-          'id': 'prod_004',
-          'storeId': 'store_002',
-          'categoryId': 'cate_008',
-          'categoryName': 'Pizza',
-          'name': 'Pizza Phô Mai',
-          'description': 'Pizza pho mai 4 loai nhap khau tu My.',
-          'basePrice': 120000.0,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&q=80',
-          'isOutOfStock': false,
-          'isFeatured': true,
-          'optionGroups': [
-            {
-              'id': 'optg_004',
-              'name': 'Chọn Size',
-              'isRequired': true,
-              'maxChoices': 1,
-              'options': [
-                {'id': 'opto_010', 'name': 'Size S (20cm)', 'additionalPrice': 0, 'isOutOfStock': false},
-                {'id': 'opto_011', 'name': 'Size M (25cm)', 'additionalPrice': 30000, 'isOutOfStock': false},
-                {'id': 'opto_012', 'name': 'Size L (30cm)', 'additionalPrice': 60000, 'isOutOfStock': false},
-              ],
-            },
-            {
-              'id': 'optg_005',
-              'name': 'Đế bánh',
-              'isRequired': true,
-              'maxChoices': 1,
-              'options': [
-                {'id': 'opto_013', 'name': 'De mong', 'additionalPrice': 0, 'isOutOfStock': false},
-                {'id': 'opto_014', 'name': 'De day', 'additionalPrice': 5000, 'isOutOfStock': false},
-                {'id': 'opto_015', 'name': 'De gia', 'additionalPrice': 10000, 'isOutOfStock': false},
-              ],
-            },
+          'name': 'Luong duong',
+          'options': [
+            {'name': '0%', 'price': 0.0},
+            {'name': '30%', 'price': 0.0},
+            {'name': '50%', 'price': 0.0},
+            {'name': '100%', 'price': 0.0},
           ],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
         },
         {
-          'id': 'prod_005',
-          'storeId': 'store_002',
-          'categoryId': 'cate_008',
-          'categoryName': 'Pizza',
-          'name': 'Pizza Hải Sản',
-          'description': 'Pizza voi tom, muc, ca cham day cao.',
-          'basePrice': 150000.0,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400&q=80',
-          'isOutOfStock': false,
-          'optionGroups': [
-            {
-              'id': 'optg_006',
-              'name': 'Chọn Size',
-              'isRequired': true,
-              'maxChoices': 1,
-              'options': [
-                {'id': 'opto_016', 'name': 'Size S (20cm)', 'additionalPrice': 0, 'isOutOfStock': false},
-                {'id': 'opto_017', 'name': 'Size M (25cm)', 'additionalPrice': 40000, 'isOutOfStock': false},
-                {'id': 'opto_018', 'name': 'Size L (30cm)', 'additionalPrice': 80000, 'isOutOfStock': false},
-              ],
-            },
+          'name': 'Luong da',
+          'options': [
+            {'name': '0%', 'price': 0.0},
+            {'name': '30%', 'price': 0.0},
+            {'name': '50%', 'price': 0.0},
+            {'name': '100%', 'price': 0.0},
           ],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
         },
-        // FoodGo Trà Sữa - store_003
+      ],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+
+    {
+      'id': 'prod_005',
+      'storeId': 'store_002',
+      'categoryId': 'cate_003',
+      'categoryName': 'Tra sua',
+      'name': 'Tra sua matcha',
+      'description': 'Tra sua matcha Nhat Ban chat luong cao',
+      'basePrice': 35000.0,
+      'imageUrl': 'https://images.unsplash.com/photo-1558857563-b371033873b8?w=400&q=80',
+      'isOutOfStock': false,
+      'isFeatured': false,
+      'optionGroups': [
         {
-          'id': 'prod_006',
-          'storeId': 'store_003',
-          'categoryId': 'cate_007',
-          'categoryName': 'Trà sữa',
-          'name': 'Trà Sữa Thái Đỏ',
-          'description': 'Tra sua Thai Lan that ngon, vi ngot nhe.',
-          'basePrice': 35000.0,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1558857563-b371033873b8?w=400&q=80',
-          'isOutOfStock': false,
-          'isFeatured': true,
-          'optionGroups': [
-            {
-              'id': 'optg_007',
-              'name': 'Chọn Size',
-              'isRequired': true,
-              'maxChoices': 1,
-              'options': [
-                {'id': 'opto_019', 'name': 'S', 'additionalPrice': 0, 'isOutOfStock': false},
-                {'id': 'opto_020', 'name': 'M', 'additionalPrice': 5000, 'isOutOfStock': false},
-                {'id': 'opto_021', 'name': 'L', 'additionalPrice': 10000, 'isOutOfStock': false},
-              ],
-            },
-            {
-              'id': 'optg_008',
-              'name': 'Chọn Đường',
-              'isRequired': true,
-              'maxChoices': 1,
-              'options': [
-                {'id': 'opto_022', 'name': '0% duong', 'additionalPrice': 0, 'isOutOfStock': false},
-                {'id': 'opto_023', 'name': '30% duong', 'additionalPrice': 0, 'isOutOfStock': false},
-                {'id': 'opto_024', 'name': '50% duong', 'additionalPrice': 0, 'isOutOfStock': false},
-                {'id': 'opto_025', 'name': '100% duong', 'additionalPrice': 0, 'isOutOfStock': false},
-              ],
-            },
-            {
-              'id': 'optg_009',
-              'name': 'Thêm Topping',
-              'isRequired': false,
-              'maxChoices': 5,
-              'options': [
-                {'id': 'opto_026', 'name': 'Them tran chau den', 'additionalPrice': 5000, 'isOutOfStock': false},
-                {'id': 'opto_027', 'name': 'Them tran chau trang', 'additionalPrice': 5000, 'isOutOfStock': false},
-                {'id': 'opto_028', 'name': 'Them pudding', 'additionalPrice': 7000, 'isOutOfStock': false},
-                {'id': 'opto_029', 'name': 'Them flan', 'additionalPrice': 7000, 'isOutOfStock': false},
-              ],
-            },
+          'name': 'Kich thuoc',
+          'options': [
+            {'name': 'M', 'price': 0.0},
+            {'name': 'L', 'price': 5000.0},
           ],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
         },
+      ],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+
+    {
+      'id': 'prod_006',
+      'storeId': 'store_002',
+      'categoryId': 'cate_010',
+      'categoryName': 'Tra cay',
+      'name': 'Nuoc ep cam',
+      'description': 'Nuoc ep cam tuoi nguyen chat 100%',
+      'basePrice': 25000.0,
+      'imageUrl': 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&q=80',
+      'isOutOfStock': false,
+      'isFeatured': false,
+      'optionGroups': [],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+
+    {
+      'id': 'prod_007',
+      'storeId': 'store_002',
+      'categoryId': 'cate_003',
+      'categoryName': 'Tra sua',
+      'name': 'Tra sua chocolate',
+      'description': 'Tra sua chocolate Belgia thom ngot',
+      'basePrice': 33000.0,
+      'imageUrl': 'https://images.unsplash.com/photo-1558857563-b371033873b8?w=400&q=80',
+      'isOutOfStock': true,
+      'isFeatured': false,
+      'optionGroups': [
         {
-          'id': 'prod_007',
-          'storeId': 'store_003',
-          'categoryId': 'cate_002',
-          'categoryName': 'Đồ uống',
-          'name': 'Trà Đào Cam',
-          'description': 'Tra dao that cam that ngon, giai khat cuc te.',
-          'basePrice': 30000.0,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400&q=80',
-          'isOutOfStock': false,
-          'optionGroups': [
-            {
-              'id': 'optg_010',
-              'name': 'Chọn Size',
-              'isRequired': true,
-              'maxChoices': 1,
-              'options': [
-                {'id': 'opto_030', 'name': 'S', 'additionalPrice': 0, 'isOutOfStock': false},
-                {'id': 'opto_031', 'name': 'M', 'additionalPrice': 5000, 'isOutOfStock': false},
-                {'id': 'opto_032', 'name': 'L', 'additionalPrice': 10000, 'isOutOfStock': false},
-              ],
-            },
+          'name': 'Kich thuoc',
+          'options': [
+            {'name': 'M', 'price': 0.0},
+            {'name': 'L', 'price': 5000.0},
           ],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
         },
-        // FoodGo Bánh Mì - store_004
+      ],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+
+    // === San pham cua store_003 - Ga ran KFC ===
+
+    {
+      'id': 'prod_008',
+      'storeId': 'store_003',
+      'categoryId': 'cate_005',
+      'categoryName': 'Ga ran',
+      'name': 'Ga ran lon 1',
+      'description': 'Ga ran lon giòn rum cay thom',
+      'basePrice': 75000.0,
+      'imageUrl': 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=400&q=80',
+      'isOutOfStock': false,
+      'isFeatured': true,
+      'optionGroups': [],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+
+    {
+      'id': 'prod_009',
+      'storeId': 'store_003',
+      'categoryId': 'cate_005',
+      'categoryName': 'Ga ran',
+      'name': 'Ga man hieu',
+      'description': 'Ga man hieu oc bap giòn tanh',
+      'basePrice': 55000.0,
+      'imageUrl': 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=400&q=80',
+      'isOutOfStock': false,
+      'isFeatured': false,
+      'optionGroups': [],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+
+    {
+      'id': 'prod_010',
+      'storeId': 'store_003',
+      'categoryId': 'cate_004',
+      'categoryName': 'An vat',
+      'name': 'Khoai tay chien',
+      'description': 'Khoai tay chien vai rum giòn',
+      'basePrice': 25000.0,
+      'imageUrl': 'https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?w=400&q=80',
+      'isOutOfStock': false,
+      'isFeatured': false,
+      'optionGroups': [
         {
-          'id': 'prod_008',
-          'storeId': 'store_004',
-          'categoryId': 'cate_003',
-          'categoryName': 'Bánh mì',
-          'name': 'Bánh Mì Thịt Nướng',
-          'description': 'Banh mi that nong, thit nuong thom phuc.',
-          'basePrice': 35000.0,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1509722747041-616f39b57569?w=400&q=80',
-          'isOutOfStock': false,
-          'optionGroups': [
-            {
-              'id': 'optg_011',
-              'name': 'Loại Bánh',
-              'isRequired': true,
-              'maxChoices': 1,
-              'options': [
-                {'id': 'opto_033', 'name': 'Banh my dang', 'additionalPrice': 0, 'isOutOfStock': false},
-                {'id': 'opto_034', 'name': 'Banh my soc', 'additionalPrice': 2000, 'isOutOfStock': false},
-              ],
-            },
+          'name': 'Kich thuoc',
+          'options': [
+            {'name': 'Nho', 'price': 0.0},
+            {'name': 'Lon', 'price': 10000.0},
           ],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
         },
+      ],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+
+    {
+      'id': 'prod_011',
+      'storeId': 'store_003',
+      'categoryId': 'cate_005',
+      'categoryName': 'Ga ran',
+      'name': 'Combo KFC 1 nguoi',
+      'description': 'Ga ran + khoai tay + nuoc ngot',
+      'basePrice': 95000.0,
+      'imageUrl': 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=400&q=80',
+      'isOutOfStock': false,
+      'isFeatured': true,
+      'optionGroups': [],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+
+    // === San pham cua store_004 - Bun bo Hue Ba Le ===
+
+    {
+      'id': 'prod_012',
+      'storeId': 'store_004',
+      'categoryId': 'cate_002',
+      'categoryName': 'Pho/Bun',
+      'name': 'Bun bo Hue lon',
+      'description': 'Bun bo Hue chinh goc, nuoc duong dam da, them bot',
+      'basePrice': 50000.0,
+      'imageUrl': 'https://images.unsplash.com/photo-1583224964978-2257b960c3f3?w=400&q=80',
+      'isOutOfStock': false,
+      'isFeatured': true,
+      'optionGroups': [
         {
-          'id': 'prod_009',
-          'storeId': 'store_004',
-          'categoryId': 'cate_003',
-          'categoryName': 'Bánh mì',
-          'name': 'Bánh Mì Chả Bông',
-          'description': 'Banh mi cha bong truyen thong, nhieu cha.',
-          'basePrice': 30000.0,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1585441748780-3675d6a7f9c0?w=400&q=80',
-          'isOutOfStock': false,
-          'optionGroups': [],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-        // FoodGo Cơm Tấm - store_005
-        {
-          'id': 'prod_010',
-          'storeId': 'store_005',
-          'categoryId': 'cate_004',
-          'categoryName': 'Cơm tấm',
-          'name': 'Cơm Tấm Sườn Bì',
-          'description': 'Com tam suon bi chao that ngon, tieu bieu Saigon.',
-          'basePrice': 45000.0,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=400&q=80',
-          'isOutOfStock': false,
-          'optionGroups': [],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-        {
-          'id': 'prod_011',
-          'storeId': 'store_005',
-          'categoryId': 'cate_004',
-          'categoryName': 'Cơm tấm',
-          'name': 'Cơm Tấm Bò Kho',
-          'description': 'Com tam bo kho dac biet, nuoc dung thom ngao.',
-          'basePrice': 55000.0,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&q=80',
-          'isOutOfStock': false,
-          'optionGroups': [],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-        // FoodGo Lẩu - store_006
-        {
-          'id': 'prod_012',
-          'storeId': 'store_006',
-          'categoryId': 'cate_005',
-          'categoryName': 'Lẩu & Buffet',
-          'name': 'Lẩu Thái Chua Cay',
-          'description': 'Lau Thai chua cay man mien, thit bo that ngon.',
-          'basePrice': 250000.0,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=400&q=80',
-          'isOutOfStock': false,
-          'isFeatured': true,
-          'optionGroups': [
-            {
-              'id': 'optg_012',
-              'name': 'Loại Nước Dùng',
-              'isRequired': true,
-              'maxChoices': 1,
-              'options': [
-                {'id': 'opto_035', 'name': 'Nuoc dau (tre)', 'additionalPrice': 0, 'isOutOfStock': false},
-                {'id': 'opto_036', 'name': 'Nuoc dau (nhieu)', 'additionalPrice': 20000, 'isOutOfStock': false},
-              ],
-            },
-            {
-              'id': 'optg_013',
-              'name': 'Thêm Khẩu Phần',
-              'isRequired': false,
-              'maxChoices': 5,
-              'options': [
-                {'id': 'opto_037', 'name': 'Them 1 nguoi', 'additionalPrice': 80000, 'isOutOfStock': false},
-                {'id': 'opto_038', 'name': 'Them thit bo', 'additionalPrice': 50000, 'isOutOfStock': false},
-                {'id': 'opto_039', 'name': 'Them tom', 'additionalPrice': 60000, 'isOutOfStock': false},
-              ],
-            },
+          'name': 'Muc do cay',
+          'options': [
+            {'name': 'Khong cay', 'price': 0.0},
+            {'name': 'Cay vua', 'price': 0.0},
+            {'name': 'Cay nhieu', 'price': 0.0},
           ],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
         },
-        {
-          'id': 'prod_013',
-          'storeId': 'store_006',
-          'categoryId': 'cate_005',
-          'categoryName': 'Lẩu & Buffet',
-          'name': 'Lẩu Bò',
-          'description': 'Lau bo nhat Ban, nuoc dung ngot thanh.',
-          'basePrice': 350000.0,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80',
-          'isOutOfStock': false,
-          'optionGroups': [],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-        // FoodGo Ăn Vặt - store_007
-        {
-          'id': 'prod_014',
-          'storeId': 'store_007',
-          'categoryId': 'cate_006',
-          'categoryName': 'Ăn vặt',
-          'name': 'Gà Rán',
-          'description': 'Ga chien vang ruc, gion tan, thit mit.',
-          'basePrice': 40000.0,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?w=400&q=80',
-          'isOutOfStock': false,
-          'optionGroups': [
-            {
-              'id': 'optg_014',
-              'name': 'Loại Gà',
-              'isRequired': true,
-              'maxChoices': 1,
-              'options': [
-                {'id': 'opto_040', 'name': 'Ga ta', 'additionalPrice': 0, 'isOutOfStock': false},
-                {'id': 'opto_041', 'name': 'Ga ta (1/2 con)', 'additionalPrice': 25000, 'isOutOfStock': false},
-              ],
-            },
-          ],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-        {
-          'id': 'prod_015',
-          'storeId': 'store_007',
-          'categoryId': 'cate_006',
-          'categoryName': 'Ăn vặt',
-          'name': 'Mực Chiên',
-          'description': 'Muc chien banh that, gion tan that ngon.',
-          'basePrice': 60000.0,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1599084993091-1cb5c0721cc6?w=400&q=80',
-          'isOutOfStock': false,
-          'optionGroups': [],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-        // FoodGo Fast Food - store_008
-        {
-          'id': 'prod_016',
-          'storeId': 'store_008',
-          'categoryId': 'cate_006',
-          'categoryName': 'Ăn vặt',
-          'name': 'Combo Phô Mai Que',
-          'description': 'Pho mai que gion tan, kem saucac.',
-          'basePrice': 65000.0,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?w=400&q=80',
-          'isOutOfStock': false,
-          'optionGroups': [],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-        {
-          'id': 'prod_017',
-          'storeId': 'store_008',
-          'categoryId': 'cate_001',
-          'categoryName': 'Đồ ăn nhanh',
-          'name': 'Hot Dog',
-          'description': 'Hotdog xuc xich My, mustard ngon.',
-          'basePrice': 35000.0,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1612392062126-e51e8ba9e0a5?w=400&q=80',
-          'isOutOfStock': false,
-          'optionGroups': [],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-      ];
+      ],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+
+    {
+      'id': 'prod_013',
+      'storeId': 'store_004',
+      'categoryId': 'cate_002',
+      'categoryName': 'Pho/Bun',
+      'name': 'Bun bo Hue dao',
+      'description': 'Bun bo Hue voi dao bo, ngon tuyet voi',
+      'basePrice': 55000.0,
+      'imageUrl': 'https://images.unsplash.com/photo-1583224964978-2257b960c3f3?w=400&q=80',
+      'isOutOfStock': false,
+      'isFeatured': false,
+      'optionGroups': [],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+
+    {
+      'id': 'prod_014',
+      'storeId': 'store_004',
+      'categoryId': 'cate_002',
+      'categoryName': 'Pho/Bun',
+      'name': 'Hu tieu sa te',
+      'description': 'Hu tieu sa te Tom Truc Xanh, nuoc le dam ngot',
+      'basePrice': 45000.0,
+      'imageUrl': 'https://images.unsplash.com/photo-1569058242567-93de6f36f8eb?w=400&q=80',
+      'isOutOfStock': true,
+      'isFeatured': false,
+      'optionGroups': [],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+
+    {
+      'id': 'prod_015',
+      'storeId': 'store_004',
+      'categoryId': 'cate_001',
+      'categoryName': 'Com',
+      'name': 'Com rang dua bo',
+      'description': 'Com rang dua bo duoc nau chinh tuoi, huu amph',
+      'basePrice': 40000.0,
+      'imageUrl': 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&q=80',
+      'isOutOfStock': false,
+      'isFeatured': false,
+      'optionGroups': [],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+  ];
 
   static List<Map<String, dynamic>> _buildBanners() => [
-        {
-          'id': 'banner_001',
-          'title': 'Khuyen mai 20%',
-          'imageUrl':
-              'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=80',
-          'storeId': null,
-          'storeName': null,
-          'isActive': true,
-          'order': 1,
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-        {
-          'id': 'banner_002',
-          'title': 'Mien phi giao hang',
-          'imageUrl':
-              'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&q=80',
-          'storeId': null,
-          'storeName': null,
-          'isActive': true,
-          'order': 2,
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-        {
-          'id': 'banner_003',
-          'title': 'Flash Sale',
-          'imageUrl':
-              'https://images.unsplash.com/photo-1543353071-873f17a7a088?w=800&q=80',
-          'storeId': null,
-          'storeName': null,
-          'isActive': true,
-          'order': 3,
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-      ];
+    {
+      'id': 'banner_001',
+      'title': 'Sieu sale giua thang',
+      'imageUrl': 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&q=80',
+      'storeId': null,
+      'storeName': null,
+      'isActive': true,
+      'order': 1,
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+    {
+      'id': 'banner_002',
+      'title': 'Freeship 0 dong',
+      'imageUrl': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80',
+      'storeId': null,
+      'storeName': null,
+      'isActive': true,
+      'order': 2,
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+    {
+      'id': 'banner_003',
+      'title': 'Le hoi am thuc',
+      'imageUrl': 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&q=80',
+      'storeId': null,
+      'storeName': null,
+      'isActive': true,
+      'order': 3,
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+    {
+      'id': 'banner_004',
+      'title': 'Uong tra van chiu',
+      'imageUrl': 'https://images.unsplash.com/photo-1558857563-b371033873b8?w=800&q=80',
+      'storeId': null,
+      'storeName': null,
+      'isActive': true,
+      'order': 4,
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+  ];
 
-  static List<Map<String, dynamic>> _buildUsers() => [
-        {
-          'id': 'user_001',
-          'phone': '0909123456',
-          'fullName': 'Nguyen Van A',
-          'avatarUrl':
-              'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=200&q=80',
-          'loyaltyPoints': 2500,
-          'settings': {
-            'themeMode': 0,
-            'isPushEnabled': true,
+  /// Ham seed User voi Sub-collections.
+  /// Tao khoang 2-3 user, moi user co 7 Sub-collections: addresses, payment_methods,
+  /// notifications, search_history, expenses, my_vouchers, cart.
+  static Future<bool> _seedUsersCustom() async {
+    debugPrint('--- Dang seed users voi Sub-collections ---');
+
+    int userSuccessCount = 0;
+    int userFailCount = 0;
+
+    // Dinh nghia 2-3 user khac nhau
+    final List<Map<String, dynamic>> users = [
+      // User 1 - Khach hang tieu bieu
+      {
+        'id': 'user_001',
+        'email': 'khachhang@gmail.com',
+        'fullName': 'Khoi',
+        'phoneNumber': '0123456789',
+        'photoUrl': 'https://example.com/avatar/user001.jpg',
+        'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+        'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+
+        // addresses
+        'addresses': [
+          {
+            'id': 'addr_001',
+            'name': 'Nha rieng',
+            'address': 'Ky tuc xa UTC2, Quan 9, TP.HCM',
+            'lat': 10.8455,
+            'lng': 106.7939,
+            'isDefault': true,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+            'deletedAt': null,
           },
-          'savedAddresses': [
-            {
-              'id': 'addr_001',
-              'label': 'Nhà',
-              'addressText': '123 Nguyen Hue, Quan 1, TP.HCM',
-              'latitude': 10.7765,
-              'longitude': 106.7009,
-              'isDefault': true,
-            },
-            {
-              'id': 'addr_002',
-              'label': 'Văn phòng',
-              'addressText': '45 Le Duan, Quan 3, TP.HCM',
-              'latitude': 10.7795,
-              'longitude': 106.6950,
-              'isDefault': false,
-            },
-          ],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
+          {
+            'id': 'addr_002',
+            'name': 'Truong hoc',
+            'address': 'Truong Dai hoc Giao thong Van tai, Quan 9, TP.HCM',
+            'lat': 10.8512,
+            'lng': 106.7890,
+            'isDefault': false,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+            'deletedAt': null,
+          },
+        ],
+
+        // payment_methods
+        'payment_methods': [
+          {
+            'id': 'pm_001',
+            'type': 'wallet',
+            'isDefault': true,
+            'cardBrand': null,
+            'last4Digits': null,
+            'walletBrand': 'momo',
+            'isLinked': true,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          },
+          {
+            'id': 'pm_002',
+            'type': 'card',
+            'isDefault': false,
+            'cardBrand': 'Visa',
+            'last4Digits': '1234',
+            'walletBrand': null,
+            'isLinked': true,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          },
+        ],
+
+        // notifications
+        'notifications': [
+          {
+            'id': 'notif_001',
+            'type': 'order',
+            'title': 'Don hang dang den',
+            'body': 'Tai xe dang giao don hang FoodGo cho ban.',
+            'isRead': false,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          },
+          {
+            'id': 'notif_002',
+            'type': 'promotion',
+            'title': 'Uu dai dac biet',
+            'body': 'Giam 20% cho don hang dau tien cua ban hom nay.',
+            'isRead': true,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+          },
+          {
+            'id': 'notif_003',
+            'type': 'reward',
+            'title': 'Ban da doi duoc voucher',
+            'body': 'Chuc mung ban da doi thanh cong voucher Freeship.',
+            'isRead': false,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+          },
+        ],
+
+        // search_history
+        'search_history': [
+          {
+            'id': 'sh_001',
+            'keyword': 'Com tam',
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+            'deletedAt': null,
+          },
+          {
+            'id': 'sh_002',
+            'keyword': 'Tra sua',
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+            'deletedAt': null,
+          },
+          {
+            'id': 'sh_003',
+            'keyword': 'Ga ran',
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+            'deletedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+          },
+        ],
+
+        // expenses
+        'expenses': [
+          {
+            'id': 'exp_001',
+            'storeName': 'Com tam Phuc Loc Tho',
+            'iconName': 'food',
+            'categoryKey': 'food_drink',
+            'date': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+            'amount': 55000.0,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          },
+          {
+            'id': 'exp_002',
+            'storeName': 'Tra sua Tocotoco',
+            'iconName': 'drink',
+            'categoryKey': 'food_drink',
+            'date': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+            'amount': 29000.0,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+          },
+          {
+            'id': 'exp_003',
+            'storeName': 'Ga ran KFC Nguyen Cuu',
+            'iconName': 'food',
+            'categoryKey': 'food_drink',
+            'date': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+            'amount': 125000.0,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+          },
+        ],
+
+        // my_vouchers
+        'my_vouchers': [
+          {
+            'id': 'mv_001',
+            'name': 'Giam 20K phi giao hang',
+            'code': 'FREESHIP20',
+            'description': 'Ap dung cho don tu 100K',
+            'expiryDate': Timestamp.fromDate(DateTime.parse('2026-04-30T23:59:59Z')),
+            'discountValue': 20000.0,
+            'isPercentage': false,
+            'minOrderValue': 100000.0,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          },
+          {
+            'id': 'mv_002',
+            'name': 'Giam 10% cho don hang',
+            'code': 'SAVE10',
+            'description': 'Giam toi da 30K, ap dung cho tat ca quan an',
+            'expiryDate': Timestamp.fromDate(DateTime.parse('2026-04-20T23:59:59Z')),
+            'discountValue': 10.0,
+            'isPercentage': true,
+            'minOrderValue': 150000.0,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+          },
+        ],
+
+        // cart
+        'cart': [
+          {
+            'id': 'cart_item_001',
+            'storeId': 'store_001',
+            'foodId': 'prod_001',
+            'name': 'Com tam suon bi cha',
+            'price': 45000.0,
+            'quantity': 2,
+            'imageUrl': 'https://example.com/comtam.jpg',
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          },
+          {
+            'id': 'cart_item_002',
+            'storeId': 'store_002',
+            'foodId': 'prod_004',
+            'name': 'Tra sua trach tang',
+            'price': 29000.0,
+            'quantity': 1,
+            'imageUrl': 'https://example.com/trasua.jpg',
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          },
+        ],
+      },
+
+      // User 2 - Khach hang nhieu hoat dong
+      {
+        'id': 'user_002',
+        'email': 'nguyenvana@yahoo.com',
+        'fullName': 'Nguyen Van A',
+        'phoneNumber': '0987654321',
+        'photoUrl': 'https://example.com/avatar/user002.jpg',
+        'createdAt': Timestamp.fromDate(DateTime.parse('2026-03-01T00:00:00Z')),
+        'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+
+        // addresses
+        'addresses': [
+          {
+            'id': 'addr_003',
+            'name': 'Nha rieng',
+            'address': '123 Duong Nguyen Trai, Quan 1, TP.HCM',
+            'lat': 10.7781,
+            'lng': 106.6935,
+            'isDefault': true,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-03-01T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-03-01T00:00:00Z')),
+            'deletedAt': null,
+          },
+          {
+            'id': 'addr_004',
+            'name': 'Cong ty',
+            'address': 'Tao Dan Tower, Quan 1, TP.HCM',
+            'lat': 10.7795,
+            'lng': 106.6991,
+            'isDefault': false,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-03-10T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-03-10T00:00:00Z')),
+            'deletedAt': null,
+          },
+          {
+            'id': 'addr_005',
+            'name': 'Nha ban',
+            'address': '456 Bui Vien, Quan 1, TP.HCM',
+            'lat': 10.7675,
+            'lng': 106.6890,
+            'isDefault': false,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-01T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-01T00:00:00Z')),
+            'deletedAt': null,
+          },
+        ],
+
+        // payment_methods
+        'payment_methods': [
+          {
+            'id': 'pm_003',
+            'type': 'card',
+            'isDefault': true,
+            'cardBrand': 'MasterCard',
+            'last4Digits': '5678',
+            'walletBrand': null,
+            'isLinked': true,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-03-01T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-03-01T00:00:00Z')),
+          },
+          {
+            'id': 'pm_004',
+            'type': 'wallet',
+            'isDefault': false,
+            'cardBrand': null,
+            'last4Digits': null,
+            'walletBrand': 'zalo',
+            'isLinked': true,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-03-15T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-03-15T00:00:00Z')),
+          },
+          {
+            'id': 'pm_005',
+            'type': 'cash',
+            'isDefault': false,
+            'cardBrand': null,
+            'last4Digits': null,
+            'walletBrand': null,
+            'isLinked': false,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-01T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-01T00:00:00Z')),
+          },
+        ],
+
+        // notifications
+        'notifications': [
+          {
+            'id': 'notif_004',
+            'type': 'order',
+            'title': 'Don hang da giao',
+            'body': 'Don hang cua ban da duoc giao thanh cong.',
+            'isRead': true,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          },
+          {
+            'id': 'notif_005',
+            'type': 'system',
+            'title': 'Tai khoan duoc xac minh',
+            'body': 'Tai khoan cua ban da duoc xac minh thanh cong.',
+            'isRead': true,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-03-02T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-03-02T00:00:00Z')),
+          },
+          {
+            'id': 'notif_006',
+            'type': 'reward',
+            'title': 'Ban duoc tang 50 diem',
+            'body': 'Cam on ban da mua hang, ban duoc tang 50 diem thuong.',
+            'isRead': false,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+          },
+          {
+            'id': 'notif_007',
+            'type': 'promotion',
+            'title': 'Ma khuyen mai moi',
+            'body': 'Ma FREESHIP50 dang cho ban, su dung ngay!',
+            'isRead': false,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+          },
+        ],
+
+        // search_history
+        'search_history': [
+          {
+            'id': 'sh_004',
+            'keyword': 'Bun bo Hue',
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+            'deletedAt': null,
+          },
+          {
+            'id': 'sh_005',
+            'keyword': 'Banh mi',
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+            'deletedAt': null,
+          },
+          {
+            'id': 'sh_006',
+            'keyword': 'Lau',
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+            'deletedAt': null,
+          },
+          {
+            'id': 'sh_007',
+            'keyword': 'Mon Han Quoc',
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-04T00:00:00Z')),
+            'deletedAt': null,
+          },
+        ],
+
+        // expenses
+        'expenses': [
+          {
+            'id': 'exp_004',
+            'storeName': 'Bun bo Hue Ba Le',
+            'iconName': 'food',
+            'categoryKey': 'food_drink',
+            'date': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+            'amount': 50000.0,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          },
+          {
+            'id': 'exp_005',
+            'storeName': 'Ga ran KFC Nguyen Cuu',
+            'iconName': 'food',
+            'categoryKey': 'food_drink',
+            'date': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+            'amount': 95000.0,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+          },
+          {
+            'id': 'exp_006',
+            'storeName': 'Com tam Phuc Loc Tho',
+            'iconName': 'food',
+            'categoryKey': 'food_drink',
+            'date': Timestamp.fromDate(DateTime.parse('2026-04-03T00:00:00Z')),
+            'amount': 45000.0,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-03T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-03T00:00:00Z')),
+          },
+          {
+            'id': 'exp_007',
+            'storeName': 'Tra sua Tocotoco',
+            'iconName': 'drink',
+            'categoryKey': 'food_drink',
+            'date': Timestamp.fromDate(DateTime.parse('2026-04-02T00:00:00Z')),
+            'amount': 35000.0,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-02T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-02T00:00:00Z')),
+          },
+        ],
+
+        // my_vouchers
+        'my_vouchers': [
+          {
+            'id': 'mv_003',
+            'name': 'Giam 50K cho don tu 200K',
+            'code': 'VIP50',
+            'description': 'Danh cho khach hang than thiet',
+            'expiryDate': Timestamp.fromDate(DateTime.parse('2026-05-31T23:59:59Z')),
+            'discountValue': 50000.0,
+            'isPercentage': false,
+            'minOrderValue': 200000.0,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-01T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-01T00:00:00Z')),
+          },
+          {
+            'id': 'mv_004',
+            'name': 'Freeship cho moi don',
+            'code': 'FREESHIP50',
+            'description': 'Mien phi van chuyen toi da 30K',
+            'expiryDate': Timestamp.fromDate(DateTime.parse('2026-04-15T23:59:59Z')),
+            'discountValue': 30000.0,
+            'isPercentage': false,
+            'minOrderValue': 50000.0,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+          },
+        ],
+
+        // cart
+        'cart': [
+          {
+            'id': 'cart_item_003',
+            'storeId': 'store_004',
+            'foodId': 'prod_012',
+            'name': 'Bun bo Hue lon',
+            'price': 50000.0,
+            'quantity': 1,
+            'imageUrl': 'https://example.com/bunbohue.jpg',
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          },
+          {
+            'id': 'cart_item_004',
+            'storeId': 'store_001',
+            'foodId': 'prod_003',
+            'name': 'Com tam ca ke',
+            'price': 55000.0,
+            'quantity': 1,
+            'imageUrl': 'https://example.com/comtam_cake.jpg',
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+          },
+          {
+            'id': 'cart_item_005',
+            'storeId': 'store_003',
+            'foodId': 'prod_011',
+            'name': 'Combo KFC 1 nguoi',
+            'price': 95000.0,
+            'quantity': 1,
+            'imageUrl': 'https://example.com/kfc_combo.jpg',
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+          },
+        ],
+      },
+
+      // User 3 - Khach hang moi tao
+      {
+        'id': 'user_003',
+        'email': 'newuser@example.com',
+        'fullName': 'Tran Thi B',
+        'phoneNumber': '0369258147',
+        'photoUrl': 'https://example.com/avatar/user003.jpg',
+        'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+        'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+
+        // addresses
+        'addresses': [
+          {
+            'id': 'addr_006',
+            'name': 'Nha rieng',
+            'address': '78 Le Lai, Quan Tan Binh, TP.HCM',
+            'lat': 10.7868,
+            'lng': 106.6573,
+            'isDefault': true,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+            'deletedAt': null,
+          },
+        ],
+
+        // payment_methods
+        'payment_methods': [
+          {
+            'id': 'pm_006',
+            'type': 'wallet',
+            'isDefault': true,
+            'cardBrand': null,
+            'last4Digits': null,
+            'walletBrand': 'vnpay',
+            'isLinked': true,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+          },
+        ],
+
+        // notifications
+        'notifications': [
+          {
+            'id': 'notif_008',
+            'type': 'system',
+            'title': 'Chao mung ban den voi FoodGo',
+            'body': 'Cam on ban da dang ky tai khoan FoodGo. Han bat dau!',
+            'isRead': false,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+          },
+          {
+            'id': 'notif_009',
+            'type': 'promotion',
+            'title': 'uu dai khach hang moi',
+            'body': 'Nhan ngay voucher giam 20K cho don hang dau tien cua ban.',
+            'isRead': false,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+          },
+        ],
+
+        // search_history
+        'search_history': [
+          {
+            'id': 'sh_008',
+            'keyword': 'Tra sua',
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+            'deletedAt': null,
+          },
+          {
+            'id': 'sh_009',
+            'keyword': 'Cafe',
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+            'deletedAt': null,
+          },
+        ],
+
+        // expenses
+        'expenses': [
+          {
+            'id': 'exp_008',
+            'storeName': 'Tra sua Tocotoco',
+            'iconName': 'drink',
+            'categoryKey': 'food_drink',
+            'date': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+            'amount': 35000.0,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+          },
+        ],
+
+        // my_vouchers
+        'my_vouchers': [
+          {
+            'id': 'mv_005',
+            'name': 'Giam 20K phi giao hang',
+            'code': 'WELCOME20',
+            'description': 'Danh cho khach hang moi, ap dung cho don tu 100K',
+            'expiryDate': Timestamp.fromDate(DateTime.parse('2026-04-30T23:59:59Z')),
+            'discountValue': 20000.0,
+            'isPercentage': false,
+            'minOrderValue': 100000.0,
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+          },
+        ],
+
+        // cart
+        'cart': [
+          {
+            'id': 'cart_item_006',
+            'storeId': 'store_002',
+            'foodId': 'prod_005',
+            'name': 'Tra sua matcha',
+            'price': 35000.0,
+            'quantity': 2,
+            'imageUrl': 'https://example.com/matcha.jpg',
+            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          },
+        ],
+      },
+    ];
+
+    // Cac sub-collection fields can xu ly rieng
+    const subCollectionKeys = [
+      'addresses',
+      'payment_methods',
+      'notifications',
+      'search_history',
+      'expenses',
+      'my_vouchers',
+      'cart',
+    ];
+
+    for (int i = 0; i < users.length; i++) {
+      final user = users[i];
+      final userId = user['id'] as String;
+
+      // Loc ra cac sub-collection data
+      final Map<String, dynamic> subCollectionsData = {};
+      for (final key in subCollectionKeys) {
+        if (user.containsKey(key) && user[key] != null) {
+          subCollectionsData[key] = user[key];
+        }
+      }
+
+      // Tao ban sao user data chi chua thong tin goc (khong co sub-collection fields)
+      final Map<String, dynamic> userBaseData = Map<String, dynamic>.from(user);
+      for (final key in subCollectionKeys) {
+        userBaseData.remove(key);
+      }
+
+      try {
+        // Buoc 1: Ghi document goc cua User
+        await _firestore
+            .collection('users')
+            .doc(userId)
+            .set(userBaseData, SetOptions(merge: true));
+        debugPrint('  [$i] OK - User goc: $userId');
+
+        // Buoc 2: Duyet va ghi tung Sub-collection
+        int subSuccessCount = 0;
+        int subFailCount = 0;
+
+        for (final entry in subCollectionsData.entries) {
+          final subCollName = entry.key;
+          final items = entry.value as List<dynamic>;
+
+          for (int j = 0; j < items.length; j++) {
+            final item = items[j] as Map<String, dynamic>;
+            final itemId = item['id'] as String;
+
+            try {
+              await _firestore
+                  .collection('users')
+                  .doc(userId)
+                  .collection(subCollName)
+                  .doc(itemId)
+                  .set(item, SetOptions(merge: true));
+              subSuccessCount++;
+            } catch (e) {
+              subFailCount++;
+              debugPrint('    [$i][$subCollName] LOI - $itemId: $e');
+            }
+          }
+        }
+
+        debugPrint(
+          '  [$i] $userId: ${subSuccessCount} sub-doc OK, ${subFailCount} sub-doc LOI',
+        );
+        if (subFailCount == 0) {
+          userSuccessCount++;
+        } else {
+          userFailCount++;
+        }
+      } catch (e) {
+        userFailCount++;
+        debugPrint('  [$i] LOI - $userId: $e');
+      }
+    }
+
+    debugPrint(
+      '--- users: $userSuccessCount user OK, $userFailCount user LOI ---',
+    );
+    return userFailCount == 0;
+  }
+
+  // ============================================================
+  // DU LIEU REVIEWS
+  // ============================================================
+
+  static List<Map<String, dynamic>> _buildReviews() => [
+    // Danh gia 1 - user_001 danh gia store_001
+    {
+      'id': 'rev_001',
+      'storeId': 'store_001',
+      'userId': 'user_001',
+      'userName': 'Khoi',
+      'userAvatarUrl': 'https://example.com/avatar/user001.jpg',
+      'starRating': 5,
+      'comment': 'Do an rat ngon, giao hang nhanh, dong goi ky luong.',
+      'imageUrls': [
+        'https://example.com/review/rev001_1.jpg',
+        'https://example.com/review/rev001_2.jpg',
+      ],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'deletedAt': null,
+    },
+
+    // Danh gia 2 - user_002 danh gia store_002
+    {
+      'id': 'rev_002',
+      'storeId': 'store_002',
+      'userId': 'user_002',
+      'userName': 'Nguyen Van A',
+      'userAvatarUrl': 'https://example.com/avatar/user002.jpg',
+      'starRating': 4,
+      'comment': 'Tra sua thom, nhan manh, uong rat ngon. Se quay lai.',
+      'imageUrls': [
+        'https://example.com/review/rev002_1.jpg',
+      ],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+      'deletedAt': null,
+    },
+
+    // Danh gia 3 - user_001 danh gia store_003
+    {
+      'id': 'rev_003',
+      'storeId': 'store_003',
+      'userId': 'user_001',
+      'userName': 'Khoi',
+      'userAvatarUrl': 'https://example.com/avatar/user001.jpg',
+      'starRating': 4,
+      'comment': 'Ga ran gion, beo ngay, duoc hang dung gio.',
+      'imageUrls': [],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+      'deletedAt': null,
+    },
+
+    // Danh gia 4 - user_003 danh gia store_004
+    {
+      'id': 'rev_004',
+      'storeId': 'store_004',
+      'userId': 'user_003',
+      'userName': 'Tran Thi B',
+      'userAvatarUrl': 'https://example.com/avatar/user003.jpg',
+      'starRating': 5,
+      'comment': 'Bun bo ngon chuan vi Hue, nuoc dung thoi, that tuyet.',
+      'imageUrls': [
+        'https://example.com/review/rev004_1.jpg',
+        'https://example.com/review/rev004_2.jpg',
+        'https://example.com/review/rev004_3.jpg',
+      ],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-04T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-04T00:00:00Z')),
+      'deletedAt': null,
+    },
+
+    // Danh gia 5 - user_002 danh gia store_001
+    {
+      'id': 'rev_005',
+      'storeId': 'store_001',
+      'userId': 'user_002',
+      'userName': 'Nguyen Van A',
+      'userAvatarUrl': 'https://example.com/avatar/user002.jpg',
+      'starRating': 3,
+      'comment': 'Do an binh thuong, thoi gian giao hang hon 1 tieng.',
+      'imageUrls': [
+        'https://example.com/review/rev005_1.jpg',
+      ],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-03T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-03T00:00:00Z')),
+      'deletedAt': null,
+    },
+
+    // Danh gia 6 - user_003 danh gia store_002
+    {
+      'id': 'rev_006',
+      'storeId': 'store_002',
+      'userId': 'user_003',
+      'userName': 'Tran Thi B',
+      'userAvatarUrl': 'https://example.com/avatar/user003.jpg',
+      'starRating': 4,
+      'comment': 'Topping da, duong nam vua phai, uong rat thich.',
+      'imageUrls': [],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-02T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-02T00:00:00Z')),
+      'deletedAt': null,
+    },
+
+    // Danh gia 7 - user_002 danh gia store_004
+    {
+      'id': 'rev_007',
+      'storeId': 'store_004',
+      'userId': 'user_002',
+      'userName': 'Nguyen Van A',
+      'userAvatarUrl': 'https://example.com/avatar/user002.jpg',
+      'starRating': 5,
+      'comment': 'Quan sach, than thien, bun bo ngon gia re.',
+      'imageUrls': [
+        'https://example.com/review/rev007_1.jpg',
+      ],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-01T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-01T00:00:00Z')),
+      'deletedAt': null,
+    },
+
+    // Danh gia 8 - user_001 danh gia store_004
+    {
+      'id': 'rev_008',
+      'storeId': 'store_004',
+      'userId': 'user_001',
+      'userName': 'Khoi',
+      'userAvatarUrl': 'https://example.com/avatar/user001.jpg',
+      'starRating': 4,
+      'comment': 'Hu tieu ngon, nuoc sup ngot thanh, nha hang sach se.',
+      'imageUrls': [
+        'https://example.com/review/rev008_1.jpg',
+        'https://example.com/review/rev008_2.jpg',
+      ],
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-03-31T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-03-31T00:00:00Z')),
+      'deletedAt': null,
+    },
+  ];
+
+  // ============================================================
+  // DU LIEU ORDERS
+  // ============================================================
+
+  static List<Map<String, dynamic>> _buildOrders() => [
+    // Don hang 1 - da hoan tat, user_001
+    {
+      'id': 'order_001',
+      'userId': 'user_001',
+      'storeId': 'store_001',
+      'storeName': 'Com tam Phuc Loc Tho',
+      'items': [
+        {
+          'foodId': 'prod_001',
+          'name': 'Com tam suon bi cha',
+          'price': 45000.0,
+          'quantity': 2,
+          'imageUrl': 'https://example.com/comtam.jpg',
         },
         {
-          'id': 'user_002',
-          'phone': '0912345678',
-          'fullName': 'Tran Thi B',
-          'avatarUrl':
-              'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
-          'loyaltyPoints': 1200,
-          'settings': {
-            'themeMode': 0,
-            'isPushEnabled': true,
-          },
-          'savedAddresses': [
-            {
-              'id': 'addr_003',
-              'label': 'Nhà',
-              'addressText': '78 Pasteur, Quan 1, TP.HCM',
-              'latitude': 10.7815,
-              'longitude': 106.6980,
-              'isDefault': true,
-            },
-          ],
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
+          'foodId': 'prod_002',
+          'name': 'Com tam ga xot',
+          'price': 50000.0,
+          'quantity': 1,
+          'imageUrl': 'https://example.com/comtam_ga.jpg',
         },
-      ];
+      ],
+      'totalAmount': 140000.0,
+      'deliveryFee': 15000.0,
+      'status': 'completed',
+      'deliveryAddress': 'Ky tuc xa UTC2, Quan 9, TP.HCM',
+      'paymentMethod': 'momo',
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'deletedAt': null,
+    },
+
+    // Don hang 2 - dang giao, user_002
+    {
+      'id': 'order_002',
+      'userId': 'user_002',
+      'storeId': 'store_002',
+      'storeName': 'Tra sua Tocotoco',
+      'items': [
+        {
+          'foodId': 'prod_004',
+          'name': 'Tra sua trach tang',
+          'price': 29000.0,
+          'quantity': 2,
+          'imageUrl': 'https://example.com/trasua.jpg',
+        },
+        {
+          'foodId': 'prod_005',
+          'name': 'Tra sua khoai mon',
+          'price': 33000.0,
+          'quantity': 1,
+          'imageUrl': 'https://example.com/trasua_khoai.jpg',
+        },
+      ],
+      'totalAmount': 91000.0,
+      'deliveryFee': 12000.0,
+      'status': 'delivering',
+      'deliveryAddress': '123 Duong Nguyen Trai, Quan 1, TP.HCM',
+      'paymentMethod': 'card',
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'deletedAt': null,
+    },
+
+    // Don hang 3 - cho xac nhan, user_003
+    {
+      'id': 'order_003',
+      'userId': 'user_003',
+      'storeId': 'store_004',
+      'storeName': 'Bun bo Hue Ba Le',
+      'items': [
+        {
+          'foodId': 'prod_012',
+          'name': 'Bun bo Hue lon',
+          'price': 50000.0,
+          'quantity': 1,
+          'imageUrl': 'https://example.com/bunbohue.jpg',
+        },
+        {
+          'foodId': 'prod_014',
+          'name': 'Bun bo Hue nho',
+          'price': 40000.0,
+          'quantity': 1,
+          'imageUrl': 'https://example.com/bunbohue_nho.jpg',
+        },
+      ],
+      'totalAmount': 90000.0,
+      'deliveryFee': 14000.0,
+      'status': 'pending',
+      'deliveryAddress': '78 Le Lai, Quan Tan Binh, TP.HCM',
+      'paymentMethod': 'cash',
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'deletedAt': null,
+    },
+
+    // Don hang 4 - da huy, user_001
+    {
+      'id': 'order_004',
+      'userId': 'user_001',
+      'storeId': 'store_003',
+      'storeName': 'Ga ran KFC Nguyen Cuu',
+      'items': [
+        {
+          'foodId': 'prod_011',
+          'name': 'Combo KFC 1 nguoi',
+          'price': 95000.0,
+          'quantity': 1,
+          'imageUrl': 'https://example.com/kfc_combo.jpg',
+        },
+      ],
+      'totalAmount': 95000.0,
+      'deliveryFee': 18000.0,
+      'status': 'cancelled',
+      'deliveryAddress': 'Ky tuc xa UTC2, Quan 9, TP.HCM',
+      'paymentMethod': 'zalo',
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+      'deletedAt': null,
+    },
+
+    // Don hang 5 - da hoan tat, user_002
+    {
+      'id': 'order_005',
+      'userId': 'user_002',
+      'storeId': 'store_003',
+      'storeName': 'Ga ran KFC Nguyen Cuu',
+      'items': [
+        {
+          'foodId': 'prod_009',
+          'name': 'Ga lap xoi truyen thong',
+          'price': 70000.0,
+          'quantity': 2,
+          'imageUrl': 'https://example.com/kfc_galap.jpg',
+        },
+        {
+          'foodId': 'prod_010',
+          'name': 'My ga pho mai',
+          'price': 55000.0,
+          'quantity': 1,
+          'imageUrl': 'https://example.com/kfc_myga.jpg',
+        },
+      ],
+      'totalAmount': 195000.0,
+      'deliveryFee': 18000.0,
+      'status': 'completed',
+      'deliveryAddress': '123 Duong Nguyen Trai, Quan 1, TP.HCM',
+      'paymentMethod': 'card',
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+      'deletedAt': null,
+    },
+
+    // Don hang 6 - da hoan tat, user_003
+    {
+      'id': 'order_006',
+      'userId': 'user_003',
+      'storeId': 'store_001',
+      'storeName': 'Com tam Phuc Loc Tho',
+      'items': [
+        {
+          'foodId': 'prod_003',
+          'name': 'Com tam ca ke',
+          'price': 55000.0,
+          'quantity': 1,
+          'imageUrl': 'https://example.com/comtam_cake.jpg',
+        },
+      ],
+      'totalAmount': 55000.0,
+      'deliveryFee': 15000.0,
+      'status': 'completed',
+      'deliveryAddress': '78 Le Lai, Quan Tan Binh, TP.HCM',
+      'paymentMethod': 'cash',
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-04T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-04T00:00:00Z')),
+      'deletedAt': null,
+    },
+
+    // Don hang 7 - cho xac nhan, user_001
+    {
+      'id': 'order_007',
+      'userId': 'user_001',
+      'storeId': 'store_002',
+      'storeName': 'Tra sua Tocotoco',
+      'items': [
+        {
+          'foodId': 'prod_006',
+          'name': 'Tra sua trai cay',
+          'price': 35000.0,
+          'quantity': 2,
+          'imageUrl': 'https://example.com/trasua_traitay.jpg',
+        },
+        {
+          'foodId': 'prod_007',
+          'name': 'Tra sua matcha',
+          'price': 32000.0,
+          'quantity': 1,
+          'imageUrl': 'https://example.com/trasua_matcha.jpg',
+        },
+      ],
+      'totalAmount': 102000.0,
+      'deliveryFee': 12000.0,
+      'status': 'pending',
+      'deliveryAddress': 'Ky tuc xa UTC2, Quan 9, TP.HCM',
+      'paymentMethod': 'momo',
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-08T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-08T00:00:00Z')),
+      'deletedAt': null,
+    },
+  ];
 
   static List<Map<String, dynamic>> _buildVouchers() => [
-        {
-          'id': 'voucher_001',
-          'storeId': null,
-          'name': 'Mien phi giao hang',
-          'code': 'FREESHIP',
-          'discountType': 1,
-          'discountValue': 0,
-          'minOrderValue': 50000,
-          'maxDiscount': 20000,
-          'expiryDate': Timestamp.fromDate(DateTime(2026, 12, 31)),
-          'usageLimit': 1000,
-          'usageCount': 0,
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-        {
-          'id': 'voucher_002',
-          'storeId': null,
-          'name': 'Giam 15%',
-          'code': 'SUMMER15',
-          'discountType': 2,
-          'discountValue': 15,
-          'minOrderValue': 100000,
-          'maxDiscount': 50000,
-          'expiryDate': Timestamp.fromDate(DateTime(2026, 8, 31)),
-          'usageLimit': 500,
-          'usageCount': 0,
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-        {
-          'id': 'voucher_003',
-          'storeId': null,
-          'name': 'Giam 25.000 VND',
-          'code': 'FOODGO25K',
-          'discountType': 2,
-          'discountValue': 25000,
-          'minOrderValue': 150000,
-          'maxDiscount': 25000,
-          'expiryDate': Timestamp.fromDate(DateTime(2026, 6, 30)),
-          'usageLimit': 200,
-          'usageCount': 0,
-          'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-          'deletedAt': null,
-        },
-      ];
+    {
+      'id': 'sys_voucher_001',
+      'title': 'Giam 20K cho don tu 100K',
+      'subtitle': 'Danh cho khach hang moi',
+      'pointsRequired': 200,
+      'imageUrl': 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&q=80',
+      'remaining': 100,
+      'terms': 'Ap dung cho tat ca quan an.',
+      'minOrderValue': 100000.0,
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+    {
+      'id': 'sys_voucher_002',
+      'title': 'Giam 50K cho don tu 200K',
+      'subtitle': 'Danh cho khach hang than thiet',
+      'pointsRequired': 500,
+      'imageUrl': 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400&q=80',
+      'remaining': 50,
+      'terms': 'Ap dung cho tat ca quan an.',
+      'minOrderValue': 200000.0,
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+    {
+      'id': 'sys_voucher_003',
+      'title': 'Freeship cho moi don',
+      'subtitle': 'Mien phi van chuyen khong gioi han',
+      'pointsRequired': 300,
+      'imageUrl': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&q=80',
+      'remaining': 200,
+      'terms': 'Ap dung cho tat ca quan an, toi da 30K.',
+      'minOrderValue': 50000.0,
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+    {
+      'id': 'sys_voucher_004',
+      'title': 'Giam 10% cho don tu 150K',
+      'subtitle': 'Khuyen mai nhan ngu',
+      'pointsRequired': 400,
+      'imageUrl': 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&q=80',
+      'remaining': 75,
+      'terms': 'Giam toi da 30K, ap dung cho tat ca quan an.',
+      'minOrderValue': 150000.0,
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+    {
+      'id': 'sys_voucher_005',
+      'title': 'Giam 100K cho don tu 500K',
+      'subtitle': 'Uu dai cho don hang lon',
+      'pointsRequired': 1000,
+      'imageUrl': 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400&q=80',
+      'remaining': 20,
+      'terms': 'Ap dung cho tat ca quan an.',
+      'minOrderValue': 500000.0,
+      'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    },
+  ];
 
   // ============================================================
   // CAC HÀM DEBUGGING
@@ -969,10 +1834,10 @@ class DataSeeder {
   static Future<bool> testSimpleWrite() async {
     debugPrint('=== Test write don gian ===');
     try {
-      await _firestore
-          .collection('_test')
-          .doc('_test_doc')
-          .set({'test': true, 'timestamp': DateTime.now().toIso8601String()});
+      await _firestore.collection('_test').doc('_test_doc').set({
+        'test': true,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
       debugPrint('Test write: THANH CONG');
       return true;
     } on FirebaseException catch (e) {
@@ -986,8 +1851,7 @@ class DataSeeder {
   }
 
   /// Doc 1 document de xac nhan no co ton tai hay khong.
-  static Future<void> checkDocument(
-      String collection, String docId) async {
+  static Future<void> checkDocument(String collection, String docId) async {
     try {
       final snap = await _firestore
           .collection(collection)
@@ -1003,7 +1867,7 @@ class DataSeeder {
     }
   }
 
-  /// Xoa toan bo du lieu seed (de reset).
+  /// Xoa toan bo du lieu seed (de reset), bao gom ca sub-collections cua users.
   static Future<void> clearAllSeededData() async {
     debugPrint('=== Xoa toan bo du lieu seed ===');
 
@@ -1012,10 +1876,10 @@ class DataSeeder {
       'stores',
       'products',
       'banners',
-      'users',
       'vouchers',
     ];
 
+    // Xoa cac collection thong thuong
     for (final coll in collections) {
       try {
         final snap = await _firestore.collection(coll).get();
@@ -1028,6 +1892,44 @@ class DataSeeder {
       } catch (e) {
         debugPrint('Loi khi xoa $coll: $e');
       }
+    }
+
+    // Xoa users va sub-collections cua users
+    try {
+      final userSnap = await _firestore.collection('users').get();
+      int userCount = 0;
+
+      for (final userDoc in userSnap.docs) {
+        // Xoa tat ca sub-collections cua user nay
+        final subCollNames = [
+          'addresses',
+          'payment_methods',
+          'notifications',
+          'search_history',
+          'expenses',
+          'my_vouchers',
+          'cart',
+        ];
+
+        for (final subCollName in subCollNames) {
+          try {
+            final subSnap = await userDoc.reference.collection(subCollName).get();
+            for (final subDoc in subSnap.docs) {
+              await subDoc.reference.delete();
+            }
+          } catch (_) {
+            // Neu sub-collection khong ton tai thi bo qua
+          }
+        }
+
+        // Xoa document goc cua user
+        await userDoc.reference.delete();
+        userCount++;
+      }
+
+      debugPrint('Da xoa $userCount users (va sub-collections) tu users');
+    } catch (e) {
+      debugPrint('Loi khi xoa users: $e');
     }
   }
 }
