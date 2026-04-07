@@ -34,7 +34,7 @@ class CheckoutCartItems extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              LanguageService.translate('checkout_your_order'),
+              context.t('checkout_your_order'),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -207,7 +207,7 @@ class _CartItemCard extends StatelessWidget {
                   ],
                   const SizedBox(height: 6),
                   Text(
-                    '${_formatPrice(item.unitPrice)} ${LanguageService.translate('unit_currency')}',
+                    '${_formatPrice(item.unitPrice)} ${context.t('unit_currency')}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -237,7 +237,7 @@ class _CartItemCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 2),
                         Text(
-                          LanguageService.translate('common_edit'),
+                          context.t('common_edit'),
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.primary,

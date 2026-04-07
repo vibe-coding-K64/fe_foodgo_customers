@@ -50,7 +50,7 @@ class SearchFilterBar extends StatelessWidget {
         children: [
           // Nut Gia: mo cua so loc gia.
           _FilterChipButton(
-            label: LanguageService.translate('search_filter_price'),
+            label: context.t('search_filter_price'),
             icon: Icons.tune,
             isSelected: minPrice != null || maxPrice != null,
             onTap: () => _showPriceFilterDialog(context),
@@ -58,7 +58,7 @@ class SearchFilterBar extends StatelessWidget {
           const SizedBox(width: 8),
           // Nut Danh gia: mo cua so loc danh gia.
           _FilterChipButton(
-            label: LanguageService.translate('search_filter_rating'),
+            label: context.t('search_filter_rating'),
             icon: Icons.star_outline,
             isSelected: minRating != null,
             onTap: () => _showRatingFilterDialog(context),
@@ -66,7 +66,7 @@ class SearchFilterBar extends StatelessWidget {
           const SizedBox(width: 8),
           // Nut Sap xep gia tang.
           _FilterChipButton(
-            label: LanguageService.translate('search_sort_price_asc'),
+            label: context.t('search_sort_price_asc'),
             icon: Icons.arrow_upward,
             isSelected: selectedSort == SearchSortType.priceAsc,
             onTap: () => onSortChanged?.call(SearchSortType.priceAsc),
@@ -74,7 +74,7 @@ class SearchFilterBar extends StatelessWidget {
           const SizedBox(width: 8),
           // Nut Sap xep gia giam.
           _FilterChipButton(
-            label: LanguageService.translate('search_sort_price_desc'),
+            label: context.t('search_sort_price_desc'),
             icon: Icons.arrow_downward,
             isSelected: selectedSort == SearchSortType.priceDesc,
             onTap: () => onSortChanged?.call(SearchSortType.priceDesc),
@@ -82,7 +82,7 @@ class SearchFilterBar extends StatelessWidget {
           const SizedBox(width: 8),
           // Nut Sap xep danh gia cao.
           _FilterChipButton(
-            label: LanguageService.translate('search_sort_rating'),
+            label: context.t('search_sort_rating'),
             icon: Icons.star,
             isSelected: selectedSort == SearchSortType.ratingDesc,
             onTap: () => onSortChanged?.call(SearchSortType.ratingDesc),
@@ -215,7 +215,7 @@ class _PriceFilterSheetState extends State<_PriceFilterSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            LanguageService.translate('search_filter_price'),
+            context.t('search_filter_price'),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -230,8 +230,8 @@ class _PriceFilterSheetState extends State<_PriceFilterSheet> {
                   keyboardType: TextInputType.number,
                   autofocus: true,
                   decoration: InputDecoration(
-                    labelText: LanguageService.translate('search_price_from'),
-                    hintText: LanguageService.translate('search_price_hint_min'),
+                    labelText: context.t('search_price_from'),
+                    hintText: context.t('search_price_hint_min'),
                     fillColor: AppColors.surfaceVariant,
                   ),
                 ),
@@ -245,8 +245,8 @@ class _PriceFilterSheetState extends State<_PriceFilterSheet> {
                   controller: _maxController,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    labelText: LanguageService.translate('search_price_to'),
-                    hintText: LanguageService.translate('search_price_hint_max'),
+                    labelText: context.t('search_price_to'),
+                    hintText: context.t('search_price_hint_max'),
                     fillColor: AppColors.surfaceVariant,
                   ),
                 ),
@@ -261,7 +261,7 @@ class _PriceFilterSheetState extends State<_PriceFilterSheet> {
                 debugPrint('Loc gia: tu ${_minController.text} den ${_maxController.text}');
                 Navigator.pop(context);
               },
-              child: Text(LanguageService.translate('common_apply')),
+              child: Text(context.t('common_apply')),
             ),
           ),
           const SizedBox(height: 8),
@@ -272,7 +272,7 @@ class _PriceFilterSheetState extends State<_PriceFilterSheet> {
                 _maxController.clear();
                 Navigator.pop(context);
               },
-              child: Text(LanguageService.translate('common_clear')),
+              child: Text(context.t('common_clear')),
             ),
           ),
         ],
@@ -309,7 +309,7 @@ class _RatingFilterSheetState extends State<_RatingFilterSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            LanguageService.translate('search_filter_rating'),
+            context.t('search_filter_rating'),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -332,7 +332,7 @@ class _RatingFilterSheetState extends State<_RatingFilterSheet> {
                   ),
                 ),
               ),
-              title: Text('${starCount}+ ${LanguageService.translate('unit_rating')}'),
+              title: Text('${starCount}+ ${context.t('unit_rating')}'),
               trailing: isSelected
                   ? Icon(Icons.check, color: AppColors.primary)
                   : null,
@@ -351,7 +351,7 @@ class _RatingFilterSheetState extends State<_RatingFilterSheet> {
                 debugPrint('Loc danh gia: $_selectedRating+');
                 Navigator.pop(context);
               },
-              child: Text(LanguageService.translate('common_apply')),
+              child: Text(context.t('common_apply')),
             ),
           ),
         ],

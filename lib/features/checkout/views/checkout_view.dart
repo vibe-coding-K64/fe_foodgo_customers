@@ -339,7 +339,7 @@ class _CheckoutViewState extends State<CheckoutView> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(LanguageService.translate('checkout_title')),
+        title: Text(context.t('checkout_title')),
         backgroundColor: AppColors.surface,
         elevation: 0,
         leading: IconButton(
@@ -362,7 +362,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                   // PHAN 1: Thong tin giao hang.
                   CheckoutDeliveryInfo(
                     address: _deliveryAddress,
-                    estimatedTime: '15-20 ${LanguageService.translate('unit_min')}',
+                    estimatedTime: '15-20 ${context.t('unit_min')}',
                     onChangeAddressTap: () async {
                       debugPrint('Checkout: Mo man hinh doi dia chi');
                       final selected = await Navigator.push<AddressModel>(
@@ -446,7 +446,7 @@ class _CheckoutViewState extends State<CheckoutView> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  LanguageService.translate('checkout_total_payment'),
+                  context.t('checkout_total_payment'),
                   style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondary,
@@ -454,7 +454,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${_formatPrice(_totalPayment)} ${LanguageService.translate('unit_currency')}',
+                  '${_formatPrice(_totalPayment)} ${context.t('unit_currency')}',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -474,7 +474,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                LanguageService.translate('checkout_order_btn'),
+                context.t('checkout_order_btn'),
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
@@ -514,7 +514,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                 children: [
                   Expanded(
                     child: Text(
-                      LanguageService.translate('checkout_select_payment_method'),
+                      context.t('checkout_select_payment_method'),
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
@@ -549,7 +549,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                     size: 24,
                   ),
                   title: Text(
-                    LanguageService.translate(method.name),
+                    context.t(method.name),
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
@@ -560,7 +560,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                       ? const Icon(Icons.check_circle, color: AppColors.primary, size: 22)
                       : Icon(Icons.radio_button_off, color: AppColors.textHint, size: 22),
                   onTap: () {
-                    debugPrint('Checkout: Chon phuong thuc thanh toan [${method.id}] - ${LanguageService.translate(method.name)}');
+                    debugPrint('Checkout: Chon phuong thuc thanh toan [${method.id}] - ${context.t(method.name)}');
                     setState(() {
                       _selectedPaymentMethod = method.id;
                     });
@@ -606,7 +606,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                   children: [
                     Expanded(
                       child: Text(
-                        LanguageService.translate('checkout_select_voucher'),
+                        context.t('checkout_select_voucher'),
                         style: const TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w600,
@@ -637,8 +637,8 @@ class _CheckoutViewState extends State<CheckoutView> {
                       labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                       unselectedLabelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
                       tabs: [
-                        Tab(text: LanguageService.translate('checkout_voucher_freeship')),
-                        Tab(text: LanguageService.translate('checkout_voucher_discount')),
+                        Tab(text: context.t('checkout_voucher_freeship')),
+                        Tab(text: context.t('checkout_voucher_discount')),
                       ],
                     ),
                   ],
@@ -654,13 +654,13 @@ class _CheckoutViewState extends State<CheckoutView> {
                       _buildVoucherList(
                         vouchers: _freeshipVouchers,
                         scrollController: scrollController,
-                        emptyLabel: LanguageService.translate('checkout_voucher_empty'),
+                        emptyLabel: context.t('checkout_voucher_empty'),
                       ),
                       // Tab 2: Ma giam gia.
                       _buildVoucherList(
                         vouchers: _discountVouchers,
                         scrollController: scrollController,
-                        emptyLabel: LanguageService.translate('checkout_voucher_empty'),
+                        emptyLabel: context.t('checkout_voucher_empty'),
                       ),
                     ],
                   ),
@@ -754,7 +754,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                     children: [
                       Expanded(
                         child: Text(
-                          LanguageService.translate('checkout_edit_item'),
+                          context.t('checkout_edit_item'),
                           style: const TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w600,
@@ -816,7 +816,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    '${_formatPrice(originalItem.unitPrice)} ${LanguageService.translate('unit_currency')}',
+                                    '${_formatPrice(originalItem.unitPrice)} ${context.t('unit_currency')}',
                                     style: const TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
@@ -831,7 +831,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                         const SizedBox(height: 20),
                         // Phan topping.
                         Text(
-                          LanguageService.translate('checkout_topping_options'),
+                          context.t('checkout_topping_options'),
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -879,7 +879,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                               ),
                               subtitle: option.price > 0
                                   ? Text(
-                                      '+ ${_formatPrice(option.price)} ${LanguageService.translate('unit_currency')}',
+                                      '+ ${_formatPrice(option.price)} ${context.t('unit_currency')}',
                                       style: const TextStyle(
                                         fontSize: 12,
                                         color: AppColors.textSecondary,
@@ -896,7 +896,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                         const SizedBox(height: 16),
                         // Phan ghi chu.
                         Text(
-                          LanguageService.translate('checkout_item_note'),
+                          context.t('checkout_item_note'),
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -909,7 +909,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                           maxLines: 2,
                           maxLength: 100,
                           decoration: InputDecoration(
-                            hintText: LanguageService.translate('checkout_note_hint'),
+                            hintText: context.t('checkout_note_hint'),
                             hintStyle: const TextStyle(
                               fontSize: 14,
                               color: AppColors.textHint,
@@ -943,14 +943,14 @@ class _CheckoutViewState extends State<CheckoutView> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                LanguageService.translate('checkout_temp_total'),
+                                context.t('checkout_temp_total'),
                                 style: const TextStyle(
                                   fontSize: 14,
                                   color: AppColors.textSecondary,
                                 ),
                               ),
                               Text(
-                                '${_formatPrice(_calcEditItemTotal(originalItem.unitPrice, originalItem.quantity, selectedToppings))} ${LanguageService.translate('unit_currency')}',
+                                '${_formatPrice(_calcEditItemTotal(originalItem.unitPrice, originalItem.quantity, selectedToppings))} ${context.t('unit_currency')}',
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -1008,7 +1008,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                         elevation: 0,
                       ),
                       child: Text(
-                        LanguageService.translate('common_update'),
+                        context.t('common_update'),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -1130,7 +1130,7 @@ class _VoucherCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Toi thieu ${_formatPrice(voucher.minOrder)} ${LanguageService.translate('unit_currency')}',
+                      'Toi thieu ${_formatPrice(voucher.minOrder)} ${context.t('unit_currency')}',
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -1169,8 +1169,8 @@ class _VoucherCard extends StatelessWidget {
                   ),
                   child: Text(
                     isSelected
-                        ? LanguageService.translate('common_applied')
-                        : LanguageService.translate('common_apply'),
+                        ? context.t('common_applied')
+                        : context.t('common_apply'),
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,

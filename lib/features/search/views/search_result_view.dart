@@ -285,7 +285,7 @@ class _SearchResultViewState extends State<SearchResultView> {
           ),
           const SizedBox(height: 12),
           Text(
-            LanguageService.translate('search_no_results'),
+            context.t('search_no_results'),
             style: TextStyle(
               fontSize: 15,
               color: Colors.grey.shade600,
@@ -293,7 +293,7 @@ class _SearchResultViewState extends State<SearchResultView> {
           ),
           const SizedBox(height: 4),
           Text(
-            LanguageService.translate('search_try_different'),
+            context.t('search_try_different'),
             style: TextStyle(
               fontSize: 13,
               color: Colors.grey.shade500,

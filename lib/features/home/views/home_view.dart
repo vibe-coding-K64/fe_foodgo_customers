@@ -77,7 +77,7 @@ class HomeView extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.only(top: 24),
                   child: HomeSuggestionSection(
-                    title: LanguageService.translate('home_near_you'),
+                    title: context.t('home_near_you'),
                     storesStream: HomeService.getNearbyStoresStream(),
                     onSeeAllTap: () {
                       debugPrint('HomeView: Nguoi dung bam xem tat ca quan');
@@ -109,7 +109,7 @@ class HomeView extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              LanguageService.translate('home_featured_foods'),
+                              context.t('home_featured_foods'),
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -121,7 +121,7 @@ class HomeView extends StatelessWidget {
                                     'HomeView: Nguoi dung bam xem tat ca mon noi bat');
                               },
                               child: Text(
-                                LanguageService.translate('common_see_all'),
+                                context.t('common_see_all'),
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: AppColors.primary,
@@ -148,7 +148,7 @@ class HomeView extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    LanguageService.translate('home_popular_stores'),
+                    context.t('home_popular_stores'),
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,

@@ -69,10 +69,10 @@ class _LoginViewState extends State<LoginView> {
 
   /// Xu ly bam nut Dang nhap Google.
   void _onGoogleLoginPressed() {
-    debugPrint('LoginView: Nguoi dung bam Dang nhap Google');
+      debugPrint('LoginView: Nguoi dung bam Dang nhap Google');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(LanguageService.translate('auth_login_google')),
+        content: Text(context.t('auth_login_google')),
         backgroundColor: AppColors.primary,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 1),
@@ -82,10 +82,10 @@ class _LoginViewState extends State<LoginView> {
 
   /// Xu ly bam nut Dang nhap Facebook.
   void _onFacebookLoginPressed() {
-    debugPrint('LoginView: Nguoi dung bam Dang nhap Facebook');
+      debugPrint('LoginView: Nguoi dung bam Dang nhap Facebook');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(LanguageService.translate('auth_login_facebook')),
+        content: Text(context.t('auth_login_facebook')),
         backgroundColor: AppColors.primary,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 1),
@@ -134,7 +134,7 @@ class _LoginViewState extends State<LoginView> {
                       padding: const EdgeInsets.symmetric(vertical: 4),
                     ),
                     child: Text(
-                      LanguageService.translate('auth_forgot_password'),
+                      context.t('auth_forgot_password_link'),
                       style: const TextStyle(
                         fontSize: 14,
                         color: AppColors.primary,
@@ -185,7 +185,7 @@ class _LoginViewState extends State<LoginView> {
         ),
         const SizedBox(height: 20),
         Text(
-          LanguageService.translate('auth_welcome_title'),
+          context.t('auth_welcome_title'),
           style: const TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.bold,
@@ -195,7 +195,7 @@ class _LoginViewState extends State<LoginView> {
         ),
         const SizedBox(height: 8),
         Text(
-          LanguageService.translate('auth_login_subtitle'),
+          context.t('auth_login_subtitle'),
           style: const TextStyle(
             fontSize: 15,
             color: AppColors.textSecondary,
@@ -213,7 +213,7 @@ class _LoginViewState extends State<LoginView> {
       keyboardType: TextInputType.emailAddress,
       textInputAction: TextInputAction.next,
       decoration: InputDecoration(
-        labelText: LanguageService.translate('auth_phone_email_hint'),
+        labelText: context.t('auth_phone_email_hint'),
         labelStyle: const TextStyle(
           fontSize: 14,
           color: AppColors.textSecondary,
@@ -249,7 +249,7 @@ class _LoginViewState extends State<LoginView> {
       ),
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
-          return LanguageService.translate('auth_error_empty_field');
+          return context.t('auth_error_empty_field');
         }
         return null;
       },
@@ -264,7 +264,7 @@ class _LoginViewState extends State<LoginView> {
       textInputAction: TextInputAction.done,
       onFieldSubmitted: (_) => _onLoginPressed(),
       decoration: InputDecoration(
-        labelText: LanguageService.translate('auth_password'),
+        labelText: context.t('auth_password_label'),
         labelStyle: const TextStyle(
           fontSize: 14,
           color: AppColors.textSecondary,
@@ -313,10 +313,10 @@ class _LoginViewState extends State<LoginView> {
       ),
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
-          return LanguageService.translate('auth_error_empty_field');
+          return context.t('auth_error_empty_field');
         }
         if (value.length < 6) {
-          return LanguageService.translate('auth_error_password_short');
+          return context.t('auth_error_password_short');
         }
         return null;
       },
@@ -338,7 +338,7 @@ class _LoginViewState extends State<LoginView> {
           elevation: 0,
         ),
         child: Text(
-          LanguageService.translate('auth_login'),
+          context.t('auth_login_btn'),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -356,7 +356,7 @@ class _LoginViewState extends State<LoginView> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            LanguageService.translate('auth_or'),
+            context.t('auth_or_label'),
             style: const TextStyle(
               fontSize: 14,
               color: AppColors.textSecondary,
@@ -385,7 +385,7 @@ class _LoginViewState extends State<LoginView> {
             ),
             icon: const Icon(Icons.g_mobiledata, size: 24),
             label: Text(
-              LanguageService.translate('auth_google'),
+              context.t('auth_google_label'),
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -407,7 +407,7 @@ class _LoginViewState extends State<LoginView> {
             ),
             icon: const Icon(Icons.facebook, size: 22, color: Colors.blue),
             label: Text(
-              LanguageService.translate('auth_facebook'),
+              context.t('auth_facebook_label'),
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -425,7 +425,7 @@ class _LoginViewState extends State<LoginView> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          LanguageService.translate('auth_dont_have_account'),
+          context.t('auth_dont_have_account'),
           style: const TextStyle(
             fontSize: 14,
             color: AppColors.textSecondary,
@@ -435,7 +435,7 @@ class _LoginViewState extends State<LoginView> {
         GestureDetector(
           onTap: _onRegisterTap,
           child: Text(
-            LanguageService.translate('auth_sign_up_now'),
+            context.t('auth_sign_up_now'),
             style: const TextStyle(
               fontSize: 14,
               color: AppColors.primary,

@@ -140,7 +140,7 @@ class CartItemWidget extends StatelessWidget {
                   ],
                   const SizedBox(height: 6),
                   Text(
-                    '${_formatPrice(item.unitPrice)} ${LanguageService.translate('unit_currency')}',
+                    '${_formatPrice(item.unitPrice)} ${context.t('unit_currency')}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,

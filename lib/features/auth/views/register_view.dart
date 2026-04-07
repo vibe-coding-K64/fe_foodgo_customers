@@ -87,7 +87,7 @@ class _RegisterViewState extends State<RegisterView> {
           },
         ),
         title: Text(
-          LanguageService.translate('auth_register'),
+          context.t('auth_register_btn'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -107,7 +107,7 @@ class _RegisterViewState extends State<RegisterView> {
                 const SizedBox(height: 24),
                 // Tieu de man hinh.
                 Text(
-                  LanguageService.translate('auth_create_account'),
+                  context.t('auth_create_account_title'),
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -117,7 +117,7 @@ class _RegisterViewState extends State<RegisterView> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  LanguageService.translate('auth_register_subtitle'),
+                  context.t('auth_register_subtitle'),
                   style: const TextStyle(
                     fontSize: 15,
                     color: AppColors.textSecondary,
@@ -159,7 +159,7 @@ class _RegisterViewState extends State<RegisterView> {
       textInputAction: TextInputAction.next,
       textCapitalization: TextCapitalization.words,
       decoration: InputDecoration(
-        labelText: LanguageService.translate('auth_full_name'),
+        labelText: context.t('auth_full_name_label'),
         labelStyle: const TextStyle(
           fontSize: 14,
           color: AppColors.textSecondary,
@@ -195,10 +195,10 @@ class _RegisterViewState extends State<RegisterView> {
       ),
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
-          return LanguageService.translate('auth_error_empty_field');
+          return context.t('auth_error_empty_field');
         }
         if (value.trim().length < 2) {
-          return LanguageService.translate('auth_error_name_short');
+          return context.t('auth_error_name_short');
         }
         return null;
       },
@@ -212,7 +212,7 @@ class _RegisterViewState extends State<RegisterView> {
       keyboardType: TextInputType.phone,
       textInputAction: TextInputAction.next,
       decoration: InputDecoration(
-        labelText: LanguageService.translate('auth_phone_number'),
+        labelText: context.t('auth_phone_number_label'),
         labelStyle: const TextStyle(
           fontSize: 14,
           color: AppColors.textSecondary,
@@ -248,11 +248,11 @@ class _RegisterViewState extends State<RegisterView> {
       ),
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
-          return LanguageService.translate('auth_error_empty_field');
+          return context.t('auth_error_empty_field');
         }
         final phoneRegex = RegExp(r'^[0-9]{9,11}$');
         if (!phoneRegex.hasMatch(value.trim())) {
-          return LanguageService.translate('auth_error_invalid_phone');
+          return context.t('auth_error_invalid_phone');
         }
         return null;
       },
@@ -266,7 +266,7 @@ class _RegisterViewState extends State<RegisterView> {
       obscureText: _obscurePassword,
       textInputAction: TextInputAction.next,
       decoration: InputDecoration(
-        labelText: LanguageService.translate('auth_password'),
+        labelText: context.t('auth_password_label'),
         labelStyle: const TextStyle(
           fontSize: 14,
           color: AppColors.textSecondary,
@@ -315,10 +315,10 @@ class _RegisterViewState extends State<RegisterView> {
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return LanguageService.translate('auth_error_empty_field');
+          return context.t('auth_error_empty_field');
         }
         if (value.length < 6) {
-          return LanguageService.translate('auth_error_password_short');
+          return context.t('auth_error_password_short');
         }
         return null;
       },
@@ -333,7 +333,7 @@ class _RegisterViewState extends State<RegisterView> {
       textInputAction: TextInputAction.done,
       onFieldSubmitted: (_) => _onRegisterPressed(),
       decoration: InputDecoration(
-        labelText: LanguageService.translate('auth_confirm_password'),
+        labelText: context.t('auth_confirm_password_label'),
         labelStyle: const TextStyle(
           fontSize: 14,
           color: AppColors.textSecondary,
@@ -382,10 +382,10 @@ class _RegisterViewState extends State<RegisterView> {
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return LanguageService.translate('auth_error_empty_field');
+          return context.t('auth_error_empty_field');
         }
         if (value != _passwordController.text) {
-          return LanguageService.translate('auth_error_password_mismatch');
+          return context.t('auth_error_password_mismatch');
         }
         return null;
       },
@@ -407,7 +407,7 @@ class _RegisterViewState extends State<RegisterView> {
           elevation: 0,
         ),
         child: Text(
-          LanguageService.translate('auth_register'),
+          context.t('auth_register_btn'),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -423,7 +423,7 @@ class _RegisterViewState extends State<RegisterView> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          LanguageService.translate('auth_already_have_account'),
+          context.t('auth_already_have_account'),
           style: const TextStyle(
             fontSize: 14,
             color: AppColors.textSecondary,
@@ -436,7 +436,7 @@ class _RegisterViewState extends State<RegisterView> {
             Navigator.pop(context);
           },
           child: Text(
-            LanguageService.translate('auth_sign_in_now'),
+            context.t('auth_sign_in_now'),
             style: const TextStyle(
               fontSize: 14,
               color: AppColors.primary,
