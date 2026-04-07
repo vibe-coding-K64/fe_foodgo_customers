@@ -89,7 +89,7 @@ class _RestaurantReviewsViewState extends State<RestaurantReviewsView> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          LanguageService.translate('review_title'),
+          context.t('review_title'),
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
@@ -186,7 +186,7 @@ class _ReviewOverviewSection extends StatelessWidget {
                     const Icon(Icons.star, color: Colors.amber, size: 20),
                     const SizedBox(width: 4),
                     Text(
-                      LanguageService.translate('review_star_label'),
+                      context.t('review_star_label'),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -195,7 +195,7 @@ class _ReviewOverviewSection extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${LanguageService.translate('review_total_count').replaceFirst('\$1', distribution.total.toString())}',
+                  '${context.t('review_total_count').replaceFirst('\$1', distribution.total.toString())}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppColors.textHint,
                   ),
@@ -395,7 +395,7 @@ class _ReviewFilterBar extends StatelessWidget {
 
             // Nut loc theo binh luan.
             _FilterChipButton(
-              label: LanguageService.translate('filter_with_comment'),
+              label: context.t('filter_with_comment'),
               icon: Icons.comment_outlined,
               isSelected: filterWithComment,
               onTap: () => onCommentFilterChanged(!filterWithComment),
@@ -405,7 +405,7 @@ class _ReviewFilterBar extends StatelessWidget {
 
             // Nut loc theo hinh anh.
             _FilterChipButton(
-              label: LanguageService.translate('filter_with_image'),
+              label: context.t('filter_with_image'),
               icon: Icons.image_outlined,
               isSelected: filterWithImage,
               onTap: () => onImageFilterChanged(!filterWithImage),
@@ -500,7 +500,7 @@ class _ReviewListSection extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(
-            LanguageService.translate('review_total_count').replaceFirst('\$1', totalReviews.toString()),
+            context.t('review_total_count').replaceFirst('\$1', totalReviews.toString()),
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
@@ -535,7 +535,7 @@ class _ReviewItemWidget extends StatelessWidget {
 
   const _ReviewItemWidget({required this.review});
 
-  String _formatDate(DateTime date) {
+  String _formatDate(BuildContext context, DateTime date) {
     final day = date.day.toString().padLeft(2, '0');
     final month = date.month.toString().padLeft(2, '0');
     final year = date.year;
@@ -543,7 +543,7 @@ class _ReviewItemWidget extends StatelessWidget {
     final minute = date.minute.toString().padLeft(2, '0');
     final timePart = '$hour:$minute';
     final datePart = '$day/$month/$year';
-    final template = LanguageService.translate('review_time_format');
+    final template = context.t('review_time_format');
     return template.replaceFirst('\$1', timePart).replaceFirst('\$2', datePart);
   }
 
@@ -587,7 +587,7 @@ class _ReviewItemWidget extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      _formatDate(review.createdAt),
+                      _formatDate(context, review.createdAt),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppColors.textHint,
                         fontSize: 11,
@@ -621,7 +621,7 @@ class _ReviewItemWidget extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(left: 50),
               child: Text(
-                LanguageService.translate('review_no_content'),
+                context.t('review_no_content'),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: AppColors.textHint,
                   fontStyle: FontStyle.italic,
@@ -714,7 +714,7 @@ class _EmptyReviewsWidget extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            LanguageService.translate('empty_reviews'),
+            context.t('empty_reviews'),
             style: theme.textTheme.titleMedium?.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -753,7 +753,7 @@ class _StarFilterBottomSheet extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
             child: Text(
-              LanguageService.translate('filter_by_star'),
+              context.t('filter_by_star'),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
@@ -776,8 +776,8 @@ class _StarFilterBottomSheet extends StatelessWidget {
                     ),
               title: Text(
                 star == null
-                    ? LanguageService.translate('filter_all')
-                    : '${star} ${LanguageService.translate('review_star_label')}',
+                    ? context.t('filter_all')
+                    : '${star} ${context.t('review_star_label')}',
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: AppColors.textPrimary,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,

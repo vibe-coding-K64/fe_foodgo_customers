@@ -85,7 +85,7 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '${LanguageService.translate('success_add_to_cart')} ${product.name}',
+          '${context.t('success_add_to_cart')} ${product.name}',
         ),
         backgroundColor: AppColors.primary,
         duration: const Duration(seconds: 1),
@@ -106,7 +106,7 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
       'seafood': 'category_seafood',
     };
     final key = keyMap[category.id] ?? category.name;
-    return LanguageService.translate(key);
+    return context.t(key);
   }
 
   @override
@@ -247,7 +247,7 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
                 return SliverFillRemaining(
                   child: Center(
                     child:
-                        Text(LanguageService.translate('error_load_products')),
+                        Text(context.t('error_load_products')),
                   ),
                 );
               }
@@ -256,7 +256,7 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
                 return SliverFillRemaining(
                   child: Center(
                     child: Text(
-                      LanguageService.translate('empty_products'),
+                      context.t('empty_products'),
                       style: TextStyle(color: AppColors.textSecondary),
                     ),
                   ),
@@ -366,7 +366,7 @@ class _StoreInfoSection extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                '${LanguageService.translate('restaurant_distance')} $distance ${LanguageService.translate('unit_km')}',
+                '${context.t('restaurant_distance')} $distance ${context.t('unit_km')}',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -379,7 +379,7 @@ class _StoreInfoSection extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                '${LanguageService.translate('restaurant_delivery_time')} ${store.deliveryTime}',
+                '${context.t('restaurant_delivery_time')} ${store.deliveryTime}',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -399,7 +399,7 @@ class _StoreInfoSection extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                '${LanguageService.translate('restaurant_delivery_fee')}: ${_formatPrice(store.deliveryFee)}',
+                '${context.t('restaurant_delivery_fee')}: ${_formatPrice(store.deliveryFee)}',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -440,7 +440,7 @@ class _StoreInfoSection extends StatelessWidget {
                   const SizedBox(width: 8),
                   // Review count.
                   Text(
-                    '${_formatReviewCount(store.reviewCount)} ${LanguageService.translate('restaurant_reviews_count')}',
+                    '${_formatReviewCount(store.reviewCount)} ${context.t('restaurant_reviews_count')}',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -473,7 +473,7 @@ class _StoreInfoSection extends StatelessWidget {
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]}.',
         );
-    return '$formatted VND';
+    return '$formatted ${LanguageService.translate('unit_currency')}';
   }
 
   String _formatReviewCount(int count) {
@@ -642,7 +642,7 @@ class _FoodItemTile extends StatelessWidget {
                       ),
                       alignment: Alignment.center,
                       child: Text(
-                        LanguageService.translate('product_out_of_stock'),
+                        context.t('product_out_of_stock'),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 11,
@@ -732,6 +732,6 @@ class _FoodItemTile extends StatelessWidget {
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]}.',
         );
-    return '$formatted VND';
+    return '$formatted ${LanguageService.translate('unit_currency')}';
   }
 }

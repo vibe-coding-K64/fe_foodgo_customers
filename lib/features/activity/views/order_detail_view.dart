@@ -132,7 +132,7 @@ class OrderDetailView extends StatelessWidget {
         foregroundColor: Colors.white,
         elevation: 0,
         title: Text(
-          LanguageService.translate('order_detail_title'),
+          context.t('order_detail_title'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -148,16 +148,16 @@ class OrderDetailView extends StatelessWidget {
             _buildOrderIdSection(context),
             const SizedBox(height: 12),
             // Phan co dinh: dia chi (Tu -> Den).
-            _buildAddressSection(),
+            _buildAddressSection(context),
             const SizedBox(height: 12),
             // Phan co dinh: danh sach mon.
             _buildProductListSection(),
             const SizedBox(height: 12),
             // Phan co dinh: chi tiet thanh toan.
-            _buildPaymentDetailSection(),
+            _buildPaymentDetailSection(context),
             const SizedBox(height: 12),
             // Phan co dinh: phuong thuc thanh toan.
-            _buildPaymentMethodSection(),
+            _buildPaymentMethodSection(context),
             const SizedBox(height: 12),
             // Phan dong: nut Tro giup.
             _buildHelpSection(context),
@@ -204,8 +204,8 @@ class OrderDetailView extends StatelessWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    '${LanguageService.translate('order_id')}: #${order.id} '
-                    '${LanguageService.translate('order_copy')}',
+                    '${context.t('order_id')}: #${order.id} '
+                    '${context.t('order_copy')}',
                   ),
                   backgroundColor: AppColors.primary,
                   behavior: SnackBarBehavior.floating,
@@ -214,7 +214,7 @@ class OrderDetailView extends StatelessWidget {
               );
             },
             icon: const Icon(Icons.copy, size: 16),
-            label: Text(LanguageService.translate('order_copy')),
+            label: Text(context.t('order_copy')),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.primary,
               side: const BorderSide(color: AppColors.primary),
@@ -229,7 +229,7 @@ class OrderDetailView extends StatelessWidget {
     );
   }
 
-  Widget _buildAddressSection() {
+  Widget _buildAddressSection(BuildContext ctx) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -457,7 +457,7 @@ class OrderDetailView extends StatelessWidget {
     );
   }
 
-  Widget _buildPaymentDetailSection() {
+  Widget _buildPaymentDetailSection(BuildContext ctx) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -549,7 +549,7 @@ class OrderDetailView extends StatelessWidget {
     );
   }
 
-  Widget _buildPaymentMethodSection() {
+  Widget _buildPaymentMethodSection(BuildContext ctx) {
     String methodText;
     IconData methodIcon;
 
@@ -621,7 +621,7 @@ class OrderDetailView extends StatelessWidget {
           );
         },
         icon: const Icon(Icons.support_agent_outlined, size: 20),
-        label: Text(LanguageService.translate('order_need_help')),
+        label: Text(context.t('order_need_help')),
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.textSecondary,
           side: const BorderSide(color: AppColors.divider),
@@ -670,7 +670,7 @@ class OrderDetailView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                LanguageService.translate('order_driver_info'),
+                context.t('order_driver_info'),
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -768,7 +768,7 @@ class OrderDetailView extends StatelessWidget {
                         );
                       },
                       icon: const Icon(Icons.map_outlined, size: 18),
-                      label: Text(LanguageService.translate('order_open_map')),
+                      label: Text(context.t('order_open_map')),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.primary,
                         side: const BorderSide(color: AppColors.primary),
@@ -800,7 +800,7 @@ class OrderDetailView extends StatelessWidget {
                         );
                       },
                       icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                      label: Text(LanguageService.translate('order_chat_driver')),
+                      label: Text(context.t('order_chat_driver')),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -835,7 +835,7 @@ class OrderDetailView extends StatelessWidget {
               ),
             ),
             child: Text(
-              LanguageService.translate('order_cancel_order'),
+              context.t('order_cancel_order'),
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -908,7 +908,7 @@ class OrderDetailView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                LanguageService.translate('order_rating_title'),
+                context.t('order_rating_title'),
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -924,7 +924,7 @@ class OrderDetailView extends StatelessWidget {
                     debugPrint('OrderDetailView: Nguoi dung bam Danh gia mon an');
                   },
                   icon: const Icon(Icons.restaurant_outlined, size: 18),
-                  label: Text(LanguageService.translate('order_rate_food')),
+                  label: Text(context.t('order_rate_food')),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: AppColors.primary),
@@ -945,7 +945,7 @@ class OrderDetailView extends StatelessWidget {
                       debugPrint('OrderDetailView: Nguoi dung bam Danh gia tai xe');
                     },
                     icon: const Icon(Icons.directions_car_outlined, size: 18),
-                    label: Text(LanguageService.translate('order_rate_driver')),
+                    label: Text(context.t('order_rate_driver')),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.secondary,
                       foregroundColor: Colors.white,
@@ -972,7 +972,7 @@ class OrderDetailView extends StatelessWidget {
                     );
                   },
                   icon: const Icon(Icons.replay_outlined, size: 18),
-                  label: Text(LanguageService.translate('order_reorder_btn')),
+                  label: Text(context.t('order_reorder_btn')),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -1011,7 +1011,7 @@ class OrderDetailView extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            LanguageService.translate('order_cancelled_title'),
+            context.t('order_cancelled_title'),
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -1021,7 +1021,7 @@ class OrderDetailView extends StatelessWidget {
           if (order.cancelReason != null && order.cancelReason!.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
-              '${LanguageService.translate('order_cancel_reason')}: ${order.cancelReason}',
+              '${context.t('order_cancel_reason')}: ${order.cancelReason}',
               style: TextStyle(
                 fontSize: 13,
                 color: AppColors.textSecondary,
@@ -1044,7 +1044,7 @@ class OrderDetailView extends StatelessWidget {
                 );
               },
               icon: const Icon(Icons.replay_outlined, size: 18),
-              label: Text(LanguageService.translate('order_reorder_btn')),
+              label: Text(context.t('order_reorder_btn')),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -1085,7 +1085,7 @@ class OrderDetailView extends StatelessWidget {
             debugPrint('OrderDetailView: Nguoi dung bam Huy don [${order.id}]');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(LanguageService.translate('order_cancel_order')),
+                content: Text(context.t('order_cancel_order')),
                 backgroundColor: AppColors.error,
                 behavior: SnackBarBehavior.floating,
               ),
@@ -1101,7 +1101,7 @@ class OrderDetailView extends StatelessWidget {
             elevation: 0,
           ),
           child: Text(
-            LanguageService.translate('order_cancel_order'),
+            context.t('order_cancel_order'),
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,

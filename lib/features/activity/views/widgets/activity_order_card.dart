@@ -179,7 +179,7 @@ class ActivityOrderCard extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      LanguageService.translate('activity_btn_detail'),
+                      context.t('activity_btn_detail'),
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,

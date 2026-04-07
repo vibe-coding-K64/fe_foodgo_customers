@@ -239,7 +239,7 @@ class _DriverChatViewState extends State<DriverChatView> {
           onPressed: () {
             debugPrint('DriverChatView: Nguoi dung bam goi dien cho tai xe [${widget.chat.driverPhone}]');
           },
-          tooltip: LanguageService.translate('driver_chat_call_btn'),
+          tooltip: context.t('driver_chat_call_btn'),
         ),
       ],
     );
@@ -253,7 +253,7 @@ class _DriverChatViewState extends State<DriverChatView> {
     if (_messages.isEmpty) {
       return Center(
         child: Text(
-          LanguageService.translate('driver_chat_input_hint'),
+          context.t('driver_chat_input_hint'),
           style: TextStyle(
             fontSize: 14,
             color: AppColors.textHint,
@@ -291,9 +291,9 @@ class _DriverChatViewState extends State<DriverChatView> {
 
   Widget _buildQuickReplyBar() {
     final quickReplies = [
-      LanguageService.translate('quick_reply_coming_down'),
-      LanguageService.translate('quick_reply_where_are_you'),
-      LanguageService.translate('quick_reply_call_when_arrive'),
+      context.t('quick_reply_coming_down'),
+      context.t('quick_reply_where_are_you'),
+      context.t('quick_reply_call_when_arrive'),
     ];
 
     return Container(
@@ -399,7 +399,7 @@ class _DriverChatViewState extends State<DriverChatView> {
                   color: AppColors.textPrimary,
                 ),
                 decoration: InputDecoration(
-                  hintText: LanguageService.translate('driver_chat_input_hint'),
+                  hintText: context.t('driver_chat_input_hint'),
                   hintStyle: TextStyle(
                     fontSize: 15,
                     color: AppColors.textHint,
@@ -468,14 +468,14 @@ class _DriverChatViewState extends State<DriverChatView> {
                     ),
                   ),
                   title: Text(
-                    LanguageService.translate('order_delivery_address'),
+                    context.t('order_delivery_address'),
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   subtitle: Text(
-                    LanguageService.translate('driver_chat_location_sent'),
+                    context.t('driver_chat_location_sent'),
                     style: TextStyle(
                       fontSize: 13,
                       color: AppColors.textSecondary,
@@ -486,7 +486,7 @@ class _DriverChatViewState extends State<DriverChatView> {
                     Navigator.pop(context);
                     final locationMsg = ChatMessageModel(
                       id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
-                      content: LanguageService.translate('driver_chat_location_sent'),
+                      content: context.t('driver_chat_location_sent'),
                       timestamp: DateTime.now(),
                       sender: ChatSender.user,
                       type: ChatMessageType.location,
@@ -512,15 +512,15 @@ class _DriverChatViewState extends State<DriverChatView> {
                       color: AppColors.primary,
                     ),
                   ),
-                  title: const Text(
-                    'Gui hinh anh',
+                  title: Text(
+                    LanguageService.translate('driver_chat_send_image'),
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   subtitle: Text(
-                    LanguageService.translate('driver_chat_image_sent'),
+                    context.t('driver_chat_image_sent'),
                     style: TextStyle(
                       fontSize: 13,
                       color: AppColors.textSecondary,

@@ -652,5 +652,48 @@
   "auth_otp_resend": "Resend code",
   "auth_confirm": "Confirm",
   "auth_otp_invalid": "Invalid OTP code",
-  "auth_otp_empty": "Please enter all 6 digits"
+  "auth_otp_empty": "Please enter all 6 digits",
+
+  "auth_login_btn": "Log In",
+  "auth_forgot_password_link": "Forgot password?",
+  "auth_or_label": "Or",
+  "auth_google_label": "Google",
+  "auth_facebook_label": "Facebook",
+  "auth_dont_have_account": "Don't have an account?",
+  "auth_sign_up_now": "Sign up now",
+
+  "auth_register_btn": "Sign Up",
+  "auth_create_account_title": "Create your account",
+  "auth_full_name_label": "Full name",
+  "auth_phone_number_label": "Phone number",
+  "auth_password_label": "Password",
+  "auth_confirm_password_label": "Confirm password",
+  "auth_already_have_account": "Already have an account?",
+  "auth_sign_in_now": "Sign in now",
+
+  "main_nav_home": "Home",
+  "main_nav_activity": "Activity",
+  "main_nav_offers": "Offers",
+  "main_nav_notifications": "Notifications",
+  "main_nav_profile": "Account",
+
+  "settings_noti_enabled": "Notifications enabled",
+  "settings_noti_disabled": "Notifications disabled",
+  "settings_lang_switched_vi": "Switched to Vietnamese",
+  "settings_lang_switched_en": "Switched to English",
+
+  "notification_empty": "No notifications yet",
+  "notification_time_just_now": "Just now",
+  "notification_time_minutes_ago": "$1 min ago",
+  "notification_time_hours_ago": "$1 hrs ago",
+  "notification_time_days_ago": "$1 days ago",
+
+  "reward_using_voucher": "Using voucher $1",
+  "reward_default_terms": "Offer valid for 30 days from redemption date.",
+  "reward_remaining": "Remaining",
+  "reward_voucher_unit": "voucher",
+  "reward_discount_label": "OFF",
+
+  "activity_cancel_order_hint": "Cancel order $1",
+  "driver_chat_send_image": "Send image"
 }

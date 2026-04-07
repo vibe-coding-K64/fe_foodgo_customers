@@ -660,5 +660,48 @@
   "product_added": "Da them",
   "product_out_of_stock": "Het hang",
   "restaurant_closed": "Dang dong cua",
-  "restaurant_open_now": "Dang mo cua"
+  "restaurant_open_now": "Dang mo cua",
+
+  "auth_login_btn": "Dang nhap",
+  "auth_forgot_password_link": "Quen mat khau?",
+  "auth_or_label": "Hoac",
+  "auth_google_label": "Google",
+  "auth_facebook_label": "Facebook",
+  "auth_dont_have_account": "Chua co tai khoan?",
+  "auth_sign_up_now": "Dang ky ngay",
+
+  "auth_register_btn": "Dang ky",
+  "auth_create_account_title": "Tao tai khoan cua ban",
+  "auth_full_name_label": "Ho va ten",
+  "auth_phone_number_label": "So dien thoai",
+  "auth_password_label": "Mat khau",
+  "auth_confirm_password_label": "Xac nhan mat khau",
+  "auth_already_have_account": "Da co tai khoan?",
+  "auth_sign_in_now": "Dang nhap ngay",
+
+  "main_nav_home": "Trang chu",
+  "main_nav_activity": "Hoat dong",
+  "main_nav_offers": "Uu dai",
+  "main_nav_notifications": "Thong bao",
+  "main_nav_profile": "Tai khoan",
+
+  "settings_noti_enabled": "Thong bao da bat",
+  "settings_noti_disabled": "Thong bao da tat",
+  "settings_lang_switched_vi": "Da chuyen sang Tieng Viet",
+  "settings_lang_switched_en": "Da chuyen sang English",
+
+  "notification_empty": "Chua co thong bao nao",
+  "notification_time_just_now": "Vua xong",
+  "notification_time_minutes_ago": "$1 phut truoc",
+  "notification_time_hours_ago": "$1 gio truoc",
+  "notification_time_days_ago": "$1 ngay truoc",
+
+  "reward_using_voucher": "Dang su dung voucher $1",
+  "reward_default_terms": "Uu dai co hieu luc trong 30 ngay tu ngay doi.",
+  "reward_remaining": "Con lai",
+  "reward_voucher_unit": "voucher",
+  "reward_discount_label": "GIAM",
+
+  "activity_cancel_order_hint": "Huy don hang $1",
+  "driver_chat_send_image": "Gui hinh anh"
 }
