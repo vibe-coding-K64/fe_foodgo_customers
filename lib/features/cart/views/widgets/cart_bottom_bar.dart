@@ -76,7 +76,7 @@ class CartBottomBar extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Text(
-            LanguageService.translate('cart_select_all'),
+            context.t('cart_select_all'),
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
@@ -90,7 +90,7 @@ class CartBottomBar extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                LanguageService.translate('cart_estimated_total'),
+                context.t('cart_estimated_total'),
                 style: const TextStyle(
                   fontSize: 12,
                   color: AppColors.textHint,
@@ -99,8 +99,8 @@ class CartBottomBar extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 isEnabled
-                    ? '~ ${_formatPrice(subtotal)} ${LanguageService.translate('unit_currency')}'
-                    : '~ 0 ${LanguageService.translate('unit_currency')}',
+                    ? '~ ${_formatPrice(subtotal)} ${context.t('unit_currency')}'
+                    : '~ 0 ${context.t('unit_currency')}',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
@@ -128,7 +128,7 @@ class CartBottomBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
-                LanguageService.translate('cart_buy_btn')
+                context.t('cart_buy_btn')
                     .replaceAll('{count}', '$selectedCount'),
                 style: const TextStyle(
                   fontSize: 14,

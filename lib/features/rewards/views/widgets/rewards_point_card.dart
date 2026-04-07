@@ -46,7 +46,7 @@ class RewardsPointCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                LanguageService.translate('rewards_my_points'),
+                context.t('rewards_my_points'),
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.9),
                   fontSize: 14,
@@ -100,7 +100,7 @@ class RewardsPointCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Text(
-                  LanguageService.translate('rewards_points'),
+                  context.t('rewards_points'),
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.9),
                     fontSize: 16,
@@ -111,13 +111,13 @@ class RewardsPointCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           // Thanh tien do den hang tiep theo.
-          _buildProgressBar(),
+          _buildProgressBar(context),
         ],
       ),
     );
   }
 
-  Widget _buildProgressBar() {
+  Widget _buildProgressBar(BuildContext context) {
     final progress = currentPoints / nextTierPoints;
 
     return Column(
@@ -127,7 +127,7 @@ class RewardsPointCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              LanguageService.translate('rewards_next_tier'),
+              context.t('rewards_next_tier'),
               style: TextStyle(
                 color: Colors.white.withOpacity(0.8),
                 fontSize: 12,

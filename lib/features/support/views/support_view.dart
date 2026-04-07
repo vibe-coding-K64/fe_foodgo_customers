@@ -23,8 +23,15 @@ class FaqItem {
 ///
 /// Duoc goi tu:
 ///   - Tab Tai khoan (ProfileView): bam "Ho tro"
+///   - OrderDetailView: bam "Ban can ho tro?"
 class SupportView extends StatefulWidget {
-  const SupportView({super.key});
+  /// Ma don hang de truyen sang man hinh chat (neu co).
+  final String? orderId;
+
+  const SupportView({
+    super.key,
+    this.orderId,
+  });
 
   @override
   State<SupportView> createState() => _SupportViewState();
@@ -76,11 +83,11 @@ class _SupportViewState extends State<SupportView> {
 
   /// Xu ly bam nut Chat.
   void _onChatTap() {
-    debugPrint('SupportView: Mo man hinh chat voi nhan vien');
+    debugPrint('SupportView: Mo man hinh chat voi nhan vien, ma don hang: [${widget.orderId ?? "khong co"}]');
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const SupportChatView(),
+        builder: (context) => SupportChatView(orderId: widget.orderId),
       ),
     );
   }

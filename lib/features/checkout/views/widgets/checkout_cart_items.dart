@@ -9,14 +9,14 @@ class CheckoutCartItems extends StatelessWidget {
   final List<CheckoutCartItem> items;
   final void Function(int index, int newQuantity) onQuantityChanged;
   final void Function(int index) onItemRemoved;
-  final VoidCallback? onAddMoreTap;
+  final void Function(int index)? onEditTap;
 
   const CheckoutCartItems({
     super.key,
     required this.items,
     required this.onQuantityChanged,
     required this.onItemRemoved,
-    this.onAddMoreTap,
+    this.onEditTap,
   });
 
   @override
@@ -34,7 +34,7 @@ class CheckoutCartItems extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              LanguageService.translate('checkout_your_order'),
+              context.t('checkout_your_order'),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -66,30 +66,13 @@ class CheckoutCartItems extends StatelessWidget {
                 debugPrint('Xoa mon: ${items[index].name}');
                 onItemRemoved(index);
               },
+              onEditTap: onEditTap != null
+                  ? () => onEditTap!(index)
+                  : null,
             );
           },
         ),
-        const SizedBox(height: 12),
-        // Nut them mon khac.
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () {
-              debugPrint('Checkout: Nguoi dung bam them mon khac');
-              onAddMoreTap?.call();
-            },
-            icon: const Icon(Icons.add, size: 20),
-            label: Text(LanguageService.translate('checkout_add_more')),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              side: const BorderSide(color: AppColors.primary, width: 1.5),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          ),
-        ),
+        const SizedBox(height: 10),
       ],
     );
   }
@@ -100,12 +83,14 @@ class _CartItemCard extends StatelessWidget {
   final VoidCallback onDecrease;
   final VoidCallback onIncrease;
   final VoidCallback onDismiss;
+  final VoidCallback? onEditTap;
 
   const _CartItemCard({
     required this.item,
     required this.onDecrease,
     required this.onIncrease,
     required this.onDismiss,
+    this.onEditTap,
   });
 
   String _formatPrice(double price) {
@@ -194,9 +179,35 @@ class _CartItemCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
+                  // Hien thi ghi chu neu co.
+                  if (item.note.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.note_outlined,
+                          size: 12,
+                          color: AppColors.secondary,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            item.note,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.secondary,
+                              fontStyle: FontStyle.italic,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 6),
                   Text(
-                    '${_formatPrice(item.unitPrice)} ${LanguageService.translate('unit_currency')}',
+                    '${_formatPrice(item.unitPrice)} ${context.t('unit_currency')}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -206,38 +217,72 @@ class _CartItemCard extends StatelessWidget {
                 ],
               ),
             ),
-            // Bo dem so luong.
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  _buildCounterButton(
-                    icon: Icons.remove,
-                    onTap: item.quantity > 1 ? onDecrease : null,
-                    enabled: item.quantity > 1,
-                  ),
-                  SizedBox(
-                    width: 32,
-                    child: Text(
-                      '${item.quantity}',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
+            // Khoang trong giua ten mon va bo dem so luong.
+            const SizedBox(width: 8),
+            // Cot chua nut Sửa va bo dem so luong.
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Nut Sửa.
+                if (onEditTap != null)
+                  GestureDetector(
+                    onTap: onEditTap,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.edit_outlined,
+                          size: 14,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          context.t('common_edit'),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w500,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  _buildCounterButton(
-                    icon: Icons.add,
-                    onTap: onIncrease,
-                    enabled: true,
+                const SizedBox(height: 4),
+                // Bo dem so luong.
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ],
-              ),
+                  child: Row(
+                    children: [
+                      _buildCounterButton(
+                        icon: Icons.remove,
+                        onTap: item.quantity > 1 ? onDecrease : null,
+                        enabled: item.quantity > 1,
+                      ),
+                      SizedBox(
+                        width: 32,
+                        child: Text(
+                          '${item.quantity}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      _buildCounterButton(
+                        icon: Icons.add,
+                        onTap: onIncrease,
+                        enabled: true,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),

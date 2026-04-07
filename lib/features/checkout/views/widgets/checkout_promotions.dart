@@ -7,6 +7,7 @@ import '../../../../core/localization/language_service.dart';
 class CheckoutPromotions extends StatelessWidget {
   final VoidCallback? onVoucherTap;
   final VoidCallback? onPaymentMethodTap;
+  final ValueChanged<bool>? onPointsToggle;
   final bool isPointsEnabled;
   final String? selectedVoucher;
   final String selectedPaymentMethod;
@@ -15,6 +16,7 @@ class CheckoutPromotions extends StatelessWidget {
     super.key,
     this.onVoucherTap,
     this.onPaymentMethodTap,
+    this.onPointsToggle,
     this.isPointsEnabled = false,
     this.selectedVoucher,
     this.selectedPaymentMethod = 'cash',
@@ -29,7 +31,7 @@ class CheckoutPromotions extends StatelessWidget {
         _PromoRow(
           icon: Icons.local_offer_outlined,
           label: selectedVoucher ??
-              LanguageService.translate('checkout_voucher'),
+              context.t('checkout_voucher'),
           iconColor: AppColors.secondary,
           valueColor:
               selectedVoucher != null ? AppColors.primary : AppColors.textHint,
@@ -70,15 +72,13 @@ class CheckoutPromotions extends StatelessWidget {
         // DONG 2: Diem tich luy (Switch).
         _PointsRow(
           isEnabled: isPointsEnabled,
-          onToggle: (value) {
-            debugPrint('Checkout: Nguoi dung ${value ? 'bat' : 'tat'} diem tich luy');
-          },
+          onToggle: onPointsToggle,
         ),
         const SizedBox(height: 10),
         // DONG 3: Phuong thuc thanh toan.
         _PromoRow(
           icon: Icons.payment_outlined,
-          label: LanguageService.translate('checkout_payment_method'),
+          label: context.t('checkout_payment_method'),
           iconColor: AppColors.primary,
           value: _getPaymentLabel(selectedPaymentMethod),
           valueColor: AppColors.textPrimary,
@@ -260,7 +260,7 @@ class _PointsRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  LanguageService.translate('checkout_use_points'),
+                  context.t('checkout_use_points'),
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
@@ -269,7 +269,7 @@ class _PointsRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  LanguageService.translate('checkout_points_note'),
+                  context.t('checkout_points_note'),
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textHint,

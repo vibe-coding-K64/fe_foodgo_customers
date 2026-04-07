@@ -5,6 +5,7 @@ import '../../search/views/search_view.dart';
 import '../../search/views/search_result_view.dart';
 import '../../product/views/product_detail_bottom_sheet.dart';
 import '../../cart/views/cart_view.dart';
+import '../../restaurant/views/restaurant_detail_view.dart';
 import '../services/home_service.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_search_bar.dart';
@@ -76,7 +77,7 @@ class HomeView extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.only(top: 24),
                   child: HomeSuggestionSection(
-                    title: LanguageService.translate('home_near_you'),
+                    title: context.t('home_near_you'),
                     storesStream: HomeService.getNearbyStoresStream(),
                     onSeeAllTap: () {
                       debugPrint('HomeView: Nguoi dung bam xem tat ca quan');
@@ -84,6 +85,13 @@ class HomeView extends StatelessWidget {
                     onStoreTap: (store) {
                       debugPrint(
                           'HomeView: Nguoi dung bam quan [${store.name}]');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              RestaurantDetailView(storeId: store.id),
+                        ),
+                      );
                     },
                   ),
                 ),
@@ -101,7 +109,7 @@ class HomeView extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              LanguageService.translate('home_featured_foods'),
+                              context.t('home_featured_foods'),
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -113,7 +121,7 @@ class HomeView extends StatelessWidget {
                                     'HomeView: Nguoi dung bam xem tat ca mon noi bat');
                               },
                               child: Text(
-                                LanguageService.translate('common_see_all'),
+                                context.t('common_see_all'),
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: AppColors.primary,
@@ -140,7 +148,7 @@ class HomeView extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    LanguageService.translate('home_popular_stores'),
+                    context.t('home_popular_stores'),
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -154,6 +162,13 @@ class HomeView extends StatelessWidget {
                   onStoreTap: (store) {
                     debugPrint(
                         'HomeView: Nguoi dung bam quan [${store.name}]');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            RestaurantDetailView(storeId: store.id),
+                      ),
+                    );
                   },
                   productsStream: HomeService.getProductsStream(),
                   onProductTap: (product) {

@@ -117,7 +117,7 @@ class _SearchViewState extends State<SearchView> {
               onSubmitted: (_) => _onSearch(),
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText: LanguageService.translate('search_hint'),
+                hintText: context.t('search_hint'),
                 hintStyle: TextStyle(
                   color: AppColors.textHint,
                   fontSize: 15,
@@ -193,7 +193,7 @@ class _SearchViewState extends State<SearchView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                LanguageService.translate('search_recent'),
+                context.t('search_recent'),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -205,7 +205,7 @@ class _SearchViewState extends State<SearchView> {
                   debugPrint('Xoa lich su tim kiem');
                 },
                 child: Text(
-                  LanguageService.translate('search_clear_history'),
+                  context.t('search_clear_history'),
                   style: TextStyle(
                     fontSize: 13,
                     color: AppColors.primary,
@@ -230,7 +230,7 @@ class _SearchViewState extends State<SearchView> {
           const SizedBox(height: 24),
           // Tieu de tim kiem pho bien.
           Text(
-            LanguageService.translate('search_popular'),
+            context.t('search_popular'),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,

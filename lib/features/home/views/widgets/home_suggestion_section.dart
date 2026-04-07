@@ -48,7 +48,7 @@ class HomeSuggestionSection extends StatelessWidget {
                 GestureDetector(
                   onTap: onSeeAllTap,
                   child: Text(
-                    LanguageService.translate('common_see_all'),
+                    context.t('common_see_all'),
                     style: TextStyle(
                       fontSize: 14,
                       color: AppColors.primary,
@@ -107,14 +107,14 @@ class _StoresStreamBuilder extends StatelessWidget {
           debugPrint(
               'HomeSuggestionSection: loi khi load danh sach quan: ${snapshot.error}');
           return _ErrorWidget(
-            message: LanguageService.translate('error_load_stores'),
+            message: context.t('error_load_stores'),
           );
         }
 
         final stores = snapshot.data!;
         if (stores.isEmpty) {
           return _EmptyWidget(
-            message: LanguageService.translate('empty_stores'),
+            message: context.t('empty_stores'),
           );
         }
 
@@ -170,14 +170,14 @@ class _ProductsStreamBuilder extends StatelessWidget {
           debugPrint(
               'HomeSuggestionSection: loi khi load danh sach san pham: ${snapshot.error}');
           return _ErrorWidget(
-            message: LanguageService.translate('error_load_products'),
+            message: context.t('error_load_products'),
           );
         }
 
         final products = snapshot.data!;
         if (products.isEmpty) {
           return _EmptyWidget(
-            message: LanguageService.translate('empty_products'),
+            message: context.t('empty_products'),
           );
         }
 
@@ -341,7 +341,7 @@ class _ProductCard extends StatelessWidget {
                         ),
                         child: Center(
                           child: Text(
-                            LanguageService.translate('home_out_of_stock'),
+                            context.t('home_out_of_stock'),
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -369,7 +369,7 @@ class _ProductCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${product.basePrice.toStringAsFixed(0)} ${LanguageService.translate('unit_currency')}',
+                    '${product.basePrice.toStringAsFixed(0)} ${context.t('unit_currency')}',
                     style: TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,

@@ -36,7 +36,7 @@ class HomeSearchBar extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Text(
-                LanguageService.translate('home_search_placeholder'),
+                context.t('home_search_placeholder'),
                 style: TextStyle(
                   color: Colors.grey[500],
                   fontSize: 15,

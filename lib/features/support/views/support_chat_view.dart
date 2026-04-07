@@ -32,8 +32,16 @@ class ChatMessage {
 ///
 /// Duoc goi tu:
 ///   - SupportView: bam nut "Chat voi nhan vien"
+///   - OrderDetailView: bam nut "Ban can ho tro?"
 class SupportChatView extends StatefulWidget {
-  const SupportChatView({super.key});
+  /// Ma don hang de nhan vien biet khach hang can ho tro ve don nao.
+  /// Co the la null neu goi tu man hinh khong lien quan den don hang.
+  final String? orderId;
+
+  const SupportChatView({
+    super.key,
+    this.orderId,
+  });
 
   @override
   State<SupportChatView> createState() => _SupportChatViewState();
@@ -56,7 +64,25 @@ class _SupportChatViewState extends State<SupportChatView> {
   void initState() {
     super.initState();
     _messages.addAll(_buildInitialMessages());
-    debugPrint('SupportChat: Man hinh chat da mo');
+    if (widget.orderId != null && widget.orderId!.isNotEmpty) {
+      debugPrint('SupportChat: Man hinh chat da mo, ma don hang: [${widget.orderId}]');
+      _themTinNhanDonHang();
+    } else {
+      debugPrint('SupportChat: Man hinh chat da mo (khong co ma don hang)');
+    }
+  }
+
+  /// Them tin nhan tu dong vao chat neu co ma don hang.
+  void _themTinNhanDonHang() {
+    final noiDung = 'Toi can ho tro ve don hang #${widget.orderId}';
+    setState(() {
+      _messages.add(ChatMessage(
+        content: noiDung,
+        sender: MessageSender.user,
+        timestamp: DateTime.now(),
+      ));
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
   }
 
   /// Tao danh sach tin nhan khoi tao mock.

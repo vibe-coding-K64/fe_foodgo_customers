@@ -31,7 +31,7 @@ class CheckoutSummary extends StatelessWidget {
       children: [
         // Tieu de.
         Text(
-          LanguageService.translate('checkout_order_summary'),
+          context.t('checkout_order_summary'),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -56,23 +56,23 @@ class CheckoutSummary extends StatelessWidget {
           child: Column(
             children: [
               _SummaryRow(
-                label: LanguageService.translate('checkout_subtotal'),
+                label: context.t('checkout_subtotal'),
                 value:
-                    '${_formatPrice(subtotal)} ${LanguageService.translate('unit_currency')}',
+                    '${_formatPrice(subtotal)} ${context.t('unit_currency')}',
                 valueColor: AppColors.textPrimary,
               ),
               const SizedBox(height: 10),
               _SummaryRow(
-                label: LanguageService.translate('checkout_delivery_fee'),
+                label: context.t('checkout_delivery_fee'),
                 value:
-                    '+${_formatPrice(deliveryFee)} ${LanguageService.translate('unit_currency')}',
+                    '+${_formatPrice(deliveryFee)} ${context.t('unit_currency')}',
                 valueColor: AppColors.textSecondary,
               ),
               const SizedBox(height: 10),
               _SummaryRow(
-                label: LanguageService.translate('checkout_discount'),
+                label: context.t('checkout_discount'),
                 value:
-                    '-${_formatPrice(discount)} ${LanguageService.translate('unit_currency')}',
+                    '-${_formatPrice(discount)} ${context.t('unit_currency')}',
                 valueColor: AppColors.success,
               ),
             ],

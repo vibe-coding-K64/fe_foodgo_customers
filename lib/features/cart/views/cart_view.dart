@@ -139,7 +139,7 @@ class _CartViewState extends State<CartView> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '${removedItem.name} ${LanguageService.translate('cart_item_removed')}',
+          '${removedItem.name} ${context.t('cart_item_removed')}',
         ),
         backgroundColor: AppColors.textSecondary,
         duration: const Duration(seconds: 2),
@@ -182,7 +182,7 @@ class _CartViewState extends State<CartView> {
             ),
             const SizedBox(height: 20),
             Text(
-              LanguageService.translate('cart_empty_title'),
+              context.t('cart_empty_title'),
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -191,7 +191,7 @@ class _CartViewState extends State<CartView> {
             ),
             const SizedBox(height: 8),
             Text(
-              LanguageService.translate('cart_empty_desc'),
+              context.t('cart_empty_desc'),
               style: const TextStyle(
                 fontSize: 14,
                 color: AppColors.textSecondary,
@@ -212,7 +212,7 @@ class _CartViewState extends State<CartView> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: Text(LanguageService.translate('cart_add_items')),
+              child: Text(context.t('cart_add_items')),
             ),
           ],
         ),
@@ -235,7 +235,7 @@ class _CartViewState extends State<CartView> {
           },
         ),
         title: Text(
-          LanguageService.translate('cart_title'),
+          context.t('cart_title'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -257,21 +257,21 @@ class _CartViewState extends State<CartView> {
                   context: context,
                   builder: (ctx) => AlertDialog(
                     title: Text(
-                      LanguageService.translate('cart_clear'),
+                      context.t('cart_clear'),
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     content: Text(
-                      LanguageService.translate('cart_clear_confirm'),
+                      context.t('cart_clear_confirm'),
                       style: const TextStyle(fontSize: 14),
                     ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(ctx),
                         child: Text(
-                          LanguageService.translate('common_cancel'),
+                          context.t('common_cancel'),
                           style: const TextStyle(color: AppColors.textSecondary),
                         ),
                       ),
@@ -284,7 +284,7 @@ class _CartViewState extends State<CartView> {
                           debugPrint('CartView: Da xoa tat ca mon trong gio hang');
                         },
                         child: Text(
-                          LanguageService.translate('common_delete'),
+                          context.t('common_delete'),
                           style: const TextStyle(color: AppColors.error),
                         ),
                       ),

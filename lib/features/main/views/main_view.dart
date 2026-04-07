@@ -52,27 +52,27 @@ class _MainViewState extends State<MainView> {
           BottomNavigationBarItem(
             icon: const Icon(Icons.home_outlined),
             activeIcon: const Icon(Icons.home),
-            label: LanguageService.translate('nav_home'),
+            label: context.t('main_nav_home'),
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.receipt_long_outlined),
             activeIcon: const Icon(Icons.receipt_long),
-            label: LanguageService.translate('nav_activity'),
+            label: context.t('main_nav_activity'),
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.local_offer_outlined),
             activeIcon: const Icon(Icons.local_offer),
-            label: LanguageService.translate('nav_offers'),
+            label: context.t('main_nav_offers'),
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.notifications_outlined),
             activeIcon: const Icon(Icons.notifications),
-            label: LanguageService.translate('nav_notifications'),
+            label: context.t('main_nav_notifications'),
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.person_outline),
             activeIcon: const Icon(Icons.person),
-            label: LanguageService.translate('nav_profile'),
+            label: context.t('main_nav_profile'),
           ),
         ],
       ),

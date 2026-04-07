@@ -55,7 +55,7 @@ class CheckoutDeliveryInfo extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    LanguageService.translate('checkout_delivery_info'),
+                    context.t('checkout_delivery_info'),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -72,7 +72,7 @@ class CheckoutDeliveryInfo extends StatelessWidget {
                 child: Row(
                   children: [
                     Text(
-                      LanguageService.translate('checkout_change_address'),
+                      context.t('checkout_change_address'),
                       style: const TextStyle(
                         fontSize: 13,
                         color: AppColors.primary,
@@ -150,7 +150,7 @@ class CheckoutDeliveryInfo extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  '${LanguageService.translate('checkout_estimated_time')}: $estimatedTime',
+                  '${context.t('checkout_estimated_time')}: $estimatedTime',
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.primary,

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../auth/views/login_view.dart';
 import '../../address/views/address_management_view.dart';
+import '../../expense/views/expense_management_view.dart';
 import '../../payment/views/payment_methods_view.dart';
 import '../../partner/views/partner_registration_view.dart';
 import '../../settings/views/settings_view.dart';
@@ -29,7 +32,15 @@ class ProfileView extends StatelessWidget {
       ProfileMenuItem(
         titleKey: 'profile_spending',
         icon: Icons.account_balance_wallet_outlined,
-        onTap: () => _navigateTo(context, '/profile/spending'),
+        onTap: () {
+          debugPrint('ProfileView: Mo trang quan ly chi tieu');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ExpenseManagementView(),
+            ),
+          );
+        },
       ),
       // Dia chi mac dinh.
       ProfileMenuItem(
@@ -147,33 +158,32 @@ class ProfileView extends StatelessWidget {
     );
   }
 
-  /// Di chuyen den man hinh khi chon menu item.
-  void _navigateTo(BuildContext context, String route) {
-    debugPrint('Dang di chuyen den: $route');
-    // TODO: Tich hop voi router khi da cau hinh AppRoutes.
-  }
-
   /// Hien thi hop thoai xac nhan dang xuat.
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(LanguageService.translate('profile_logout')),
-        content: Text(LanguageService.translate('profile_logout_confirm')),
+        title: Text(context.t('profile_logout')),
+        content: Text(context.t('profile_logout_confirm')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(LanguageService.translate('common_cancel')),
+            child: Text(context.t('common_cancel')),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              debugPrint('Nguoi dung xac nhan dang xuat');
-              // TODO: goi AuthService.logout()
+              debugPrint('ProfileView: Nguoi dung xac nhan dang xuat');
+              // Xoa toan bo lich su man hinh va chuyen ve man hinh Dang nhap.
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginView()),
+                (route) => false,
+              );
             },
             child: Text(
-              LanguageService.translate('profile_logout'),
-              style: const TextStyle(color: Colors.red),
+              context.t('common_yes'),
+              style: const TextStyle(color: AppColors.error),
             ),
           ),
         ],
