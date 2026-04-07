@@ -114,6 +114,11 @@ class RewardsView extends StatelessWidget {
             ),
             title: Text(
               LanguageService.translate('nav_offers'),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             centerTitle: true,
             elevation: 0,

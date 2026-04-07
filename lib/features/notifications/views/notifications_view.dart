@@ -139,6 +139,11 @@ class _NotificationsViewState extends State<NotificationsView> {
         ),
         title: Text(
           LanguageService.translate('notification_title'),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
         elevation: 0,
