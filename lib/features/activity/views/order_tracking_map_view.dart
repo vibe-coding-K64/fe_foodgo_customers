@@ -277,8 +277,8 @@ class OrderTrackingMapView extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                '${LanguageService.translate('track_map_eta_label')} '
-                '${LanguageService.translate('track_map_eta_minutes').replaceFirst('\$1', etaMinutes.toString())}',
+                '${context.t('track_map_eta_label')} '
+                '${context.t('track_map_eta_minutes').replaceFirst('\$1', etaMinutes.toString())}',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -296,8 +296,8 @@ class OrderTrackingMapView extends StatelessWidget {
   Widget _buildBottomCard(BuildContext context) {
     final driver = order.driverInfo;
     // Neu khong co thong tin tai xe, hien thi gia tri mac dinh.
-    final driverName = driver?.name ?? LanguageService.translate('track_map_driver_name');
-    final vehiclePlate = driver?.vehiclePlate ?? LanguageService.translate('track_map_vehicle_plate');
+    final driverName = driver?.name ?? context.t('track_map_driver_name');
+    final vehiclePlate = driver?.vehiclePlate ?? context.t('track_map_vehicle_plate');
     final driverPhone = driver?.phone ?? '';
 
     return Container(
@@ -337,7 +337,7 @@ class OrderTrackingMapView extends StatelessWidget {
           const SizedBox(height: 14),
           // Trang thai don hang.
           Text(
-            LanguageService.translate('track_map_status_delivering'),
+            context.t('track_map_status_delivering'),
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
@@ -446,7 +446,7 @@ class OrderTrackingMapView extends StatelessWidget {
                 );
               },
               icon: const Icon(Icons.chat_bubble_outline, size: 20),
-              label: Text(LanguageService.translate('track_map_message_btn')),
+              label: Text(context.t('track_map_message_btn')),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,

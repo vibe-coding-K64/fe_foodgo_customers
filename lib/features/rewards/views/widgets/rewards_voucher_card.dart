@@ -51,7 +51,7 @@ class RewardsVoucherCard extends StatelessWidget {
         child: Row(
           children: [
             // Ben trai: Nen cam vang nhat voi so % / K giam.
-            _buildLeftSection(isExpired),
+            _buildLeftSection(context, isExpired),
             // Ben phai: Thong tin voucher va nut dung ngay.
             Expanded(
               child: _buildRightSection(context, isExpired),
@@ -63,7 +63,7 @@ class RewardsVoucherCard extends StatelessWidget {
   }
 
   /// Phan ben trai: So % giam gia trong o vuong cam vang.
-  Widget _buildLeftSection(bool isExpired) {
+  Widget _buildLeftSection(BuildContext context, bool isExpired) {
     final discountText = voucher.isPercentage
         ? '${voucher.discountValue.toInt()}%'
         : '${voucher.discountValue.toInt()}K';
@@ -91,7 +91,7 @@ class RewardsVoucherCard extends StatelessWidget {
             ),
           ),
           Text(
-            'GIAM',
+            context.t('reward_discount_label'),
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
@@ -133,7 +133,7 @@ class RewardsVoucherCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           // Han su dung.
-          Row(
+              Row(
             children: [
               Icon(
                 Icons.schedule,
@@ -142,7 +142,7 @@ class RewardsVoucherCard extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                '${LanguageService.translate('rewards_expires')}: '
+                '${context.t('rewards_expires')}: '
                 '${voucher.expiryDate.day.toString().padLeft(2, '0')}/'
                 '${voucher.expiryDate.month.toString().padLeft(2, '0')}/'
                 '${voucher.expiryDate.year}',
@@ -176,7 +176,7 @@ class RewardsVoucherCard extends StatelessWidget {
                 elevation: 0,
               ),
               child: Text(
-                LanguageService.translate('rewards_use_now'),
+                context.t('rewards_use_now'),
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,

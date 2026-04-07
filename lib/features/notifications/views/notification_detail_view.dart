@@ -84,13 +84,13 @@ class NotificationDetailView extends StatelessWidget {
 
     String timeAgo;
     if (difference.inMinutes < 1) {
-      timeAgo = 'Vua xong';
+      timeAgo = LanguageService.translate('notification_time_just_now');
     } else if (difference.inHours < 24) {
-      timeAgo = '${difference.inHours} gio truoc';
+      timeAgo = LanguageService.translate('notification_time_hours_ago').replaceAll('\$1', difference.inHours.toString());
     } else if (difference.inDays < 7) {
-      timeAgo = '${difference.inDays} ngay truoc';
+      timeAgo = LanguageService.translate('notification_time_days_ago').replaceAll('\$1', difference.inDays.toString());
     } else {
-      timeAgo = '${difference.inDays} ngay truoc';
+      timeAgo = LanguageService.translate('notification_time_days_ago').replaceAll('\$1', difference.inDays.toString());
     }
 
     final day = dateTime.day.toString().padLeft(2, '0');

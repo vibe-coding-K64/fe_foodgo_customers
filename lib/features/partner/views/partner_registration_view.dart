@@ -76,14 +76,14 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
   }
 
   /// Tao style InputDecoration.
-  InputDecoration _buildDecoration({
+  InputDecoration _buildDecoration(BuildContext context, {
     required String labelKey,
     required String hintKey,
     int? errorFieldIndex,
   }) {
     return InputDecoration(
-      labelText: LanguageService.translate(labelKey),
-      hintText: LanguageService.translate(hintKey),
+      labelText: context.t(labelKey),
+      hintText: context.t(hintKey),
       labelStyle: const TextStyle(fontSize: 14),
       hintStyle: const TextStyle(fontSize: 14, color: AppColors.textHint),
       filled: true,
@@ -111,21 +111,20 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
   }
 
   /// Validate form.
-  bool _validate() {
-    final t = LanguageService.translate;
+  bool _validate(BuildContext context) {
     final errors = <int, String>{};
 
     if (_fullnameController.text.trim().isEmpty) {
-      errors[0] = t('partner_fullname_required');
+      errors[0] = context.t('partner_fullname_required');
     }
     if (_phoneController.text.trim().isEmpty) {
-      errors[1] = t('partner_phone_required');
+      errors[1] = context.t('partner_phone_required');
     }
     if (_idCardController.text.trim().isEmpty) {
-      errors[2] = t('partner_idcard_required');
+      errors[2] = context.t('partner_idcard_required');
     }
     if (_areaController.text.trim().isEmpty) {
-      errors[3] = t('partner_area_required');
+      errors[3] = context.t('partner_area_required');
     }
 
     setState(() {
@@ -140,8 +139,8 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
   }
 
   /// Xu ly submit form.
-  void _onSubmit() {
-    if (!_validate()) return;
+  void _onSubmit(BuildContext context) {
+    if (!_validate(context)) return;
 
     setState(() => _isSubmitting = true);
 
@@ -158,7 +157,7 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(LanguageService.translate('partner_submit_success')),
+        content: Text(context.t('partner_submit_success')),
         backgroundColor: AppColors.primary,
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
@@ -183,7 +182,7 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
           },
         ),
         title: Text(
-          LanguageService.translate('partner_title'),
+          context.t('partner_title'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -197,23 +196,23 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // PHAN 1: Landing Page - Gioi thieu quyen loi.
-            _buildBannerSection(),
+            _buildBannerSection(context),
             const             SizedBox(height: 24),
 
             // PHAN 2: Form dang ky.
-            _buildFormSection(),
+            _buildFormSection(context),
           ],
         ),
       ),
       bottomNavigationBar: SafeArea(
         top: false,
-        child: _buildStickyBottomBar(),
+        child: _buildStickyBottomBar(context),
       ),
     );
   }
 
   /// PHAN 1: Banner Landing Page.
-  Widget _buildBannerSection() {
+  Widget _buildBannerSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -283,7 +282,7 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
                 right: 20,
                 bottom: 20,
                 child: Text(
-                  LanguageService.translate('partner_banner_title'),
+                  context.t('partner_banner_title'),
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -297,17 +296,17 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
         ),
         const SizedBox(height: 20),
         // Danh sach quyen loi.
-        _buildBenefitsSection(),
+        _buildBenefitsSection(context),
       ],
     );
   }
 
   /// Danh sach quyen loi (icon + text).
-  Widget _buildBenefitsSection() {
+  Widget _buildBenefitsSection(BuildContext context) {
     final benefits = [
-      LanguageService.translate('partner_benefit_1'),
-      LanguageService.translate('partner_benefit_2'),
-      LanguageService.translate('partner_benefit_3'),
+      context.t('partner_benefit_1'),
+      context.t('partner_benefit_2'),
+      context.t('partner_benefit_3'),
     ];
 
     return Column(
@@ -372,7 +371,7 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
   }
 
   /// PHAN 2: Form dang ky.
-  Widget _buildFormSection() {
+  Widget _buildFormSection(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -380,7 +379,7 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
         children: [
           // Tieu de form.
           Text(
-            LanguageService.translate('partner_form_title'),
+            context.t('partner_form_title'),
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -390,38 +389,38 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
           const SizedBox(height: 16),
 
           // Lua chon loai doi tac.
-          _buildRoleSelector(),
+          _buildRoleSelector(context),
           const SizedBox(height: 16),
 
           // Ho va ten.
-          _buildFullnameField(),
+          _buildFullnameField(context),
           const SizedBox(height: 14),
 
           // So dien thoai.
-          _buildPhoneField(),
+          _buildPhoneField(context),
           const SizedBox(height: 14),
 
           // CCCD.
-          _buildIdCardField(),
+          _buildIdCardField(context),
           const SizedBox(height: 14),
 
           // Khu vuc hoat dong.
-          _buildAreaField(),
+          _buildAreaField(context),
         ],
       ),
     );
   }
 
   /// Lua chon loai doi tac (Nguoi ban / Tai xe).
-  Widget _buildRoleSelector() {
+  Widget _buildRoleSelector(BuildContext context) {
     final roles = [
       (
-        label: LanguageService.translate('partner_role_seller'),
+        labelKey: 'partner_role_seller',
         value: PartnerRole.seller,
         icon: Icons.restaurant_outlined,
       ),
       (
-        label: LanguageService.translate('partner_role_driver'),
+        labelKey: 'partner_role_driver',
         value: PartnerRole.driver,
         icon: Icons.delivery_dining_outlined,
       ),
@@ -469,7 +468,7 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      role.label,
+                      context.t(role.labelKey),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight:
@@ -512,7 +511,7 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
     );
   }
 
-  Widget _buildFullnameField() {
+  Widget _buildFullnameField(BuildContext context) {
     return TextField(
       controller: _fullnameController,
       focusNode: _fullnameFocus,
@@ -520,6 +519,7 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
       textCapitalization: TextCapitalization.words,
       onSubmitted: (_) => _phoneFocus.requestFocus(),
       decoration: _buildDecoration(
+        context,
         labelKey: 'partner_form_fullname',
         hintKey: 'partner_form_fullname_hint',
         errorFieldIndex: 0,
@@ -527,7 +527,7 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
     );
   }
 
-  Widget _buildPhoneField() {
+  Widget _buildPhoneField(BuildContext context) {
     return TextField(
       controller: _phoneController,
       focusNode: _phoneFocus,
@@ -539,6 +539,7 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
       ],
       onSubmitted: (_) => _idCardFocus.requestFocus(),
       decoration: _buildDecoration(
+        context,
         labelKey: 'partner_form_phone',
         hintKey: 'partner_form_phone_hint',
         errorFieldIndex: 1,
@@ -546,7 +547,7 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
     );
   }
 
-  Widget _buildIdCardField() {
+  Widget _buildIdCardField(BuildContext context) {
     return TextField(
       controller: _idCardController,
       focusNode: _idCardFocus,
@@ -558,6 +559,7 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
       ],
       onSubmitted: (_) => _areaFocus.requestFocus(),
       decoration: _buildDecoration(
+        context,
         labelKey: 'partner_form_idcard',
         hintKey: 'partner_form_idcard_hint',
         errorFieldIndex: 2,
@@ -565,7 +567,7 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
     );
   }
 
-  Widget _buildAreaField() {
+  Widget _buildAreaField(BuildContext context) {
     return TextField(
       controller: _areaController,
       focusNode: _areaFocus,
@@ -587,6 +589,7 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
         );
       },
       decoration: _buildDecoration(
+        context,
         labelKey: 'partner_form_area',
         hintKey: 'partner_form_area_hint',
         errorFieldIndex: 3,
@@ -608,7 +611,7 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
   }
 
   /// Sticky Bottom Bar.
-  Widget _buildStickyBottomBar() {
+  Widget _buildStickyBottomBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: BoxDecoration(
@@ -622,7 +625,7 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
         ],
       ),
       child: GestureDetector(
-        onTap: _isSubmitting ? null : _onSubmit,
+        onTap: _isSubmitting ? null : () => _onSubmit(context),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -644,7 +647,7 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
                   ),
                 )
               : Text(
-                  LanguageService.translate('partner_submit_btn'),
+                  context.t('partner_submit_btn'),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 16,

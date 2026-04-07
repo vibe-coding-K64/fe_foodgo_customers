@@ -33,7 +33,7 @@ class RewardDetailView extends StatelessWidget {
 
   /// Xu ly khi bam nut "Doi diem ngay".
   void _onExchangeTap(BuildContext context) {
-    final bodyTemplate = LanguageService.translate('reward_exchange_confirm_body');
+    final bodyTemplate = context.t('reward_exchange_confirm_body');
     final bodyText = bodyTemplate.replaceAll('\$1', _formatPoints(voucher.pointsRequired));
 
     showDialog(
@@ -46,7 +46,7 @@ class RewardDetailView extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
           ),
           title: Text(
-            LanguageService.translate('reward_exchange_confirm_title'),
+            context.t('reward_exchange_confirm_title'),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -70,7 +70,7 @@ class RewardDetailView extends StatelessWidget {
                 Navigator.pop(dialogContext);
               },
               child: Text(
-                LanguageService.translate('common_cancel'),
+                context.t('common_cancel'),
                 style: const TextStyle(
                   fontSize: 14,
                   color: AppColors.textSecondary,
@@ -96,7 +96,7 @@ class RewardDetailView extends StatelessWidget {
                 ),
               ),
               child: Text(
-                LanguageService.translate('common_confirm'),
+                context.t('common_confirm'),
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -115,7 +115,7 @@ class RewardDetailView extends StatelessWidget {
   void _showSuccessAndPop(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(LanguageService.translate('reward_exchange_success')),
+        content: Text(context.t('reward_exchange_success')),
         backgroundColor: AppColors.primary,
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
@@ -139,7 +139,7 @@ class RewardDetailView extends StatelessWidget {
           },
         ),
         title: Text(
-          LanguageService.translate('reward_detail_title'),
+          context.t('reward_detail_title'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -166,7 +166,7 @@ class RewardDetailView extends StatelessWidget {
                   _buildDivider(),
                   const SizedBox(height: 16),
                   // Dieu khoan.
-                  _buildTerms(),
+                  _buildTerms(context),
                   const SizedBox(height: 32),
                 ],
               ),
@@ -255,7 +255,7 @@ class RewardDetailView extends StatelessWidget {
   }
 
   /// Widget dieu khoan ap dung.
-  Widget _buildTerms() {
+  Widget _buildTerms(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -271,7 +271,7 @@ class RewardDetailView extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                LanguageService.translate('reward_terms'),
+                context.t('reward_terms'),
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -298,22 +298,23 @@ class RewardDetailView extends StatelessWidget {
                   icon: Icons.calendar_today_outlined,
                   text: voucher.terms.isNotEmpty
                       ? voucher.terms
-                      : 'Uu dai co hieu luc trong 30 ngay tu ngay doi.',
+                      : context.t('reward_default_terms'),
                 ),
                 if (voucher.minOrderValue > 0) ...[
                   const SizedBox(height: 10),
                   // Don hang toi thieu.
                   _buildTermItem(
                     icon: Icons.shopping_cart_outlined,
-                    text: '${LanguageService.translate('reward_min_order')}: '
-                        '${voucher.minOrderValue.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match[1]},')}đ',
+                    text: '${context.t('reward_min_order')}: '
+                        '${voucher.minOrderValue.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match[1]},')} '
+                        '${context.t('unit_currency')}',
                   ),
                 ],
                 const SizedBox(height: 10),
                 // So luong con lai.
                 _buildTermItem(
                   icon: Icons.inventory_2_outlined,
-                  text: 'Con lai: ${voucher.remaining} voucher',
+                  text: '${context.t('reward_remaining')}: ${voucher.remaining} ${context.t('reward_voucher_unit')}',
                 ),
               ],
             ),
@@ -386,7 +387,7 @@ class RewardDetailView extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  '${_formatPoints(voucher.pointsRequired)} ${LanguageService.translate('reward_points_required')}',
+                  '${_formatPoints(voucher.pointsRequired)} ${context.t('reward_points_required')}',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -411,7 +412,7 @@ class RewardDetailView extends StatelessWidget {
                 elevation: 0,
               ),
               child: Text(
-                LanguageService.translate('reward_action_exchange_now'),
+                context.t('reward_action_exchange_now'),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,

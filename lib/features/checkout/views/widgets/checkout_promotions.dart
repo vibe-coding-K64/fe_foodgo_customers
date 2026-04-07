@@ -31,7 +31,7 @@ class CheckoutPromotions extends StatelessWidget {
         _PromoRow(
           icon: Icons.local_offer_outlined,
           label: selectedVoucher ??
-              LanguageService.translate('checkout_voucher'),
+              context.t('checkout_voucher'),
           iconColor: AppColors.secondary,
           valueColor:
               selectedVoucher != null ? AppColors.primary : AppColors.textHint,
@@ -78,7 +78,7 @@ class CheckoutPromotions extends StatelessWidget {
         // DONG 3: Phuong thuc thanh toan.
         _PromoRow(
           icon: Icons.payment_outlined,
-          label: LanguageService.translate('checkout_payment_method'),
+          label: context.t('checkout_payment_method'),
           iconColor: AppColors.primary,
           value: _getPaymentLabel(selectedPaymentMethod),
           valueColor: AppColors.textPrimary,
@@ -260,7 +260,7 @@ class _PointsRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  LanguageService.translate('checkout_use_points'),
+                  context.t('checkout_use_points'),
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
@@ -269,7 +269,7 @@ class _PointsRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  LanguageService.translate('checkout_points_note'),
+                  context.t('checkout_points_note'),
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textHint,

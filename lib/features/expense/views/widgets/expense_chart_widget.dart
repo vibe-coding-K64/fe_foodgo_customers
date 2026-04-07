@@ -51,7 +51,7 @@ class ExpenseChartWidget extends StatelessWidget {
         children: [
           // Tieu de.
           Text(
-            LanguageService.translate('expense_chart_title'),
+            context.t('expense_chart_title'),
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
@@ -81,7 +81,7 @@ class ExpenseChartWidget extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     for (int i = 0; i < items.length; i++)
-                      _buildLegendItem(items[i], totalAmount),
+                      _buildLegendItem(context, items[i], totalAmount),
                   ],
                 ),
               ),
@@ -112,7 +112,7 @@ class ExpenseChartWidget extends StatelessWidget {
   }
 
   /// Tao mot dong chu thich.
-  Widget _buildLegendItem(ExpenseChartItem item, double total) {
+  Widget _buildLegendItem(BuildContext context, ExpenseChartItem item, double total) {
     final percentage = (item.amount / total) * 100;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -129,7 +129,7 @@ class ExpenseChartWidget extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              LanguageService.translate(item.categoryKey),
+              context.t(item.categoryKey),
               style: const TextStyle(
                 fontSize: 12,
                 color: AppColors.textSecondary,

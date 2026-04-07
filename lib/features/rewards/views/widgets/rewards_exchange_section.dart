@@ -24,7 +24,7 @@ class RewardsExchangeSection extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            LanguageService.translate('rewards_exchange'),
+            context.t('rewards_exchange'),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,

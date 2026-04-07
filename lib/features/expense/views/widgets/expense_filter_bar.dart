@@ -35,12 +35,12 @@ class ExpenseFilterBar extends StatelessWidget {
       _FilterOption(
         month: thisMonth,
         year: thisYear,
-        label: LanguageService.translate('expense_filter_this_month'),
+        labelKey: 'expense_filter_this_month',
       ),
       _FilterOption(
         month: lastMonth,
         year: lastMonthYear,
-        label: LanguageService.translate('expense_filter_last_month'),
+        labelKey: 'expense_filter_last_month',
       ),
     ];
 
@@ -56,7 +56,7 @@ class ExpenseFilterBar extends StatelessWidget {
           final isSelected = selectedMonth == option.month;
 
           return ChoiceChip(
-            label: Text(option.label),
+            label: Text(context.t(option.labelKey)),
             selected: isSelected,
             onSelected: (_) {
               debugPrint('ExpenseFilter: Chon loc [$option]');
@@ -88,12 +88,12 @@ class ExpenseFilterBar extends StatelessWidget {
 class _FilterOption {
   final int month;
   final int year;
-  final String label;
+  final String labelKey;
 
   const _FilterOption({
     required this.month,
     required this.year,
-    required this.label,
+    required this.labelKey,
   });
 
   @override

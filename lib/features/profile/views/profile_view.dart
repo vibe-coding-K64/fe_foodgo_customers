@@ -163,12 +163,12 @@ class ProfileView extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(LanguageService.translate('profile_logout')),
-        content: Text(LanguageService.translate('profile_logout_confirm')),
+        title: Text(context.t('profile_logout')),
+        content: Text(context.t('profile_logout_confirm')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(LanguageService.translate('common_cancel')),
+            child: Text(context.t('common_cancel')),
           ),
           TextButton(
             onPressed: () {
@@ -182,7 +182,7 @@ class ProfileView extends StatelessWidget {
               );
             },
             child: Text(
-              LanguageService.translate('common_yes'),
+              context.t('common_yes'),
               style: const TextStyle(color: AppColors.error),
             ),
           ),

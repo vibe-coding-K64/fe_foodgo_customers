@@ -67,7 +67,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                 borderRadius: BorderRadius.circular(16),
               ),
               title: Text(
-                LanguageService.translate('edit_pwd_title'),
+                context.t('edit_pwd_title'),
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -88,7 +88,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                           color: AppColors.textPrimary,
                         ),
                         decoration: InputDecoration(
-                          hintText: LanguageService.translate('edit_pwd_hint'),
+                          hintText: context.t('edit_pwd_hint'),
                           hintStyle: const TextStyle(
                             fontSize: 15,
                             color: AppColors.textHint,
@@ -135,7 +135,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                     Navigator.pop(dialogContext);
                   },
                   child: Text(
-                    LanguageService.translate('common_cancel'),
+                    context.t('common_cancel'),
                     style: const TextStyle(
                       fontSize: 14,
                       color: AppColors.textSecondary,
@@ -150,7 +150,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                       ScaffoldMessenger.of(this.context).showSnackBar(
                         SnackBar(
                           content: Text(
-                              LanguageService.translate('edit_error_pwd_empty')),
+                              context.t('edit_error_pwd_empty')),
                           backgroundColor: Colors.red,
                           duration: const Duration(seconds: 2),
                           behavior: SnackBarBehavior.floating,
@@ -175,7 +175,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                     ),
                   ),
                   child: Text(
-                    LanguageService.translate('edit_pwd_continue'),
+                    context.t('edit_pwd_continue'),
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -206,7 +206,7 @@ class _EditProfileViewState extends State<EditProfileView> {
             borderRadius: BorderRadius.circular(16),
           ),
           title: Text(
-            LanguageService.translate('edit_otp_title'),
+            context.t('edit_otp_title'),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -218,7 +218,7 @@ class _EditProfileViewState extends State<EditProfileView> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                LanguageService.translate('edit_otp_desc'),
+                context.t('edit_otp_desc'),
                 style: const TextStyle(
                   fontSize: 13,
                   color: AppColors.textSecondary,
@@ -281,7 +281,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                 Navigator.pop(dialogContext);
               },
               child: Text(
-                LanguageService.translate('common_cancel'),
+                context.t('common_cancel'),
                 style: const TextStyle(
                   fontSize: 14,
                   color: AppColors.textSecondary,
@@ -296,7 +296,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                   ScaffoldMessenger.of(this.context).showSnackBar(
                     SnackBar(
                       content: Text(
-                          LanguageService.translate('edit_error_otp_empty')),
+                          context.t('edit_error_otp_empty')),
                       backgroundColor: Colors.red,
                       duration: const Duration(seconds: 2),
                       behavior: SnackBarBehavior.floating,
@@ -320,7 +320,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                 ),
               ),
               child: Text(
-                LanguageService.translate('edit_otp_confirm'),
+                context.t('edit_otp_confirm'),
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -341,7 +341,7 @@ class _EditProfileViewState extends State<EditProfileView> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(LanguageService.translate('edit_success_msg')),
+        content: Text(context.t('edit_success_msg')),
         backgroundColor: AppColors.primary,
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
@@ -367,7 +367,7 @@ class _EditProfileViewState extends State<EditProfileView> {
           },
         ),
         title: Text(
-          LanguageService.translate('edit_profile_title'),
+          context.t('edit_profile_title'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -436,7 +436,7 @@ class _EditProfileViewState extends State<EditProfileView> {
               debugPrint('EditProfile: Nguoi dung bam doi avatar');
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(LanguageService.translate('edit_avatar_hint')),
+                  content: Text(context.t('edit_avatar_hint')),
                   backgroundColor: AppColors.primary,
                   duration: const Duration(seconds: 1),
                   behavior: SnackBarBehavior.floating,
@@ -467,26 +467,26 @@ class _EditProfileViewState extends State<EditProfileView> {
     return Column(
       children: [
         // Ho ten.
-        _buildLabel(LanguageService.translate('edit_nickname_label')),
+        _buildLabel(context.t('edit_nickname_label')),
         const SizedBox(height: 8),
         _buildTextField(
           controller: _nameController,
-          hintText: LanguageService.translate('edit_nickname_hint'),
+          hintText: context.t('edit_nickname_hint'),
           keyboardType: TextInputType.name,
           textCapitalization: TextCapitalization.words,
         ),
         const SizedBox(height: 20),
         // Email.
-        _buildLabel(LanguageService.translate('edit_email_label')),
+        _buildLabel(context.t('edit_email_label')),
         const SizedBox(height: 8),
         _buildTextField(
           controller: _emailController,
-          hintText: LanguageService.translate('edit_email_hint'),
+          hintText: context.t('edit_email_hint'),
           keyboardType: TextInputType.emailAddress,
         ),
         const SizedBox(height: 20),
         // So dien thoai (chi doc).
-        _buildLabel(LanguageService.translate('edit_phone_label')),
+        _buildLabel(context.t('edit_phone_label')),
         const SizedBox(height: 8),
         _buildReadOnlyField(),
       ],
@@ -558,7 +558,7 @@ class _EditProfileViewState extends State<EditProfileView> {
   Widget _buildReadOnlyField() {
     return TextField(
       controller: TextEditingController(
-        text: LanguageService.translate('edit_phone_value'),
+        text: context.t('edit_phone_value'),
       ),
       readOnly: true,
       style: const TextStyle(
@@ -577,7 +577,7 @@ class _EditProfileViewState extends State<EditProfileView> {
           borderSide: BorderSide.none,
         ),
         suffixIcon: Tooltip(
-          message: LanguageService.translate('edit_phone_locked'),
+          message: context.t('edit_phone_locked'),
           child: const Icon(
             Icons.lock_outline,
             color: AppColors.textHint,
@@ -621,7 +621,7 @@ class _EditProfileViewState extends State<EditProfileView> {
           elevation: 0,
         ),
         child: Text(
-          LanguageService.translate('edit_save_btn'),
+          context.t('edit_save_btn'),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,

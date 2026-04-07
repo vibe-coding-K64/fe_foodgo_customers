@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/localization/language_service.dart';
 import '../../models/notification_model.dart';
 
 /// Widget hien thi mot thong bao trong danh sach.
@@ -164,13 +165,16 @@ class NotificationCard extends StatelessWidget {
     final difference = now.difference(dateTime);
 
     if (difference.inMinutes < 1) {
-      return 'Vua xong';
+      return LanguageService.translate('notification_time_just_now');
     } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes} phut truoc';
+      return LanguageService.translate('notification_time_minutes_ago')
+          .replaceAll('\$1', difference.inMinutes.toString());
     } else if (difference.inHours < 24) {
-      return '${difference.inHours} gio truoc';
+      return LanguageService.translate('notification_time_hours_ago')
+          .replaceAll('\$1', difference.inHours.toString());
     } else if (difference.inDays < 7) {
-      return '${difference.inDays} ngay truoc';
+      return LanguageService.translate('notification_time_days_ago')
+          .replaceAll('\$1', difference.inDays.toString());
     } else {
       return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
     }

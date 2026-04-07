@@ -56,7 +56,7 @@ class ExpenseSummaryCard extends StatelessWidget {
         children: [
           // Tieude phu.
           Text(
-            '${LanguageService.translate('expense_total_label')} $monthLabel',
+            '${context.t('expense_total_label')} $monthLabel',
             style: TextStyle(
               fontSize: 13,
               color: Colors.white.withAlpha(200),
@@ -81,7 +81,7 @@ class ExpenseSummaryCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(bottom: 5),
                 child: Text(
-                  LanguageService.translate('expense_prefix'),
+                  context.t('expense_prefix'),
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.white.withAlpha(200),

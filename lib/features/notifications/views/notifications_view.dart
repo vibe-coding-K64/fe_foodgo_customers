@@ -190,7 +190,7 @@ class _NotificationsViewState extends State<NotificationsView> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Chua co thong bao nao',
+            LanguageService.translate('notification_empty'),
             style: TextStyle(
               fontSize: 15,
               color: Colors.grey.shade600,

@@ -34,7 +34,7 @@ class MyVouchersView extends StatelessWidget {
           },
         ),
         title: Text(
-          LanguageService.translate('rewards_all_vouchers_title'),
+          context.t('rewards_all_vouchers_title'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -44,7 +44,7 @@ class MyVouchersView extends StatelessWidget {
         centerTitle: true,
       ),
       body: vouchers.isEmpty
-          ? _buildEmptyState()
+          ? _buildEmptyState(context)
           : ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: vouchers.length,
@@ -58,7 +58,7 @@ class MyVouchersView extends StatelessWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Dang su dung voucher ${voucher.code}',
+                          context.t('reward_using_voucher').replaceAll('\$1', voucher.code),
                         ),
                         backgroundColor: AppColors.primary,
                         behavior: SnackBarBehavior.floating,
@@ -72,7 +72,7 @@ class MyVouchersView extends StatelessWidget {
   }
 
   /// Widget trang thai rong (khong co voucher nao).
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -84,7 +84,7 @@ class MyVouchersView extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            LanguageService.translate('reward_no_vouchers'),
+            context.t('reward_no_vouchers'),
             style: TextStyle(
               fontSize: 15,
               color: AppColors.textSecondary,

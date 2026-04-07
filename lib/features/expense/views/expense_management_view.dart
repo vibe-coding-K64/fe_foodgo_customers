@@ -106,7 +106,7 @@ class _ExpenseManagementViewState extends State<ExpenseManagementView> {
           },
         ),
         title: Text(
-          LanguageService.translate('expense_title'),
+          context.t('expense_title'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -144,7 +144,7 @@ class _ExpenseManagementViewState extends State<ExpenseManagementView> {
                   ],
                   // Tieu de lich su giao dich.
                   Text(
-                    LanguageService.translate('expense_history_title'),
+                    context.t('expense_history_title'),
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -181,7 +181,7 @@ class _ExpenseManagementViewState extends State<ExpenseManagementView> {
           ),
           const SizedBox(height: 12),
           Text(
-            LanguageService.translate('expense_no_history'),
+            context.t('expense_no_history'),
             style: TextStyle(
               fontSize: 14,
               color: AppColors.textSecondary,

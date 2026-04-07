@@ -84,7 +84,7 @@ class ProfileHeader extends StatelessWidget {
                 },
                 icon: const Icon(Icons.edit, size: 16),
                 label: Text(
-                  LanguageService.translate('profile_edit'),
+                  context.t('profile_edit'),
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.white,

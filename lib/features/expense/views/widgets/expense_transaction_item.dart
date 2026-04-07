@@ -118,7 +118,7 @@ class ExpenseTransactionItem extends StatelessWidget {
           ),
           // So tien ben phai (mau do, co dau tru).
           Text(
-            '- ${_formatCurrency(transaction.amount)}${LanguageService.translate('expense_prefix')}',
+            '- ${_formatCurrency(transaction.amount)}${context.t('expense_prefix')}',
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,

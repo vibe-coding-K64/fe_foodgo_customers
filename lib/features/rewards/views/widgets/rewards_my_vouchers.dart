@@ -34,7 +34,7 @@ class RewardsMyVouchers extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                LanguageService.translate('rewards_my_vouchers'),
+                context.t('rewards_my_vouchers'),
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -47,7 +47,7 @@ class RewardsMyVouchers extends StatelessWidget {
                   onViewAll?.call();
                 },
                 child: Text(
-                  LanguageService.translate('common_see_all'),
+                  context.t('common_see_all'),
                   style: const TextStyle(
                     color: AppColors.primary,
                     fontSize: 14,
