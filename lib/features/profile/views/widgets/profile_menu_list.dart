@@ -59,7 +59,7 @@ class _MenuTile extends StatelessWidget {
         size: 24,
       ),
       title: Text(
-        LanguageService.translate(item.titleKey),
+        context.t(item.titleKey),
         style: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w500,

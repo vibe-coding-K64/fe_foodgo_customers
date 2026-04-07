@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/utils/order_converter.dart';
+import '../../../../features/checkout/views/checkout_view.dart';
+import 'order_detail_view.dart';
 import 'widgets/activity_order_card.dart';
 
 /// Man hinh Hoat dong (Quan ly don hang).
@@ -31,7 +34,12 @@ class ActivityView extends StatelessWidget {
             ),
           ),
           title: Text(
-            LanguageService.translate('nav_activity'),
+            context.t('nav_activity'),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           centerTitle: true,
           elevation: 0,
@@ -54,9 +62,9 @@ class ActivityView extends StatelessWidget {
                     fontWeight: FontWeight.normal,
                   ),
                   tabs: [
-                    Tab(text: LanguageService.translate('activity_tab_ordered')),
-                    Tab(text: LanguageService.translate('activity_tab_received')),
-                    Tab(text: LanguageService.translate('activity_tab_cancelled')),
+                    Tab(text: context.t('activity_tab_ordered')),
+                    Tab(text: context.t('activity_tab_received')),
+                    Tab(text: context.t('activity_tab_cancelled')),
                   ],
                 ),
                 // Thanh tim kiem va loc.
@@ -74,7 +82,7 @@ class ActivityView extends StatelessWidget {
                           ),
                           child: TextField(
                             decoration: InputDecoration(
-                              hintText: LanguageService.translate(
+                              hintText: context.t(
                                   'activity_search_hint'),
                               hintStyle: TextStyle(
                                 fontSize: 13,
@@ -147,7 +155,7 @@ class _OrderList extends StatelessWidget {
     final orders = _getMockOrders(status);
 
     if (orders.isEmpty) {
-      return _buildEmptyState();
+      return _buildEmptyState(context);
     }
 
     return ListView.builder(
@@ -159,26 +167,51 @@ class _OrderList extends StatelessWidget {
           order: order,
           onViewDetail: () {
             debugPrint('Xem chi tiet don hang: ${order.id}');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => OrderDetailView(
+                  order: orderModelToDetail(order),
+                ),
+              ),
+            );
           },
           onReorder: () {
-            debugPrint('Dat lai don hang: ${order.id}');
+            debugPrint('ActivityView: Nguoi dung bam Dat lai don hang [${order.id}]');
+            final orderDetail = orderModelToDetail(order);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CheckoutView(initialOrder: orderDetail),
+              ),
+            );
+          },
+          onCancel: () {
+            debugPrint('Huy don hang: ${order.id}');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(context.t('activity_cancel_order_hint').replaceAll('\$1', order.id)),
+                backgroundColor: AppColors.error,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
           },
         );
       },
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext ctx) {
     String emptyText;
     switch (status) {
       case OrderStatus.ordered:
-        emptyText = LanguageService.translate('activity_empty_ordered');
+        emptyText = ctx.t('activity_empty_ordered');
         break;
       case OrderStatus.received:
-        emptyText = LanguageService.translate('activity_empty_received');
+        emptyText = ctx.t('activity_empty_received');
         break;
       case OrderStatus.cancelled:
-        emptyText = LanguageService.translate('activity_empty_cancelled');
+        emptyText = ctx.t('activity_empty_cancelled');
         break;
     }
 
@@ -217,6 +250,7 @@ class _OrderList extends StatelessWidget {
         totalPrice: 85000,
         orderDate: now.subtract(const Duration(hours: 2)),
         status: OrderStatus.ordered,
+        subStatus: SubOrderStatus.preparing,
       ),
       OrderModel(
         id: 'ORD002',
@@ -226,6 +260,7 @@ class _OrderList extends StatelessWidget {
         totalPrice: 55000,
         orderDate: now.subtract(const Duration(days: 1)),
         status: OrderStatus.ordered,
+        subStatus: SubOrderStatus.driverComing,
       ),
       OrderModel(
         id: 'ORD003',

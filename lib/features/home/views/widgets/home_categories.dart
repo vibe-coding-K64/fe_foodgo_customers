@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/category_model.dart';
 import '../../../../core/localization/language_service.dart';
+import '../../../../core/localization/language_service.dart';
 
 /// Widget hien thi danh muc mon an duoi dang cuon ngang.
 /// Nhan Stream<List<CategoryModel>> va tu dong xu ly 3 trang thai:
@@ -25,7 +26,7 @@ class HomeCategories extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            LanguageService.translate('home_categories'),
+            context.t('home_categories'),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -54,14 +55,14 @@ class HomeCategories extends StatelessWidget {
               debugPrint(
                   'HomeCategories: Loi khi load danh muc: ${snapshot.error}');
               return _ErrorWidget(
-                message: LanguageService.translate('error_load_categories'),
+                message: context.t('error_load_categories'),
               );
             }
 
             final categories = snapshot.data!;
             if (categories.isEmpty) {
               return _EmptyWidget(
-                message: LanguageService.translate('empty_categories'),
+                message: context.t('empty_categories'),
               );
             }
 

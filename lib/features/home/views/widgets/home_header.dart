@@ -41,7 +41,7 @@ class HomeHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _l10n(context, 'home_deliver_to'),
+                  context.t('home_deliver_to'),
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 12,
@@ -49,7 +49,7 @@ class HomeHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  _l10n(context, 'home_default_address'),
+                  context.t('home_default_address'),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 15,
@@ -70,9 +70,5 @@ class HomeHeader extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _l10n(BuildContext context, String key) {
-    return LanguageService.translate(key);
   }
 }

@@ -2,6 +2,14 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
 
+/// Trang thai chi tiet cua don hang (hien thi dong sub-status).
+/// Chi ap dung cho don dang xu ly.
+enum SubOrderStatus {
+  preparing,     // Nguoi ban dang chuan bi.
+  driverComing,  // Tai xe dang toi nha hang.
+  delivering,    // Tai xe dang giao hang.
+}
+
 /// Model mock cho don hang.
 class OrderModel {
   final String id;
@@ -11,6 +19,7 @@ class OrderModel {
   final double totalPrice;
   final DateTime orderDate;
   final OrderStatus status;
+  final SubOrderStatus? subStatus; // Chi co gia tri khi status == ordered.
 
   const OrderModel({
     required this.id,
@@ -20,6 +29,7 @@ class OrderModel {
     required this.totalPrice,
     required this.orderDate,
     required this.status,
+    this.subStatus,
   });
 }
 
@@ -35,12 +45,14 @@ class ActivityOrderCard extends StatelessWidget {
   final OrderModel order;
   final VoidCallback? onViewDetail;
   final VoidCallback? onReorder;
+  final VoidCallback? onCancel;
 
   const ActivityOrderCard({
     super.key,
     required this.order,
     this.onViewDetail,
     this.onReorder,
+    this.onCancel,
   });
 
   @override
@@ -94,9 +106,13 @@ class ActivityOrderCard extends StatelessWidget {
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      // Hien thi sub-status neu co (chi cho don dang xu ly).
+                      if (order.subStatus != null) ...[
+                        const SizedBox(height: 2),
+                        _buildSubStatusRow(),
+                      ],
                       Text(
-                        '${order.mainItem}${order.itemCount > 1 ? ' + ${order.itemCount - 1} mon' : ''}',
+                        _formatItemCountText(),
                         style: const TextStyle(
                           fontSize: 13,
                           color: AppColors.textSecondary,
@@ -163,7 +179,7 @@ class ActivityOrderCard extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      LanguageService.translate('activity_btn_detail'),
+                      context.t('activity_btn_detail'),
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -172,27 +188,9 @@ class ActivityOrderCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Nut dat lai (mau chinh).
+                // Nut hanh dong thu hai: Huy don (neu ordered) hoac Dat lai (neu received/cancelled).
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: onReorder,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: Text(
-                      LanguageService.translate('activity_btn_reorder'),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
+                  child: _buildActionButton(),
                 ),
               ],
             ),
@@ -242,15 +240,122 @@ class ActivityOrderCard extends StatelessWidget {
     );
   }
 
+  /// Dong sub-status hien thi trang thai chi tiet cua don dang xu ly.
+  Widget _buildSubStatusRow() {
+    // Chi hien thi neu subStatus co gia tri (don dang xu ly).
+    if (order.subStatus == null) return const SizedBox.shrink();
+
+    String text;
+    Color textColor;
+
+    switch (order.subStatus!) {
+      case SubOrderStatus.preparing:
+        text = LanguageService.translate('activity_status_preparing');
+        textColor = Colors.blue.shade700;
+        break;
+      case SubOrderStatus.driverComing:
+        text = LanguageService.translate('activity_status_driver_coming');
+        textColor = Colors.orange.shade700;
+        break;
+      case SubOrderStatus.delivering:
+        text = LanguageService.translate('activity_status_delivering');
+        textColor = Colors.orange.shade700;
+        break;
+    }
+
+    return Row(
+      children: [
+        Icon(
+          Icons.arrow_forward_ios,
+          size: 10,
+          color: textColor,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: textColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Nut hanh dong thu hai, thay doi theo trang thai don hang:
+  ///   - ordered: nut "Huy don" (OutlineButton, chu do).
+  ///   - received/cancelled: nut "Dat lai" (ElevatedButton, xanh la).
+  Widget _buildActionButton() {
+    if (order.status == OrderStatus.ordered) {
+      // Nut Huy don: OutlineButton voi chu mau do.
+      return OutlinedButton(
+        onPressed: () {
+          debugPrint('ActivityOrderCard: Nguoi dung bam Huy don [${order.id}]');
+          onCancel?.call();
+        },
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.error,
+          side: const BorderSide(color: AppColors.error),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        child: Text(
+          LanguageService.translate('activity_btn_cancel'),
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+    }
+
+    // Nut Dat lai: ElevatedButton xanh la (cho received va cancelled).
+    return ElevatedButton(
+      onPressed: () {
+        debugPrint('ActivityOrderCard: Nguoi dung bam Dat lai [${order.id}]');
+        onReorder?.call();
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        elevation: 0,
+      ),
+      child: Text(
+        LanguageService.translate('activity_btn_reorder'),
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
   String _formatPrice(double price) {
     final formatted = price.toStringAsFixed(0).replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]}.',
         );
-    return '$formatted VND';
+    return '$formatted ${LanguageService.translate('unit_currency')}';
   }
 
   String _formatDateTime(DateTime dt) {
     return '${dt.day}/${dt.month}/${dt.year} - ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  /// Format text so luong mon an them (VD: "+ 2 mon" hoac "+ 2 items").
+  String _formatItemCountText() {
+    if (order.itemCount <= 1) {
+      return order.mainItem;
+    }
+    final suffix = LanguageService.translate('order_item_count_suffix')
+        .replaceAll('\$1', (order.itemCount - 1).toString());
+    return '${order.mainItem} + $suffix';
   }
 }
