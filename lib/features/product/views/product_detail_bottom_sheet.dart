@@ -97,46 +97,46 @@ class _ProductDetailBottomSheetState extends State<ProductDetailBottomSheet> {
   }
 
   /// Tao label cho tuy chon size.
-  String _getSizeLabel(String size) {
+  String _getSizeLabel(BuildContext context, String size) {
     switch (size) {
       case 'small':
-        return LanguageService.translate('product_size_small');
+        return context.t('product_size_small');
       case 'medium':
-        return LanguageService.translate('product_size_medium');
+        return context.t('product_size_medium');
       case 'large':
-        return LanguageService.translate('product_size_large');
+        return context.t('product_size_large');
       default:
         return size;
     }
   }
 
   /// Tao label cho muc do da.
-  String _getIceLabel(String level) {
+  String _getIceLabel(BuildContext context, String level) {
     switch (level) {
       case '100':
-        return LanguageService.translate('product_ice_100');
+        return context.t('product_ice_100');
       case '70':
-        return LanguageService.translate('product_ice_70');
+        return context.t('product_ice_70');
       case '50':
-        return LanguageService.translate('product_ice_50');
+        return context.t('product_ice_50');
       case 'none':
-        return LanguageService.translate('product_ice_none');
+        return context.t('product_ice_none');
       default:
         return level;
     }
   }
 
   /// Tao label cho topping.
-  String _getToppingLabel(String topping) {
+  String _getToppingLabel(BuildContext context, String topping) {
     switch (topping) {
       case 'pearl':
-        return LanguageService.translate('product_topping_pearl');
+        return context.t('product_topping_pearl');
       case 'fruit_jelly':
-        return LanguageService.translate('product_topping_fruit_jelly');
+        return context.t('product_topping_fruit_jelly');
       case 'pudding':
-        return LanguageService.translate('product_topping_pudding');
+        return context.t('product_topping_pudding');
       case 'cheese':
-        return LanguageService.translate('product_topping_cheese');
+        return context.t('product_topping_cheese');
       default:
         return topping;
     }
@@ -191,14 +191,14 @@ class _ProductDetailBottomSheetState extends State<ProductDetailBottomSheet> {
   }
 
   /// Tra ve widget phan lua chon size (Radio).
-  Widget _buildSizeSection() {
+  Widget _buildSizeSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
             Text(
-              LanguageService.translate('product_size'),
+              context.t('product_size'),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -221,79 +221,83 @@ class _ProductDetailBottomSheetState extends State<ProductDetailBottomSheet> {
           final extra = _sizePrices[size] ?? 0;
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: GestureDetector(
-              onTap: () {
-                setState(() => _selectedSize = size);
-                debugPrint('Chon size: ${_getSizeLabel(size)}, gia them: $extra');
-              },
-              child: Row(
-                children: [
-                  Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: _selectedSize == size ? AppColors.primary : AppColors.border,
-                        width: 2,
-                      ),
-                    ),
-                    child: _selectedSize == size
-                        ? Center(
-                            child: Container(
-                              width: 10,
-                              height: 10,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          )
-                        : null,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    _getSizeLabel(size),
-                    style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
-                  ),
-                  if (extra > 0) ...[
-                    const SizedBox(width: 4),
-                    Text(
-                      _formatPrice(extra),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                  if (size == 'small') ...[
-                    const Spacer(),
-                    Text(
-                      LanguageService.translate('common_confirm').toLowerCase().replaceFirst(
-                        LanguageService.translate('common_confirm')[0],
-                        LanguageService.translate('common_confirm')[0].toUpperCase(),
-                      ),
-                      style: const TextStyle(fontSize: 12, color: AppColors.textHint),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+            child: _buildSizeItem(context, size, extra),
           );
         }),
       ],
     );
   }
 
+  Widget _buildSizeItem(BuildContext context, String size, double extra) {
+    return GestureDetector(
+      onTap: () {
+        setState(() => _selectedSize = size);
+        debugPrint('Chon size: ${_getSizeLabel(context, size)}, gia them: $extra');
+      },
+      child: Row(
+        children: [
+          Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: _selectedSize == size ? AppColors.primary : AppColors.border,
+                width: 2,
+              ),
+            ),
+            child: _selectedSize == size
+                ? Center(
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  )
+                : null,
+          ),
+          const SizedBox(width: 12),
+          Text(
+            _getSizeLabel(context, size),
+            style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+          ),
+          if (extra > 0) ...[
+            const SizedBox(width: 4),
+            Text(
+              _formatPrice(extra),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+          if (size == 'small') ...[
+            const Spacer(),
+            Text(
+              context.t('common_confirm').toLowerCase().replaceFirst(
+                context.t('common_confirm')[0],
+                context.t('common_confirm')[0].toUpperCase(),
+              ),
+              style: const TextStyle(fontSize: 12, color: AppColors.textHint),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   /// Tra ve widget phan lua chon muc do da (Radio).
-  Widget _buildIceLevelSection() {
+  Widget _buildIceLevelSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
             Text(
-              LanguageService.translate('product_ice_level'),
+              context.t('product_ice_level'),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -320,7 +324,7 @@ class _ProductDetailBottomSheetState extends State<ProductDetailBottomSheet> {
             return GestureDetector(
               onTap: () {
                 setState(() => _selectedIceLevel = level);
-                debugPrint('Chon muc do da: ${_getIceLabel(level)}');
+                debugPrint('Chon muc do da: ${_getIceLabel(context, level)}');
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -333,7 +337,7 @@ class _ProductDetailBottomSheetState extends State<ProductDetailBottomSheet> {
                   ),
                 ),
                 child: Text(
-                  _getIceLabel(level),
+                  _getIceLabel(context, level),
                   style: TextStyle(
                     fontSize: 14,
                     color: isSelected ? AppColors.primary : AppColors.textPrimary,
@@ -349,12 +353,12 @@ class _ProductDetailBottomSheetState extends State<ProductDetailBottomSheet> {
   }
 
   /// Tra ve widget phan lua chon topping (Checkbox).
-  Widget _buildToppingSection() {
+  Widget _buildToppingSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          LanguageService.translate('product_topping'),
+          context.t('product_topping'),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -376,7 +380,7 @@ class _ProductDetailBottomSheetState extends State<ProductDetailBottomSheet> {
                   }
                 });
                 debugPrint(
-                  'Topping: ${_getToppingLabel(entry.key)} - ${isSelected ? 'bo chon' : 'chon'}',
+                  'Topping: ${_getToppingLabel(context, entry.key)} - ${isSelected ? 'bo chon' : 'chon'}',
                 );
               },
               child: Row(
@@ -399,7 +403,7 @@ class _ProductDetailBottomSheetState extends State<ProductDetailBottomSheet> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      _getToppingLabel(entry.key),
+                      _getToppingLabel(context, entry.key),
                       style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
                     ),
                   ),
@@ -420,12 +424,12 @@ class _ProductDetailBottomSheetState extends State<ProductDetailBottomSheet> {
   }
 
   /// Tra ve widget ghi chu nhap lieu nhieu dong.
-  Widget _buildNoteSection() {
+  Widget _buildNoteSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          LanguageService.translate('cart_note'),
+          context.t('cart_note'),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -437,7 +441,7 @@ class _ProductDetailBottomSheetState extends State<ProductDetailBottomSheet> {
           controller: _noteController,
           maxLines: 3,
           decoration: InputDecoration(
-            hintText: LanguageService.translate('product_note_hint'),
+            hintText: context.t('product_note_hint'),
             hintStyle: const TextStyle(
               color: AppColors.textHint,
               fontSize: 14,
@@ -457,7 +461,7 @@ class _ProductDetailBottomSheetState extends State<ProductDetailBottomSheet> {
   }
 
   /// Tra ve widget thanh hanh dong bat chan (Sticky Bottom Bar).
-  Widget _buildStickyBottomBar() {
+  Widget _buildStickyBottomBar(BuildContext context) {
     return Container(
       padding: EdgeInsets.fromLTRB(
         16,
@@ -507,9 +511,9 @@ class _ProductDetailBottomSheetState extends State<ProductDetailBottomSheet> {
             child: GestureDetector(
               onTap: () {
                 debugPrint('Them vao gio hang: $_quantity x ${widget.product.name}');
-                debugPrint('  Size: ${_getSizeLabel(_selectedSize)} (+${_formatPrice(_sizeExtra)})');
-                debugPrint('  Muc do da: ${_getIceLabel(_selectedIceLevel)}');
-                debugPrint('  Topping: ${_selectedToppings.map(_getToppingLabel).join(', ')}');
+                debugPrint('  Size: ${_getSizeLabel(context, _selectedSize)} (+${_formatPrice(_sizeExtra)})');
+                debugPrint('  Muc do da: ${_getIceLabel(context, _selectedIceLevel)}');
+                debugPrint('  Topping: ${_selectedToppings.map((t) => _getToppingLabel(context, t)).join(', ')}');
                 debugPrint('  Ghi chu: ${_noteController.text}');
                 debugPrint('  Tong tien: ${_formatFullPrice(_totalPrice)}');
                 Navigator.pop(context);
@@ -530,7 +534,7 @@ class _ProductDetailBottomSheetState extends State<ProductDetailBottomSheet> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      LanguageService.translate('product_add_to_cart'),
+                      context.t('product_add_to_cart'),
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -673,7 +677,7 @@ class _ProductDetailBottomSheetState extends State<ProductDetailBottomSheet> {
                   // ========== LUA CHON SIZE ==========
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildSizeSection(),
+                    child: _buildSizeSection(context),
                   ),
 
                   const Padding(
@@ -684,7 +688,7 @@ class _ProductDetailBottomSheetState extends State<ProductDetailBottomSheet> {
                   // ========== LUA CHON MUC DO DA ==========
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildIceLevelSection(),
+                    child: _buildIceLevelSection(context),
                   ),
 
                   const Padding(
@@ -695,7 +699,7 @@ class _ProductDetailBottomSheetState extends State<ProductDetailBottomSheet> {
                   // ========== LUA CHON TOPPING ==========
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildToppingSection(),
+                    child: _buildToppingSection(context),
                   ),
 
                   const Padding(
@@ -706,7 +710,7 @@ class _ProductDetailBottomSheetState extends State<ProductDetailBottomSheet> {
                   // ========== GHI CHU ==========
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                    child: _buildNoteSection(),
+                    child: _buildNoteSection(context),
                   ),
 
                   // Khoang trong duoi cung cua phan cuon (truoc sticky bar).
@@ -717,7 +721,7 @@ class _ProductDetailBottomSheetState extends State<ProductDetailBottomSheet> {
           ),
 
           // ========== STICKY BOTTOM BAR ==========
-          _buildStickyBottomBar(),
+          _buildStickyBottomBar(context),
         ],
       ),
     );

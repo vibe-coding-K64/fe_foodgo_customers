@@ -71,12 +71,12 @@ class _SupportViewState extends State<SupportView> {
   }
 
   /// Loc danh sach FAQ theo tu khoa tim kiem.
-  List<FaqItem> get _filteredFaqs {
+  List<FaqItem> _getFilteredFaqs(BuildContext context) {
     if (_searchQuery.isEmpty) return _faqItems;
     final query = _searchQuery.toLowerCase();
     return _faqItems.where((faq) {
-      final question = LanguageService.translate(faq.questionKey).toLowerCase();
-      final answer = LanguageService.translate(faq.answerKey).toLowerCase();
+      final question = context.t(faq.questionKey).toLowerCase();
+      final answer = context.t(faq.answerKey).toLowerCase();
       return question.contains(query) || answer.contains(query);
     }).toList();
   }
@@ -97,7 +97,7 @@ class _SupportViewState extends State<SupportView> {
     debugPrint('SupportView: Nguoi dung bam nut Goi tong dai');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(LanguageService.translate('support_call_btn')),
+        content: Text(context.t('support_call_btn')),
         backgroundColor: AppColors.primary,
         duration: const Duration(seconds: 1),
         behavior: SnackBarBehavior.floating,
@@ -120,7 +120,7 @@ class _SupportViewState extends State<SupportView> {
           },
         ),
         title: Text(
-          LanguageService.translate('support_title'),
+          context.t('support_title'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -132,10 +132,10 @@ class _SupportViewState extends State<SupportView> {
       body: Column(
         children: [
           // Thanh tim kiem.
-          _buildSearchBar(),
+          _buildSearchBar(context),
           // Danh sach FAQ.
           Expanded(
-            child: _buildFaqList(),
+            child: _buildFaqList(context),
           ),
           // Sticky bottom bar.
           _buildStickyBottomBar(context),
@@ -145,7 +145,7 @@ class _SupportViewState extends State<SupportView> {
   }
 
   /// Thanh tim kiem o dau trang.
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       color: AppColors.surface,
@@ -162,7 +162,7 @@ class _SupportViewState extends State<SupportView> {
             debugPrint('SupportView: Tu khoa tim kiem = [$value]');
           },
           decoration: InputDecoration(
-            hintText: LanguageService.translate('support_search_hint'),
+            hintText: context.t('support_search_hint'),
             hintStyle: const TextStyle(
               fontSize: 14,
               color: AppColors.textHint,
@@ -210,8 +210,8 @@ class _SupportViewState extends State<SupportView> {
   }
 
   /// Danh sach FAQ su dung ExpansionTile.
-  Widget _buildFaqList() {
-    final filtered = _filteredFaqs;
+  Widget _buildFaqList(BuildContext context) {
+    final filtered = _getFilteredFaqs(context);
 
     if (filtered.isEmpty) {
       return Center(
@@ -233,7 +233,7 @@ class _SupportViewState extends State<SupportView> {
             ),
             const SizedBox(height: 16),
             Text(
-              LanguageService.translate('search_no_results'),
+              context.t('search_no_results'),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -242,7 +242,7 @@ class _SupportViewState extends State<SupportView> {
             ),
             const SizedBox(height: 6),
             Text(
-              LanguageService.translate('support_search_hint'),
+              context.t('support_search_hint'),
               style: const TextStyle(
                 fontSize: 13,
                 color: AppColors.textSecondary,
@@ -259,7 +259,7 @@ class _SupportViewState extends State<SupportView> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(
-            LanguageService.translate('support_faq_title'),
+            context.t('support_faq_title'),
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -272,7 +272,7 @@ class _SupportViewState extends State<SupportView> {
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
             itemCount: filtered.length,
             itemBuilder: (context, index) {
-              return _buildFaqTile(filtered[index], index);
+              return _buildFaqTile(context, filtered[index], index);
             },
           ),
         ),
@@ -281,7 +281,7 @@ class _SupportViewState extends State<SupportView> {
   }
 
   /// Mot item FAQ su dung ExpansionTile.
-  Widget _buildFaqTile(FaqItem faq, int index) {
+  Widget _buildFaqTile(BuildContext context, FaqItem faq, int index) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
@@ -300,7 +300,7 @@ class _SupportViewState extends State<SupportView> {
         iconColor: AppColors.textHint,
         collapsedIconColor: AppColors.textHint,
         title: Text(
-          LanguageService.translate(faq.questionKey),
+          context.t(faq.questionKey),
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -312,7 +312,7 @@ class _SupportViewState extends State<SupportView> {
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              LanguageService.translate(faq.answerKey),
+              context.t(faq.answerKey),
               style: const TextStyle(
                 fontSize: 13,
                 color: AppColors.textSecondary,
@@ -347,7 +347,7 @@ class _SupportViewState extends State<SupportView> {
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Text(
-              LanguageService.translate('support_need_help'),
+              context.t('support_need_help'),
               style: const TextStyle(
                 fontSize: 13,
                 color: AppColors.textSecondary,
@@ -381,7 +381,7 @@ class _SupportViewState extends State<SupportView> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          LanguageService.translate('support_chat_btn'),
+                          context.t('support_chat_btn'),
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -414,7 +414,7 @@ class _SupportViewState extends State<SupportView> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          LanguageService.translate('support_call_btn'),
+                          context.t('support_call_btn'),
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,

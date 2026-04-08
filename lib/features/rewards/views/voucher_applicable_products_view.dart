@@ -103,31 +103,31 @@ class _VoucherApplicableProductsViewState
   int _cartItemCount = 0;
 
   /// Tao tieu de dong cho AppBar.
-  String get _titleText {
+  String _titleText(BuildContext context) {
     final discountText = widget.voucher.isPercentage
-        ? LanguageService.translate('voucher_discount_percent')
+        ? context.t('voucher_discount_percent')
             .replaceAll('\$1', widget.voucher.discountValue.toInt().toString())
-        : LanguageService.translate('voucher_discount_amount')
+        : context.t('voucher_discount_amount')
             .replaceAll('\$1', widget.voucher.discountValue.toInt().toString());
     final titleTemplate =
-        LanguageService.translate('voucher_apply_title').replaceAll('\$1', discountText);
+        context.t('voucher_apply_title').replaceAll('\$1', discountText);
     return titleTemplate;
   }
 
   /// Format gia thanh chuoi VND (VD: "35.000 VND").
-  String _formatPrice(double price) {
+  String _formatPrice(BuildContext context, double price) {
     if (price >= 1000) {
       final formatted = price.toStringAsFixed(0).replaceAllMapped(
             RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
             (Match m) => '${m[1]}.',
           );
-      return '$formatted ${LanguageService.translate('unit_currency')}';
+      return '$formatted ${context.t('unit_currency')}';
     }
-    return '${price.toStringAsFixed(0)} ${LanguageService.translate('unit_currency')}';
+    return '${price.toStringAsFixed(0)} ${context.t('unit_currency')}';
   }
 
   /// Xu ly khi nguoi dung them san pham vao gio hang.
-  void _onAddToCart(ProductItemModel product) {
+  void _onAddToCart(BuildContext context, ProductItemModel product) {
     setState(() {
       _cartItemCount++;
     });
@@ -135,7 +135,7 @@ class _VoucherApplicableProductsViewState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          LanguageService.translate('success_add_to_cart'),
+          context.t('success_add_to_cart'),
         ),
         duration: const Duration(seconds: 1),
         backgroundColor: AppColors.primary,
@@ -152,7 +152,7 @@ class _VoucherApplicableProductsViewState
         foregroundColor: Colors.white,
         elevation: 0,
         title: Text(
-          _titleText,
+          _titleText(context),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -163,13 +163,13 @@ class _VoucherApplicableProductsViewState
       body: Column(
         children: [
           // Banner thong bao nho phia duoi AppBar.
-          _buildInfoBanner(),
+          _buildInfoBanner(context),
           // Danh sach san pham.
           Expanded(
             child: ListView.builder(
               itemCount: _mockProducts.length,
               itemBuilder: (context, index) {
-                return _buildProductItem(_mockProducts[index]);
+                return _buildProductItem(context, _mockProducts[index]);
               },
             ),
           ),
@@ -180,7 +180,7 @@ class _VoucherApplicableProductsViewState
   }
 
   /// Banner thong bao nho phia duoi AppBar.
-  Widget _buildInfoBanner() {
+  Widget _buildInfoBanner(BuildContext ctx) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -197,7 +197,7 @@ class _VoucherApplicableProductsViewState
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              LanguageService.translate('voucher_auto_apply_note'),
+              ctx.t('voucher_auto_apply_note'),
               style: TextStyle(
                 fontSize: 13,
                 color: AppColors.primary,
@@ -211,7 +211,7 @@ class _VoucherApplicableProductsViewState
   }
 
   /// Widget hien thi mot item san pham trong danh sach.
-  Widget _buildProductItem(ProductItemModel product) {
+  Widget _buildProductItem(BuildContext ctx, ProductItemModel product) {
     return Material(
       color: AppColors.surface,
       child: InkWell(
@@ -248,7 +248,7 @@ class _VoucherApplicableProductsViewState
                 ),
               ),
               // Nut them vao gio hang ben phai.
-              _buildAddButton(product),
+              _buildAddButton(ctx, product),
             ],
           ),
         ),
@@ -310,7 +310,7 @@ class _VoucherApplicableProductsViewState
 
   Widget _buildPrice(ProductItemModel product) {
     return Text(
-      _formatPrice(product.price),
+      _formatPrice(context, product.price),
       style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w700,
@@ -319,9 +319,9 @@ class _VoucherApplicableProductsViewState
     );
   }
 
-  Widget _buildAddButton(ProductItemModel product) {
+  Widget _buildAddButton(BuildContext ctx, ProductItemModel product) {
     return GestureDetector(
-      onTap: () => _onAddToCart(product),
+      onTap: () => _onAddToCart(ctx, product),
       child: Container(
         width: 36,
         height: 36,

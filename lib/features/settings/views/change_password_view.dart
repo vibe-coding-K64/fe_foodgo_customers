@@ -123,7 +123,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
       debugPrint('ChangePassword: Co o nhap bi trong');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(LanguageService.translate('pwd_error_empty')),
+          content: Text(context.t('pwd_error_empty')),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
@@ -137,7 +137,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
       debugPrint('ChangePassword: Mat khau xac nhan khong khop');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(LanguageService.translate('pwd_error_mismatch')),
+          content: Text(context.t('pwd_error_mismatch')),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
@@ -147,11 +147,11 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
     }
 
     debugPrint('ChangePassword: Gui yeu cau doi mat khau');
-    _showOtpDialog();
+    _showOtpDialog(context);
   }
 
   /// Hien AlertDialog nhap ma OTP 6 so.
-  void _showOtpDialog() {
+  void _showOtpDialog(BuildContext ctx) {
     // Reset o nhap OTP moi lan mo.
     _otpController.clear();
 
@@ -165,7 +165,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
             borderRadius: BorderRadius.circular(16),
           ),
           title: Text(
-            LanguageService.translate('pwd_otp_title'),
+            ctx.t('pwd_otp_title'),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -178,7 +178,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
             children: [
               // Mo ta.
               Text(
-                LanguageService.translate('pwd_otp_desc'),
+                ctx.t('pwd_otp_desc'),
                 style: const TextStyle(
                   fontSize: 13,
                   color: AppColors.textSecondary,
@@ -243,7 +243,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
                 Navigator.pop(dialogContext);
               },
               child: Text(
-                LanguageService.translate('common_cancel'),
+                ctx.t('common_cancel'),
                 style: const TextStyle(
                   fontSize: 14,
                   color: AppColors.textSecondary,
@@ -270,7 +270,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
                 ),
               ),
               child: Text(
-                LanguageService.translate('pwd_otp_confirm'),
+                ctx.t('pwd_otp_confirm'),
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -296,7 +296,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(LanguageService.translate('pwd_success_msg')),
+        content: Text(context.t('pwd_success_msg')),
         backgroundColor: AppColors.primary,
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
@@ -322,7 +322,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
           },
         ),
         title: Text(
-          LanguageService.translate('pwd_title'),
+          context.t('pwd_title'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -343,7 +343,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
                   children: [
                     // Mat khau hien tai.
                     Text(
-                      LanguageService.translate('pwd_old_hint'),
+                      context.t('pwd_old_hint'),
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -353,7 +353,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
                     const SizedBox(height: 8),
                     _buildPasswordField(
                       controller: _oldPwdController,
-                      hintText: LanguageService.translate('pwd_old_hint'),
+                      hintText: context.t('pwd_old_hint'),
                       isVisible: _isOldPwdVisible,
                       onToggleVisibility: () {
                         setState(() => _isOldPwdVisible = !_isOldPwdVisible);
@@ -362,7 +362,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
                     const SizedBox(height: 20),
                     // Mat khau moi.
                     Text(
-                      LanguageService.translate('pwd_new_hint'),
+                      context.t('pwd_new_hint'),
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -372,7 +372,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
                     const SizedBox(height: 8),
                     _buildPasswordField(
                       controller: _newPwdController,
-                      hintText: LanguageService.translate('pwd_new_hint'),
+                      hintText: context.t('pwd_new_hint'),
                       isVisible: _isNewPwdVisible,
                       onToggleVisibility: () {
                         setState(() => _isNewPwdVisible = !_isNewPwdVisible);
@@ -381,7 +381,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
                     const SizedBox(height: 20),
                     // Xac nhan mat khau moi.
                     Text(
-                      LanguageService.translate('pwd_confirm_hint'),
+                      context.t('pwd_confirm_hint'),
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -391,7 +391,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
                     const SizedBox(height: 8),
                     _buildPasswordField(
                       controller: _confirmPwdController,
-                      hintText: LanguageService.translate('pwd_confirm_hint'),
+                      hintText: context.t('pwd_confirm_hint'),
                       isVisible: _isConfirmPwdVisible,
                       onToggleVisibility: () {
                         setState(
@@ -434,7 +434,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
                   elevation: 0,
                 ),
                 child: Text(
-                  LanguageService.translate('pwd_submit_btn'),
+                  context.t('pwd_submit_btn'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,

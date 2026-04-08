@@ -297,18 +297,18 @@ class PaymentMethodCard extends StatelessWidget {
   }
 
   /// Lay ten nhan hien thi cua nha the.
-  String _getCardBrandName() {
+  String _getCardBrandName(BuildContext ctx) {
     switch (method.cardBrand) {
       case CardBrand.visa:
-        return LanguageService.translate('payment_visa');
+        return ctx.t('payment_visa');
       case CardBrand.mastercard:
-        return LanguageService.translate('payment_mastercard');
+        return ctx.t('payment_mastercard');
       case CardBrand.jcb:
         return 'JCB';
       case CardBrand.amex:
         return 'American Express';
       default:
-        return LanguageService.translate('payment_card');
+        return ctx.t('payment_card');
     }
   }
 
@@ -361,16 +361,16 @@ class PaymentMethodCard extends StatelessWidget {
   }
 
   /// Lay ten hien thi cua vi.
-  String _getWalletName() {
+  String _getWalletName(BuildContext ctx) {
     switch (method.walletBrand) {
       case WalletBrand.momo:
-        return LanguageService.translate('payment_momo');
+        return ctx.t('payment_momo');
       case WalletBrand.zalopay:
-        return LanguageService.translate('payment_zalopay');
+        return ctx.t('payment_zalopay');
       case WalletBrand.vnpay:
-        return LanguageService.translate('payment_vnpay');
+        return ctx.t('payment_vnpay');
       default:
-        return LanguageService.translate('payment_wallet');
+        return ctx.t('payment_wallet');
     }
   }
 

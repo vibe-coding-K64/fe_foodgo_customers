@@ -60,15 +60,32 @@ class _SupportChatViewState extends State<SupportChatView> {
   /// Danh sach tin nhan mock (3-4 cau hoi tra loi).
   final List<ChatMessage> _messages = [];
 
+  bool _initialMessagesBuilt = false;
+
   @override
   void initState() {
     super.initState();
-    _messages.addAll(_buildInitialMessages());
     if (widget.orderId != null && widget.orderId!.isNotEmpty) {
       debugPrint('SupportChat: Man hinh chat da mo, ma don hang: [${widget.orderId}]');
-      _themTinNhanDonHang();
     } else {
       debugPrint('SupportChat: Man hinh chat da mo (khong co ma don hang)');
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialMessagesBuilt) {
+      _initialMessagesBuilt = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _messages.addAll(_buildInitialMessages(context));
+          if (widget.orderId != null && widget.orderId!.isNotEmpty) {
+            _themTinNhanDonHang();
+          }
+        });
+      });
     }
   }
 
@@ -86,11 +103,11 @@ class _SupportChatViewState extends State<SupportChatView> {
   }
 
   /// Tao danh sach tin nhan khoi tao mock.
-  List<ChatMessage> _buildInitialMessages() {
+  List<ChatMessage> _buildInitialMessages(BuildContext context) {
     final now = DateTime.now();
     return [
       ChatMessage(
-        content: LanguageService.translate('chat_staff_greeting'),
+        content: context.t('chat_staff_greeting'),
         sender: MessageSender.staff,
         timestamp: DateTime(now.year, now.month, now.day, 10, 25),
         isRead: true,
@@ -167,7 +184,7 @@ class _SupportChatViewState extends State<SupportChatView> {
     debugPrint('SupportChat: Nguoi dung bam nut dinh kem');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(LanguageService.translate('chat_attachment')),
+        content: Text(context.t('chat_attachment')),
         backgroundColor: AppColors.primary,
         duration: const Duration(seconds: 1),
         behavior: SnackBarBehavior.floating,
@@ -191,15 +208,15 @@ class _SupportChatViewState extends State<SupportChatView> {
   }
 
   /// Tao dinh dang ngay (Hien thi "Hom nay" / "Hom qua").
-  String _formatDate(DateTime dt) {
+  String _formatDate(BuildContext context, DateTime dt) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final msgDate = DateTime(dt.year, dt.month, dt.day);
 
     if (msgDate == today) {
-      return LanguageService.translate('chat_today');
+      return context.t('chat_today');
     } else if (msgDate == today.subtract(const Duration(days: 1))) {
-      return LanguageService.translate('chat_yesterday');
+      return context.t('chat_yesterday');
     } else {
       return '${dt.day}/${dt.month}/${dt.year}';
     }
@@ -222,13 +239,13 @@ class _SupportChatViewState extends State<SupportChatView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: _buildAppBar(),
+      appBar: _buildAppBar(context),
       body: SafeArea(
         child: Column(
           children: [
             // Vung hien thi tin nhan.
             Expanded(
-              child: _buildMessageList(),
+              child: _buildMessageList(context),
             ),
             // Vung nhap tin nhan.
             _buildInputArea(context),
@@ -239,7 +256,7 @@ class _SupportChatViewState extends State<SupportChatView> {
   }
 
   /// AppBar voi ten nhan vien va trang thai online.
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
       backgroundColor: AppColors.surface,
       elevation: 1,
@@ -275,7 +292,7 @@ class _SupportChatViewState extends State<SupportChatView> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  LanguageService.translate('chat_staff_name'),
+                  context.t('chat_staff_name'),
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -295,7 +312,7 @@ class _SupportChatViewState extends State<SupportChatView> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      LanguageService.translate('chat_status_online'),
+                      context.t('chat_status_online'),
                       style: const TextStyle(
                         fontSize: 11,
                         color: AppColors.primary,
@@ -312,7 +329,7 @@ class _SupportChatViewState extends State<SupportChatView> {
   }
 
   /// Danh sach tin nhan (ListView).
-  Widget _buildMessageList() {
+  Widget _buildMessageList(BuildContext context) {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -325,9 +342,9 @@ class _SupportChatViewState extends State<SupportChatView> {
           children: [
             // Nhan ngay chia khoang (neu can).
             if (showDate)
-              _buildDateDivider(message.timestamp),
+              _buildDateDivider(context, message.timestamp),
             // Bong bong tin nhan.
-            _buildChatBubble(message, index),
+            _buildChatBubble(context, message, index),
           ],
         );
       },
@@ -335,7 +352,7 @@ class _SupportChatViewState extends State<SupportChatView> {
   }
 
   /// Nhan ngay chia khoang giua cac nhom tin nhan.
-  Widget _buildDateDivider(DateTime timestamp) {
+  Widget _buildDateDivider(BuildContext context, DateTime timestamp) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Container(
@@ -345,7 +362,7 @@ class _SupportChatViewState extends State<SupportChatView> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
-          _formatDate(timestamp),
+          _formatDate(context, timestamp),
           style: const TextStyle(
             fontSize: 11,
             color: AppColors.textSecondary,
@@ -356,7 +373,7 @@ class _SupportChatViewState extends State<SupportChatView> {
   }
 
   /// Mot bong bong tin nhan (trai = nhan vien, phai = nguoi dung).
-  Widget _buildChatBubble(ChatMessage message, int index) {
+  Widget _buildChatBubble(BuildContext context, ChatMessage message, int index) {
     final isStaff = message.sender == MessageSender.staff;
     final isLastUnread = !isStaff &&
         index == _messages.length - 1 &&
@@ -496,7 +513,7 @@ class _SupportChatViewState extends State<SupportChatView> {
                 textCapitalization: TextCapitalization.sentences,
                 onChanged: _onTextChanged,
                 decoration: InputDecoration(
-                  hintText: LanguageService.translate('chat_input_hint'),
+                  hintText: context.t('chat_input_hint'),
                   hintStyle: const TextStyle(
                     fontSize: 14,
                     color: AppColors.textHint,
