@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../models/user_model.dart';
+import '../services/profile_service.dart';
 
 /// Man hinh Chinh sua ho so ca nhan.
 ///
@@ -13,26 +15,45 @@ import '../../../core/localization/language_service.dart';
 /// Luong bao mat kep:
 ///   Buoc 1: Dialog nhap mat khau.
 ///   Buoc 2: Dialog nhap OTP 6 so.
-///   Buoc 3: SnackBar thanh cong + quay ve.
+///   Buoc 3: Goi ProfileService.updateProfile() va quay ve neu thanh cong.
 ///
 /// Duoc goi tu:
 ///   - ProfileView: bam "Chinh sua ho so"
 class EditProfileView extends StatefulWidget {
-  const EditProfileView({super.key});
+  /// Nguoi dung hien tai (co the null neu chua co du lieu).
+  final UserModel? user;
+
+  const EditProfileView({super.key, this.user});
 
   @override
   State<EditProfileView> createState() => _EditProfileViewState();
 }
 
 class _EditProfileViewState extends State<EditProfileView> {
+  /// Service quan ly ho so.
+  final ProfileService _profileService = const ProfileService();
+
   /// Controller o nhap ho ten.
-  final _nameController = TextEditingController(text: 'Nguyen Van A');
+  late final TextEditingController _nameController;
 
   /// Controller o nhap email.
-  final _emailController = TextEditingController(text: 'nguyenvana@email.com');
+  late final TextEditingController _emailController;
 
   /// Khoa submit (chan double-tap).
   bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Khoi tao controller voi du lieu tu UserModel (neu co).
+    _nameController = TextEditingController(
+      text: widget.user?.fullName ?? '',
+    );
+    _emailController = TextEditingController(
+      text: widget.user?.email ?? '',
+    );
+    debugPrint('EditProfile: Khoi tao voi user = ${widget.user?.fullName ?? "null"}');
+  }
 
   @override
   void dispose() {
@@ -290,7 +311,7 @@ class _EditProfileViewState extends State<EditProfileView> {
             ),
             const SizedBox(width: 8),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 final otp = otpController.text.trim();
                 if (otp.isEmpty || otp.length < 6) {
                   ScaffoldMessenger.of(this.context).showSnackBar(
@@ -304,9 +325,9 @@ class _EditProfileViewState extends State<EditProfileView> {
                   );
                   return;
                 }
-                debugPrint('EditProfile: OTP da xac thuc, cap nhat ho so');
+                debugPrint('EditProfile: OTP da xac thuc, goi updateProfile');
                 Navigator.pop(dialogContext);
-                _onProfileUpdated();
+                await _onProfileUpdated();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
@@ -335,21 +356,48 @@ class _EditProfileViewState extends State<EditProfileView> {
     );
   }
 
-  /// Buoc 3: Cap nhat thanh cong.
-  void _onProfileUpdated() {
-    debugPrint('EditProfile: Cap nhat ho so thanh cong');
+  /// Buoc 3: Cap nhat ho so qua Firebase.
+  Future<void> _onProfileUpdated() async {
+    setState(() => _isSubmitting = true);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.t('edit_success_msg')),
-        backgroundColor: AppColors.primary,
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    try {
+      await _profileService.updateProfile(
+        fullName: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+      );
 
-    // Quay ve man hinh truoc.
-    Navigator.pop(context);
+      debugPrint('EditProfile: Cap nhat ho so thanh cong');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.t('edit_success_msg')),
+            backgroundColor: AppColors.primary,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+
+        // Quay ve man hinh truoc.
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      debugPrint('EditProfile: Loi cap nhat ho so - $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.t('edit_error_update_failed')),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   @override
@@ -404,6 +452,7 @@ class _EditProfileViewState extends State<EditProfileView> {
 
   /// Khu vuc avatar: CircleAvatar + icon camera ghep de.
   Widget _buildAvatarArea() {
+    final avatarUrl = widget.user?.photoUrl;
     return Stack(
       children: [
         // Avatar chinh.
@@ -417,14 +466,20 @@ class _EditProfileViewState extends State<EditProfileView> {
               width: 1.5,
             ),
           ),
-          child: const CircleAvatar(
+          child: CircleAvatar(
             radius: 46,
             backgroundColor: AppColors.surfaceVariant,
-            child: Icon(
-              Icons.person,
-              size: 48,
-              color: AppColors.textHint,
-            ),
+            backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
+                ? NetworkImage(avatarUrl)
+                : null,
+            onBackgroundImageError: (_, __) {},
+            child: (avatarUrl == null || avatarUrl.isEmpty)
+                ? const Icon(
+                    Icons.person,
+                    size: 48,
+                    color: AppColors.textHint,
+                  )
+                : null,
           ),
         ),
         // Icon camera o goc phai duoi (phan ghep de).
@@ -434,6 +489,7 @@ class _EditProfileViewState extends State<EditProfileView> {
           child: GestureDetector(
             onTap: () {
               debugPrint('EditProfile: Nguoi dung bam doi avatar');
+              // TODO: Xu ly upload anh avatar khi da co Firebase Storage.
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(context.t('edit_avatar_hint')),
@@ -556,9 +612,10 @@ class _EditProfileViewState extends State<EditProfileView> {
 
   /// O nhap so dien thoai chi doc (nen xam, khong cho phep sua).
   Widget _buildReadOnlyField() {
+    final phoneValue = widget.user?.phoneNumber ?? '';
     return TextField(
       controller: TextEditingController(
-        text: context.t('edit_phone_value'),
+        text: phoneValue.isNotEmpty ? phoneValue : context.t('edit_phone_value'),
       ),
       readOnly: true,
       style: const TextStyle(

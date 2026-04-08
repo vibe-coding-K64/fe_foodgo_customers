@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/localization/language_service.dart';
-import '../edit_profile_view.dart';
 
 /// Widget hien thi phan header cua trang tai khoan.
 /// Background gradient xanh, avatar tron o giua, ten va so dien thoai.
@@ -8,12 +7,14 @@ class ProfileHeader extends StatelessWidget {
   final String userName;
   final String phoneNumber;
   final String avatarUrl;
+  final VoidCallback? onEditProfile;
 
   const ProfileHeader({
     super.key,
     required this.userName,
     required this.phoneNumber,
     required this.avatarUrl,
+    this.onEditProfile,
   });
 
   @override
@@ -41,7 +42,9 @@ class ProfileHeader extends StatelessWidget {
               CircleAvatar(
                 radius: 50,
                 backgroundColor: Colors.white.withOpacity(0.2),
-                backgroundImage: NetworkImage(avatarUrl),
+                backgroundImage: avatarUrl.isNotEmpty
+                    ? NetworkImage(avatarUrl)
+                    : null,
                 onBackgroundImageError: (_, __) {},
                 child: avatarUrl.isEmpty
                     ? const Icon(
@@ -63,25 +66,18 @@ class ProfileHeader extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               // So dien thoai.
-              Text(
-                phoneNumber,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
-                  fontSize: 14,
+              if (phoneNumber.isNotEmpty)
+                Text(
+                  phoneNumber,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 14,
+                  ),
                 ),
-              ),
               const SizedBox(height: 12),
               // Nut chinh sua ho so.
               OutlinedButton.icon(
-                onPressed: () {
-                  debugPrint('ProfileHeader: Nguoi dung bam nut chinh sua ho so');
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const EditProfileView(),
-                    ),
-                  );
-                },
+                onPressed: onEditProfile,
                 icon: const Icon(Icons.edit, size: 16),
                 label: Text(
                   context.t('profile_edit'),

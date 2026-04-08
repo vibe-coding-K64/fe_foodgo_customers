@@ -9,25 +9,39 @@ import '../../partner/views/partner_registration_view.dart';
 import '../../settings/views/settings_view.dart';
 import '../../support/views/support_view.dart';
 import '../../terms/views/terms_view.dart';
+import '../models/user_model.dart';
+import '../services/profile_service.dart';
+import 'edit_profile_view.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/profile_menu_list.dart';
 
 /// Man hinh tai khoan nguoi dung.
 ///
 /// Hien thi thong tin ca nhan, avatar va danh sach cac tuy chon quan ly tai khoan.
-class ProfileView extends StatelessWidget {
+/// Du lieu nguoi dung duoc lay tu Firebase Firestore thong qua StreamBuilder.
+class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Du lieu gia cho header (mock data).
-    const mockUserName = 'Nguyen Van A';
-    const mockPhone = '0909123456';
-    const mockAvatar =
-        'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=200&q=80';
+  State<ProfileView> createState() => _ProfileViewState();
+}
 
-    // Danh sach cac muc menu.
-    final menuItems = [
+class _ProfileViewState extends State<ProfileView> {
+  /// Service quan ly ho so nguoi dung.
+  final ProfileService _profileService = const ProfileService();
+
+  /// Danh sach cac muc menu.
+  late final List<ProfileMenuItem> _menuItems;
+
+  @override
+  void initState() {
+    super.initState();
+    _menuItems = _buildMenuItems();
+  }
+
+  /// Xay dung danh sach cac muc menu.
+  List<ProfileMenuItem> _buildMenuItems() {
+    return [
       // Quan ly chi tieu.
       ProfileMenuItem(
         titleKey: 'profile_spending',
@@ -136,24 +150,15 @@ class ProfileView extends StatelessWidget {
         onTap: () => _showLogoutDialog(context),
       ),
     ];
+  }
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: CustomScrollView(
-        slivers: [
-          // Header gradient xanh chua avatar va thong tin nguoi dung.
-          SliverToBoxAdapter(
-            child: ProfileHeader(
-              userName: mockUserName,
-              phoneNumber: mockPhone,
-              avatarUrl: mockAvatar,
-            ),
-          ),
-          // Danh sach menu tai khoan.
-          SliverToBoxAdapter(
-            child: ProfileMenuList(items: menuItems),
-          ),
-        ],
+  /// Mo trang chinh sua ho so.
+  void _onEditProfile(UserModel user) {
+    debugPrint('ProfileView: Nguoi dung bam nut chinh sua ho so');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProfileView(user: user),
       ),
     );
   }
@@ -187,6 +192,197 @@ class ProfileView extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: CustomScrollView(
+        slivers: [
+          // Header gradient xanh chua avatar va thong tin nguoi dung.
+          SliverToBoxAdapter(
+            child: StreamBuilder<UserModel?>(
+              stream: _profileService.getCurrentUserStream(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return _buildLoadingHeader();
+                }
+                if (snapshot.hasError) {
+                  debugPrint('ProfileView: loi StreamBuilder - ${snapshot.error}');
+                  return _buildDefaultHeader();
+                }
+                final user = snapshot.data;
+                if (user == null) {
+                  return _buildDefaultHeader();
+                }
+                return ProfileHeader(
+                  userName: user.fullName.isNotEmpty
+                      ? user.fullName
+                      : context.t('profile_no_name'),
+                  phoneNumber: user.phoneNumber.isNotEmpty
+                      ? user.phoneNumber
+                      : '',
+                  avatarUrl: user.photoUrl ?? '',
+                  onEditProfile: () => _onEditProfile(user),
+                );
+              },
+            ),
+          ),
+          // Danh sach menu tai khoan.
+          SliverToBoxAdapter(
+            child: ProfileMenuList(items: _menuItems),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Header khi dang loading.
+  Widget _buildLoadingHeader() {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: [
+            Color(0xFF2E7D32),
+            Color(0xFF4CAF50),
+          ],
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.2),
+                ),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: 150,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                width: 100,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(7),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: 120,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                  border: Border.all(color: Colors.white),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Header mac dinh khi khong co du lieu.
+  Widget _buildDefaultHeader() {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: [
+            Color(0xFF2E7D32),
+            Color(0xFF4CAF50),
+          ],
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.2),
+                ),
+                child: const Icon(
+                  Icons.person,
+                  size: 50,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                context.t('profile_no_name'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () {
+                  debugPrint('ProfileView: Nguoi dung bam nut chinh sua ho so (default)');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const EditProfileView(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.edit, size: 16),
+                label: Text(
+                  context.t('profile_edit'),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Colors.white),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 8,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
