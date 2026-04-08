@@ -38,7 +38,6 @@ class DataSeeder {
     allSuccess &= await _seedWithLog('orders', _buildOrders());
     allSuccess &= await _seedWithLog('users', []);
     allSuccess &= await _seedUsersCustom();
-    allSuccess &= await _seedDriverProfiles();
 
     return allSuccess;
   }
@@ -188,7 +187,7 @@ class DataSeeder {
   ];
 
   static List<Map<String, dynamic>> _buildStores() => [
-    // Quán Cơm Tấm Phúc Lộc Thọ
+    // Quan Com Tam Phuc Loc Tho
     {
       'id': 'store_001',
       'name': 'Com tam Phuc Loc Tho',
@@ -370,7 +369,7 @@ class DataSeeder {
       'categoryId': 'cate_001',
       'categoryName': 'Com',
       'name': 'Com tam ga xot',
-      'description': 'Com tam voi ga ran giòn, chan phuot xot bong cai',
+      'description': 'Com tam voi ga ran gion, chan phuot xot bong cai',
       'basePrice': 50000.0,
       'imageUrl': 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&q=80',
       'isOutOfStock': false,
@@ -512,7 +511,7 @@ class DataSeeder {
       'categoryId': 'cate_005',
       'categoryName': 'Ga ran',
       'name': 'Ga ran lon 1',
-      'description': 'Ga ran lon giòn rum cay thom',
+      'description': 'Ga ran lon gion rum cay thom',
       'basePrice': 75000.0,
       'imageUrl': 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=400&q=80',
       'isOutOfStock': false,
@@ -528,7 +527,7 @@ class DataSeeder {
       'categoryId': 'cate_005',
       'categoryName': 'Ga ran',
       'name': 'Ga man hieu',
-      'description': 'Ga man hieu oc bap giòn tanh',
+      'description': 'Ga man hieu oc bap gion tanh',
       'basePrice': 55000.0,
       'imageUrl': 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=400&q=80',
       'isOutOfStock': false,
@@ -544,7 +543,7 @@ class DataSeeder {
       'categoryId': 'cate_004',
       'categoryName': 'An vat',
       'name': 'Khoai tay chien',
-      'description': 'Khoai tay chien vai rum giòn',
+      'description': 'Khoai tay chien vai rum gion',
       'basePrice': 25000.0,
       'imageUrl': 'https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?w=400&q=80',
       'isOutOfStock': false,
@@ -701,742 +700,361 @@ class DataSeeder {
     },
   ];
 
-  /// Ham seed User voi Sub-collections.
-  /// Tao khoang 2-3 user, moi user co 7 Sub-collections: addresses, payment_methods,
-  /// notifications, search_history, expenses, my_vouchers, cart.
+  // ============================================================
+  // HAM SEED USER THEO KIEN TRUC BRANCH
+  // ============================================================
+
+  /// Seed User theo kien truc nhanh (Strict Role-Based).
+  /// Tao user_001 voi cac bang nhanh: customer_profiles, driver_profiles, merchant_profiles.
+  /// Tao user_002 voi bang nhanh: admin_profiles.
+  /// Su dung WriteBatch de toi uu toc do.
   static Future<bool> _seedUsersCustom() async {
-    debugPrint('--- Dang seed users voi Sub-collections ---');
+    debugPrint('--- Dang seed users theo kien truc nhanh ---');
 
-    int userSuccessCount = 0;
-    int userFailCount = 0;
+    int batchSuccessCount = 0;
+    int batchFailCount = 0;
 
-    // Dinh nghia 2-3 user khac nhau
-    final List<Map<String, dynamic>> users = [
-      // User 1 - Khach hang tieu bieu, dong thoi la tai xe
-      {
-        'id': 'user_001',
-        'email': 'khachhang@gmail.com',
-        'fullName': 'Khoi',
-        'phoneNumber': '0123456789',
-        'password': 'password123',
-        'refreshToken': 'dummy_refresh_token_string_for_testing',
-        'loyaltyPoints': 1500,
-        'membershipTier': 1,  // 0: Dong, 1: Bac, 2: Vang, 3: Kim Cuong
-        'photoUrl': 'https://example.com/avatar/user001.jpg',
-        'roles': [1, 2],  // 1=Khach hang, 2=Tai xe
-        'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-        'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+    try {
+      // ---------- USER 001: KHOI (Khach hang + Tai xe + Quan) ----------
+      final WriteBatch batch001 = _firestore.batch();
 
-        // addresses
-        'addresses': [
-          {
-            'id': 'addr_001',
-            'name': 'Nha rieng',
-            'address': 'Ky tuc xa UTC2, Quan 9, TP.HCM',
-            'receiverName': 'Khoi',
-            'receiverPhone': '0123456789',
-            'lat': 10.8455,
-            'lng': 106.7939,
-            'isDefault': true,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-            'deletedAt': null,
-          },
-          {
-            'id': 'addr_002',
-            'name': 'Truong hoc',
-            'address': 'Truong Dai hoc Giao thong Van tai, Quan 9, TP.HCM',
-            'receiverName': 'Khoi',
-            'receiverPhone': '0123456789',
-            'lat': 10.8512,
-            'lng': 106.7890,
-            'isDefault': false,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-            'deletedAt': null,
-          },
-        ],
+      // 1. Bang goc users - chi chua cac truong co ban
+      batch001.set(
+        _firestore.collection('users').doc('user_001'),
+        {
+          'id': 'user_001',
+          'email': 'khachhang@gmail.com',
+          'fullName': 'Khoi',
+          'phoneNumber': '0123456789',
+          'photoUrl': 'https://example.com/avatar/user001.jpg',
+          'password': 'password123',
+          'roles': [1, 2, 3],  // 1=Khach hang, 2=Tai xe, 3=Quan
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+        },
+        SetOptions(merge: true),
+      );
 
-        // payment_methods
-        'payment_methods': [
-          {
-            'id': 'pm_001',
-            'type': 2,  // 1: Tien mat, 2: Vi dien tu, 3: The ngan hang
-            'isDefault': true,
-            'cardBrand': null,
-            'last4Digits': null,
-            'walletBrand': 'momo',
-            'isLinked': true,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-          },
-          {
-            'id': 'pm_002',
-            'type': 3,  // 1: Tien mat, 2: Vi dien tu, 3: The ngan hang
-            'isDefault': false,
-            'cardBrand': 'Visa',
-            'last4Digits': '1234',
-            'walletBrand': null,
-            'isLinked': true,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-          },
-        ],
+      // 2. Bang nhanh customer_profiles (ID = user_001)
+      batch001.set(
+        _firestore.collection('customer_profiles').doc('user_001'),
+        {
+          'id': 'user_001',
+          'loyaltyPoints': 1500,
+          'membershipTier': 1,  // 0: Dong, 1: Bac, 2: Vang, 3: Kim Cuong
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+        },
+        SetOptions(merge: true),
+      );
 
-        // notifications
-        'notifications': [
-          {
-            'id': 'notif_001',
-            'type': 2,  // 0: He thong, 1: Khuyen mai, 2: Don hang
-            'referenceId': 'order_001',
-            'isRead': false,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-          },
-          {
-            'id': 'notif_002',
-            'type': 1,  // 0: He thong, 1: Khuyen mai, 2: Don hang
-            'referenceId': 'voucher_001',
-            'isRead': true,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-          },
-          {
-            'id': 'notif_003',
-            'type': 0,  // 0: He thong, 1: Khuyen mai, 2: Don hang
-            'referenceId': 'voucher_002',
-            'isRead': false,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
-          },
-        ],
+      // 2a. Sub-collection addresses cua customer_profiles
+      batch001.set(
+        _firestore.collection('customer_profiles').doc('user_001').collection('addresses').doc('addr_001'),
+        {
+          'id': 'addr_001',
+          'name': 'Nha rieng',
+          'address': 'Ky tuc xa UTC2, Quan 9, TP.HCM',
+          'receiverName': 'Khoi',
+          'receiverPhone': '0123456789',
+          'lat': 10.8455,
+          'lng': 106.7939,
+          'isDefault': true,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'deletedAt': null,
+        },
+        SetOptions(merge: true),
+      );
 
-        // search_history
-        'search_history': [
-          {
-            'id': 'sh_001',
-            'keyword': 'Com tam',
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-            'deletedAt': null,
-          },
-          {
-            'id': 'sh_002',
-            'keyword': 'Tra sua',
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-            'deletedAt': null,
-          },
-          {
-            'id': 'sh_003',
-            'keyword': 'Ga ran',
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
-            'deletedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-          },
-        ],
+      batch001.set(
+        _firestore.collection('customer_profiles').doc('user_001').collection('addresses').doc('addr_002'),
+        {
+          'id': 'addr_002',
+          'name': 'Truong hoc',
+          'address': 'Truong Dai hoc Giao thong Van tai, Quan 9, TP.HCM',
+          'receiverName': 'Khoi',
+          'receiverPhone': '0123456789',
+          'lat': 10.8512,
+          'lng': 106.7890,
+          'isDefault': false,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'deletedAt': null,
+        },
+        SetOptions(merge: true),
+      );
 
-        // expenses
-        'expenses': [
-          {
-            'id': 'exp_001',
-            'storeName': 'Com tam Phuc Loc Tho',
-            'iconName': 'food',
-            'categoryKey': 'food_drink',
-            'date': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-            'amount': 55000.0,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-          },
-          {
-            'id': 'exp_002',
-            'storeName': 'Tra sua Tocotoco',
-            'iconName': 'drink',
-            'categoryKey': 'food_drink',
-            'date': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-            'amount': 29000.0,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-          },
-          {
-            'id': 'exp_003',
-            'storeName': 'Ga ran KFC Nguyen Cuu',
-            'iconName': 'food',
-            'categoryKey': 'food_drink',
-            'date': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
-            'amount': 125000.0,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
-          },
-        ],
+      // 2b. Sub-collection payment_methods cua customer_profiles
+      batch001.set(
+        _firestore.collection('customer_profiles').doc('user_001').collection('payment_methods').doc('pm_001'),
+        {
+          'id': 'pm_001',
+          'type': 2,  // 1: Tien mat, 2: Vi dien tu, 3: The ngan hang
+          'isDefault': true,
+          'cardBrand': null,
+          'last4Digits': null,
+          'walletBrand': 'momo',
+          'isLinked': true,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+        },
+        SetOptions(merge: true),
+      );
 
-        // my_vouchers
-        'my_vouchers': [
-          {
-            'id': 'mv_001',
-            'name': 'Giam 20K phi giao hang',
-            'code': 'FREESHIP20',
-            'description': 'Ap dung cho don tu 100K',
-            'expiryDate': Timestamp.fromDate(DateTime.parse('2026-04-30T23:59:59Z')),
-            'discountValue': 20000.0,
-            'isPercentage': false,
-            'minOrderValue': 100000.0,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-          },
-          {
-            'id': 'mv_002',
-            'name': 'Giam 10% cho don hang',
-            'code': 'SAVE10',
-            'description': 'Giam toi da 30K, ap dung cho tat ca quan an',
-            'expiryDate': Timestamp.fromDate(DateTime.parse('2026-04-20T23:59:59Z')),
-            'discountValue': 10.0,
-            'isPercentage': true,
-            'minOrderValue': 150000.0,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
-          },
-        ],
+      batch001.set(
+        _firestore.collection('customer_profiles').doc('user_001').collection('payment_methods').doc('pm_002'),
+        {
+          'id': 'pm_002',
+          'type': 3,  // 1: Tien mat, 2: Vi dien tu, 3: The ngan hang
+          'isDefault': false,
+          'cardBrand': 'Visa',
+          'last4Digits': '1234',
+          'walletBrand': null,
+          'isLinked': true,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+        },
+        SetOptions(merge: true),
+      );
 
-        // cart
-        'cart': [
-          {
-            'id': 'cart_item_001',
-            'storeId': 'store_001',
-            'foodId': 'prod_001',
-            'name': 'Com tam suon bi cha',
-            'price': 45000.0,
-            'quantity': 2,
-            'imageUrl': 'https://example.com/comtam.jpg',
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-          },
-          {
-            'id': 'cart_item_002',
-            'storeId': 'store_002',
-            'foodId': 'prod_004',
-            'name': 'Tra sua trach tang',
-            'price': 29000.0,
-            'quantity': 1,
-            'imageUrl': 'https://example.com/trasua.jpg',
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-          },
-        ],
-      },
+      // 2c. Sub-collection notifications (type 1, 2) cua customer_profiles
+      batch001.set(
+        _firestore.collection('customer_profiles').doc('user_001').collection('notifications').doc('notif_001'),
+        {
+          'id': 'notif_001',
+          'type': 2,  // 0: He thong, 1: Khuyen mai, 2: Don hang
+          'title': 'Don hang da duoc giao thanh cong',
+          'body': 'Don hang order_001 da duoc giao',
+          'referenceId': 'order_001',
+          'isRead': false,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+        },
+        SetOptions(merge: true),
+      );
 
-      // User 2 - Khach hang nhieu hoat dong
-      {
-        'id': 'user_002',
-        'email': 'nguyenvana@yahoo.com',
-        'fullName': 'Nguyen Van A',
-        'phoneNumber': '0987654321',
-        'password': 'password123',
-        'refreshToken': 'dummy_refresh_token_string_for_testing',
-        'loyaltyPoints': 3200,
-        'membershipTier': 2,  // 0: Dong, 1: Bac, 2: Vang, 3: Kim Cuong
-        'photoUrl': 'https://example.com/avatar/user002.jpg',
-        'roles': [1],  // 1=Khach hang
-        'createdAt': Timestamp.fromDate(DateTime.parse('2026-03-01T00:00:00Z')),
-        'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      batch001.set(
+        _firestore.collection('customer_profiles').doc('user_001').collection('notifications').doc('notif_002'),
+        {
+          'id': 'notif_002',
+          'type': 1,  // 0: He thong, 1: Khuyen mai, 2: Don hang
+          'title': 'Khuyen mai dac biet',
+          'body': 'Giam 20% cho don hang dau tien',
+          'referenceId': 'voucher_001',
+          'isRead': true,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+        },
+        SetOptions(merge: true),
+      );
 
-        // addresses
-        'addresses': [
-          {
-            'id': 'addr_003',
-            'name': 'Nha rieng',
-            'address': '123 Duong Nguyen Trai, Quan 1, TP.HCM',
-            'receiverName': 'Nguyen Van A',
-            'receiverPhone': '0987654321',
-            'lat': 10.7781,
-            'lng': 106.6935,
-            'isDefault': true,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-03-01T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-03-01T00:00:00Z')),
-            'deletedAt': null,
-          },
-          {
-            'id': 'addr_004',
-            'name': 'Cong ty',
-            'address': 'Tao Dan Tower, Quan 1, TP.HCM',
-            'receiverName': 'Nguyen Van A',
-            'receiverPhone': '0987654321',
-            'lat': 10.7795,
-            'lng': 106.6991,
-            'isDefault': false,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-03-10T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-03-10T00:00:00Z')),
-            'deletedAt': null,
-          },
-          {
-            'id': 'addr_005',
-            'name': 'Nha ban',
-            'address': '456 Bui Vien, Quan 1, TP.HCM',
-            'receiverName': 'Nguyen Van A',
-            'receiverPhone': '0987654321',
-            'lat': 10.7675,
-            'lng': 106.6890,
-            'isDefault': false,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-01T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-01T00:00:00Z')),
-            'deletedAt': null,
-          },
-        ],
+      // 2d. Sub-collection cart cua customer_profiles
+      batch001.set(
+        _firestore.collection('customer_profiles').doc('user_001').collection('cart').doc('cart_item_001'),
+        {
+          'id': 'cart_item_001',
+          'storeId': 'store_001',
+          'foodId': 'prod_001',
+          'name': 'Com tam suon bi cha',
+          'price': 45000.0,
+          'quantity': 2,
+          'imageUrl': 'https://example.com/comtam.jpg',
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+        },
+        SetOptions(merge: true),
+      );
 
-        // payment_methods
-        'payment_methods': [
-          {
-            'id': 'pm_003',
-            'type': 3,  // 1: Tien mat, 2: Vi dien tu, 3: The ngan hang
-            'isDefault': true,
-            'cardBrand': 'MasterCard',
-            'last4Digits': '5678',
-            'walletBrand': null,
-            'isLinked': true,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-03-01T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-03-01T00:00:00Z')),
-          },
-          {
-            'id': 'pm_004',
-            'type': 2,  // 1: Tien mat, 2: Vi dien tu, 3: The ngan hang
-            'isDefault': false,
-            'cardBrand': null,
-            'last4Digits': null,
-            'walletBrand': 'zalo',
-            'isLinked': true,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-03-15T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-03-15T00:00:00Z')),
-          },
-          {
-            'id': 'pm_005',
-            'type': 1,  // 1: Tien mat, 2: Vi dien tu, 3: The ngan hang
-            'isDefault': false,
-            'cardBrand': null,
-            'last4Digits': null,
-            'walletBrand': null,
-            'isLinked': false,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-01T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-01T00:00:00Z')),
-          },
-        ],
+      batch001.set(
+        _firestore.collection('customer_profiles').doc('user_001').collection('cart').doc('cart_item_002'),
+        {
+          'id': 'cart_item_002',
+          'storeId': 'store_002',
+          'foodId': 'prod_004',
+          'name': 'Tra sua trach tang',
+          'price': 29000.0,
+          'quantity': 1,
+          'imageUrl': 'https://example.com/trasua.jpg',
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+        },
+        SetOptions(merge: true),
+      );
 
-        // notifications
-        'notifications': [
-          {
-            'id': 'notif_004',
-            'type': 2,  // 0: He thong, 1: Khuyen mai, 2: Don hang
-            'referenceId': 'order_002',
-            'isRead': true,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-          },
-          {
-            'id': 'notif_005',
-            'type': 0,  // 0: He thong, 1: Khuyen mai, 2: Don hang
-            'referenceId': 'user_002',
-            'isRead': true,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-03-02T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-03-02T00:00:00Z')),
-          },
-          {
-            'id': 'notif_006',
-            'type': 0,  // 0: He thong, 1: Khuyen mai, 2: Don hang
-            'referenceId': 'reward_001',
-            'isRead': false,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-          },
-          {
-            'id': 'notif_007',
-            'type': 1,  // 0: He thong, 1: Khuyen mai, 2: Don hang
-            'referenceId': 'voucher_003',
-            'isRead': false,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
-          },
-        ],
+      // 2e. Sub-collection my_vouchers cua customer_profiles
+      batch001.set(
+        _firestore.collection('customer_profiles').doc('user_001').collection('my_vouchers').doc('mv_001'),
+        {
+          'id': 'mv_001',
+          'name': 'Giam 20K phi giao hang',
+          'code': 'FREESHIP20',
+          'description': 'Ap dung cho don tu 100K',
+          'expiryDate': Timestamp.fromDate(DateTime.parse('2026-04-30T23:59:59Z')),
+          'discountValue': 20000.0,
+          'isPercentage': false,
+          'minOrderValue': 100000.0,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+        },
+        SetOptions(merge: true),
+      );
 
-        // search_history
-        'search_history': [
-          {
-            'id': 'sh_004',
-            'keyword': 'Bun bo Hue',
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-            'deletedAt': null,
-          },
-          {
-            'id': 'sh_005',
-            'keyword': 'Banh mi',
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-            'deletedAt': null,
-          },
-          {
-            'id': 'sh_006',
-            'keyword': 'Lau',
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
-            'deletedAt': null,
-          },
-          {
-            'id': 'sh_007',
-            'keyword': 'Mon Han Quoc',
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-04T00:00:00Z')),
-            'deletedAt': null,
-          },
-        ],
+      batch001.set(
+        _firestore.collection('customer_profiles').doc('user_001').collection('my_vouchers').doc('mv_002'),
+        {
+          'id': 'mv_002',
+          'name': 'Giam 10% cho don hang',
+          'code': 'SAVE10',
+          'description': 'Giam toi da 30K, ap dung cho tat ca quan an',
+          'expiryDate': Timestamp.fromDate(DateTime.parse('2026-04-20T23:59:59Z')),
+          'discountValue': 10.0,
+          'isPercentage': true,
+          'minOrderValue': 150000.0,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
+        },
+        SetOptions(merge: true),
+      );
 
-        // expenses
-        'expenses': [
-          {
-            'id': 'exp_004',
-            'storeName': 'Bun bo Hue Ba Le',
-            'iconName': 'food',
-            'categoryKey': 'food_drink',
-            'date': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-            'amount': 50000.0,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-          },
-          {
-            'id': 'exp_005',
-            'storeName': 'Ga ran KFC Nguyen Cuu',
-            'iconName': 'food',
-            'categoryKey': 'food_drink',
-            'date': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
-            'amount': 95000.0,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
-          },
-          {
-            'id': 'exp_006',
-            'storeName': 'Com tam Phuc Loc Tho',
-            'iconName': 'food',
-            'categoryKey': 'food_drink',
-            'date': Timestamp.fromDate(DateTime.parse('2026-04-03T00:00:00Z')),
-            'amount': 45000.0,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-03T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-03T00:00:00Z')),
-          },
-          {
-            'id': 'exp_007',
-            'storeName': 'Tra sua Tocotoco',
-            'iconName': 'drink',
-            'categoryKey': 'food_drink',
-            'date': Timestamp.fromDate(DateTime.parse('2026-04-02T00:00:00Z')),
-            'amount': 35000.0,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-02T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-02T00:00:00Z')),
-          },
-        ],
+      // 3. Bang nhanh driver_profiles (ID = user_001)
+      batch001.set(
+        _firestore.collection('driver_profiles').doc('user_001'),
+        {
+          'id': 'user_001',
+          'vehiclePlate': '59A-123.45',
+          'vehicleType': 'Honda Wave Alpha',
+          'driverLicense': 'DL123456789',
+          'isActive': true,
+          'rating': 4.9,
+          'totalTrips': 150,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+        },
+        SetOptions(merge: true),
+      );
 
-        // my_vouchers
-        'my_vouchers': [
-          {
-            'id': 'mv_003',
-            'name': 'Giam 50K cho don tu 200K',
-            'code': 'VIP50',
-            'description': 'Danh cho khach hang than thiet',
-            'expiryDate': Timestamp.fromDate(DateTime.parse('2026-05-31T23:59:59Z')),
-            'discountValue': 50000.0,
-            'isPercentage': false,
-            'minOrderValue': 200000.0,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-01T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-01T00:00:00Z')),
-          },
-          {
-            'id': 'mv_004',
-            'name': 'Freeship cho moi don',
-            'code': 'FREESHIP50',
-            'description': 'Mien phi van chuyen toi da 30K',
-            'expiryDate': Timestamp.fromDate(DateTime.parse('2026-04-15T23:59:59Z')),
-            'discountValue': 30000.0,
-            'isPercentage': false,
-            'minOrderValue': 50000.0,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
-          },
-        ],
+      // 3a. Sub-collection notifications (type 11, 12) cua driver_profiles
+      batch001.set(
+        _firestore.collection('driver_profiles').doc('user_001').collection('notifications').doc('dnotif_001'),
+        {
+          'id': 'dnotif_001',
+          'type': 11,  // 11: Yeu cau nhan don
+          'title': 'Yeu cau nhan don moi',
+          'body': 'Ban co don hang moi cho nhan: order_002',
+          'referenceId': 'order_002',
+          'isRead': false,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+        },
+        SetOptions(merge: true),
+      );
 
-        // cart
-        'cart': [
-          {
-            'id': 'cart_item_003',
-            'storeId': 'store_004',
-            'foodId': 'prod_012',
-            'name': 'Bun bo Hue lon',
-            'price': 50000.0,
-            'quantity': 1,
-            'imageUrl': 'https://example.com/bunbohue.jpg',
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-          },
-          {
-            'id': 'cart_item_004',
-            'storeId': 'store_001',
-            'foodId': 'prod_003',
-            'name': 'Com tam ca ke',
-            'price': 55000.0,
-            'quantity': 1,
-            'imageUrl': 'https://example.com/comtam_cake.jpg',
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-          },
-          {
-            'id': 'cart_item_005',
-            'storeId': 'store_003',
-            'foodId': 'prod_011',
-            'name': 'Combo KFC 1 nguoi',
-            'price': 95000.0,
-            'quantity': 1,
-            'imageUrl': 'https://example.com/kfc_combo.jpg',
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
-          },
-        ],
-      },
+      batch001.set(
+        _firestore.collection('driver_profiles').doc('user_001').collection('notifications').doc('dnotif_002'),
+        {
+          'id': 'dnotif_002',
+          'type': 12,  // 12: Thong bao giao hang
+          'title': 'Don hang da duoc giao',
+          'body': 'Ban da giao thanh cong don hang order_001',
+          'referenceId': 'order_001',
+          'isRead': true,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
+        },
+        SetOptions(merge: true),
+      );
 
-      // User 3 - Khach hang moi tao
-      {
-        'id': 'user_003',
-        'email': 'newuser@example.com',
-        'fullName': 'Tran Thi B',
-        'phoneNumber': '0369258147',
-        'password': 'password123',
-        'refreshToken': 'dummy_refresh_token_string_for_testing',
-        'loyaltyPoints': 800,
-        'membershipTier': 0,  // 0: Dong, 1: Bac, 2: Vang, 3: Kim Cuong
-        'photoUrl': 'https://example.com/avatar/user003.jpg',
-        'roles': [1],  // 1=Khach hang
-        'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-        'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+      // 4. Bang nhanh merchant_profiles (ID = user_001)
+      batch001.set(
+        _firestore.collection('merchant_profiles').doc('user_001'),
+        {
+          'id': 'user_001',
+          'businessName': 'Com tam Phuc Loc Tho',
+          'businessLicense': 'BL123456789',
+          'taxCode': 'TAX123456789',
+          'storeIds': ['store_001'],
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+        },
+        SetOptions(merge: true),
+      );
 
-        // addresses
-        'addresses': [
-          {
-            'id': 'addr_006',
-            'name': 'Nha rieng',
-            'address': '78 Le Lai, Quan Tan Binh, TP.HCM',
-            'receiverName': 'Tran Thi B',
-            'receiverPhone': '0369258147',
-            'lat': 10.7868,
-            'lng': 106.6573,
-            'isDefault': true,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-            'deletedAt': null,
-          },
-        ],
+      // 4a. Sub-collection notifications (type 21) cua merchant_profiles
+      batch001.set(
+        _firestore.collection('merchant_profiles').doc('user_001').collection('notifications').doc('mnotif_001'),
+        {
+          'id': 'mnotif_001',
+          'type': 21,  // 21: Don hang moi
+          'title': 'Don hang moi tu khach hang',
+          'body': 'Ban co don hang moi: order_003',
+          'referenceId': 'order_003',
+          'isRead': false,
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+        },
+        SetOptions(merge: true),
+      );
 
-        // payment_methods
-        'payment_methods': [
-          {
-            'id': 'pm_006',
-            'type': 2,  // 1: Tien mat, 2: Vi dien tu, 3: The ngan hang
-            'isDefault': true,
-            'cardBrand': null,
-            'last4Digits': null,
-            'walletBrand': 'vnpay',
-            'isLinked': true,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-          },
-        ],
+      // Commit batch 001
+      await batch001.commit();
+      debugPrint('  [OK] Batch user_001: users + customer_profiles + driver_profiles + merchant_profiles');
+      batchSuccessCount++;
 
-        // notifications
-        'notifications': [
-          {
-            'id': 'notif_008',
-            'type': 0,  // 0: He thong, 1: Khuyen mai, 2: Don hang
-            'referenceId': 'user_003',
-            'isRead': false,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-          },
-          {
-            'id': 'notif_009',
-            'type': 1,  // 0: He thong, 1: Khuyen mai, 2: Don hang
-            'referenceId': 'voucher_005',
-            'isRead': false,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-          },
-        ],
+    } catch (e) {
+      debugPrint('  [LOI] Batch user_001: $e');
+      batchFailCount++;
+    }
 
-        // search_history
-        'search_history': [
-          {
-            'id': 'sh_008',
-            'keyword': 'Tra sua',
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-            'deletedAt': null,
-          },
-          {
-            'id': 'sh_009',
-            'keyword': 'Cafe',
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-            'deletedAt': null,
-          },
-        ],
+    try {
+      // ---------- USER 002: NGUYEN VAN A (Admin) ----------
+      final WriteBatch batch002 = _firestore.batch();
 
-        // expenses
-        'expenses': [
-          {
-            'id': 'exp_008',
-            'storeName': 'Tra sua Tocotoco',
-            'iconName': 'drink',
-            'categoryKey': 'food_drink',
-            'date': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-            'amount': 35000.0,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-          },
-        ],
+      // 1. Bang goc users
+      batch002.set(
+        _firestore.collection('users').doc('user_002'),
+        {
+          'id': 'user_002',
+          'email': 'nguyenvana@yahoo.com',
+          'fullName': 'Nguyen Van A',
+          'phoneNumber': '0987654321',
+          'photoUrl': 'https://example.com/avatar/user002.jpg',
+          'password': 'password123',
+          'roles': [4],  // 4=Admin
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-03-01T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+        },
+        SetOptions(merge: true),
+      );
 
-        // my_vouchers
-        'my_vouchers': [
-          {
-            'id': 'mv_005',
-            'name': 'Giam 20K phi giao hang',
-            'code': 'WELCOME20',
-            'description': 'Danh cho khach hang moi, ap dung cho don tu 100K',
-            'expiryDate': Timestamp.fromDate(DateTime.parse('2026-04-30T23:59:59Z')),
-            'discountValue': 20000.0,
-            'isPercentage': false,
-            'minOrderValue': 100000.0,
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
-          },
-        ],
+      // 2. Bang nhanh admin_profiles (ID = user_002)
+      batch002.set(
+        _firestore.collection('admin_profiles').doc('user_002'),
+        {
+          'id': 'user_002',
+          'adminLevel': 1,  // 1: Admin thuong, 2: Super admin
+          'department': '运营部',
+          'permissions': ['manage_users', 'manage_orders', 'manage_stores', 'view_reports'],
+          'createdAt': Timestamp.fromDate(DateTime.parse('2026-03-01T00:00:00Z')),
+          'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
+        },
+        SetOptions(merge: true),
+      );
 
-        // cart
-        'cart': [
-          {
-            'id': 'cart_item_006',
-            'storeId': 'store_002',
-            'foodId': 'prod_005',
-            'name': 'Tra sua matcha',
-            'price': 35000.0,
-            'quantity': 2,
-            'imageUrl': 'https://example.com/matcha.jpg',
-            'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-            'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
-          },
-        ],
-      },
-    ];
+      // Commit batch 002
+      await batch002.commit();
+      debugPrint('  [OK] Batch user_002: users + admin_profiles');
+      batchSuccessCount++;
 
-    // Cac sub-collection fields can xu ly rieng
-    const subCollectionKeys = [
-      'addresses',
-      'payment_methods',
-      'notifications',
-      'search_history',
-      'expenses',
-      'my_vouchers',
-      'cart',
-    ];
-
-    for (int i = 0; i < users.length; i++) {
-      final user = users[i];
-      final userId = user['id'] as String;
-
-      // Loc ra cac sub-collection data
-      final Map<String, dynamic> subCollectionsData = {};
-      for (final key in subCollectionKeys) {
-        if (user.containsKey(key) && user[key] != null) {
-          subCollectionsData[key] = user[key];
-        }
-      }
-
-      // Tao ban sao user data chi chua thong tin goc (khong co sub-collection fields)
-      final Map<String, dynamic> userBaseData = Map<String, dynamic>.from(user);
-      for (final key in subCollectionKeys) {
-        userBaseData.remove(key);
-      }
-
-      try {
-        // Buoc 1: Ghi document goc cua User
-        await _firestore
-            .collection('users')
-            .doc(userId)
-            .set(userBaseData, SetOptions(merge: true));
-        debugPrint('  [$i] OK - User goc: $userId');
-
-        // Buoc 2: Duyet va ghi tung Sub-collection
-        int subSuccessCount = 0;
-        int subFailCount = 0;
-
-        for (final entry in subCollectionsData.entries) {
-          final subCollName = entry.key;
-          final items = entry.value as List<dynamic>;
-
-          for (int j = 0; j < items.length; j++) {
-            final item = items[j] as Map<String, dynamic>;
-            final itemId = item['id'] as String;
-
-            try {
-              await _firestore
-                  .collection('users')
-                  .doc(userId)
-                  .collection(subCollName)
-                  .doc(itemId)
-                  .set(item, SetOptions(merge: true));
-              subSuccessCount++;
-            } catch (e) {
-              subFailCount++;
-              debugPrint('    [$i][$subCollName] LOI - $itemId: $e');
-            }
-          }
-        }
-
-        debugPrint(
-          '  [$i] $userId: ${subSuccessCount} sub-doc OK, ${subFailCount} sub-doc LOI',
-        );
-        if (subFailCount == 0) {
-          userSuccessCount++;
-        } else {
-          userFailCount++;
-        }
-      } catch (e) {
-        userFailCount++;
-        debugPrint('  [$i] LOI - $userId: $e');
-      }
+    } catch (e) {
+      debugPrint('  [LOI] Batch user_002: $e');
+      batchFailCount++;
     }
 
     debugPrint(
-      '--- users: $userSuccessCount user OK, $userFailCount user LOI ---',
+      '--- users: $batchSuccessCount batch OK, $batchFailCount batch LOI ---',
     );
-    return userFailCount == 0;
-  }
-
-  // ============================================================
-  // DU LIEU DRIVER PROFILES
-  // ============================================================
-
-  /// Seed thong tin tai xe (driver_profiles).
-  /// Tao document co ID = "user_001" trung voi user co roles [1, 2].
-  static Future<bool> _seedDriverProfiles() async {
-    debugPrint('--- Dang seed driver_profiles ---');
-
-    try {
-      await _firestore
-          .collection('driver_profiles')
-          .doc('user_001')
-          .set(
-            {
-              'id': 'user_001',
-              'vehiclePlate': '59A-123.45',
-              'vehicleType': 'Honda Wave Alpha',
-              'isActive': true,
-              'currentLat': null,
-              'currentLng': null,
-              'rating': 4.9,
-              'totalTrips': 150,
-            },
-            SetOptions(merge: true),
-          );
-      debugPrint('  OK - driver_profiles/user_001');
-      return true;
-    } catch (e) {
-      debugPrint('  LOI - driver_profiles/user_001: $e');
-      return false;
-    }
+    return batchFailCount == 0;
   }
 
   // ============================================================
@@ -1586,7 +1204,7 @@ class DataSeeder {
   // ============================================================
 
   static List<Map<String, dynamic>> _buildOrders() => [
-    // Don hang 1 - da hoan tat, user_001
+    // Don hang 1 - dang giao (status 2), co snapshot tai xe
     {
       'id': 'order_001',
       'userId': 'user_001',
@@ -1610,15 +1228,20 @@ class DataSeeder {
       ],
       'totalAmount': 140000.0,
       'deliveryFee': 15000.0,
-      'status': 3,  // 0: Cho xac nhan, 1: Dang chuan bi, 2: Dang giao, 3: Hoan thanh, 4: Da huy
+      'status': 2,  // 0: Cho xac nhan, 1: Dang chuan bi, 2: Dang giao, 3: Hoan thanh, 4: Da huy
       'deliveryAddress': 'Ky tuc xa UTC2, Quan 9, TP.HCM',
       'paymentMethod': 'momo',
+      // Snapshot thong tin tai xe vi dang o status 2 (Dang giao)
+      'driverId': 'user_001',
+      'driverName': 'Le Van B',
+      'driverPhone': '0912345678',
+      'vehiclePlate': '59A-123.45',
       'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
       'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
       'deletedAt': null,
     },
 
-    // Don hang 2 - dang giao, user_002
+    // Don hang 2 - cho xac nhan (status 0)
     {
       'id': 'order_002',
       'userId': 'user_002',
@@ -1642,7 +1265,7 @@ class DataSeeder {
       ],
       'totalAmount': 91000.0,
       'deliveryFee': 12000.0,
-      'status': 2,  // 0: Cho xac nhan, 1: Dang chuan bi, 2: Dang giao, 3: Hoan thanh, 4: Da huy
+      'status': 0,  // 0: Cho xac nhan, 1: Dang chuan bi, 2: Dang giao, 3: Hoan thanh, 4: Da huy
       'deliveryAddress': '123 Duong Nguyen Trai, Quan 1, TP.HCM',
       'paymentMethod': 'card',
       'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
@@ -1650,7 +1273,7 @@ class DataSeeder {
       'deletedAt': null,
     },
 
-    // Don hang 3 - cho xac nhan, user_003
+    // Don hang 3 - cho xac nhan (status 0)
     {
       'id': 'order_003',
       'userId': 'user_003',
@@ -1682,7 +1305,7 @@ class DataSeeder {
       'deletedAt': null,
     },
 
-    // Don hang 4 - da huy, user_001
+    // Don hang 4 - da huy (status 4)
     {
       'id': 'order_004',
       'userId': 'user_001',
@@ -1707,7 +1330,7 @@ class DataSeeder {
       'deletedAt': null,
     },
 
-    // Don hang 5 - da hoan tat, user_002
+    // Don hang 5 - da hoan thanh (status 3)
     {
       'id': 'order_005',
       'userId': 'user_002',
@@ -1739,7 +1362,7 @@ class DataSeeder {
       'deletedAt': null,
     },
 
-    // Don hang 6 - da hoan tat, user_003
+    // Don hang 6 - da hoan thanh (status 3)
     {
       'id': 'order_006',
       'userId': 'user_003',
@@ -1764,7 +1387,7 @@ class DataSeeder {
       'deletedAt': null,
     },
 
-    // Don hang 7 - cho xac nhan, user_001
+    // Don hang 7 - cho xac nhan (status 0)
     {
       'id': 'order_007',
       'userId': 'user_001',
@@ -1861,7 +1484,7 @@ class DataSeeder {
   ];
 
   // ============================================================
-  // CAC HÀM DEBUGGING
+  // CAC HAM DEBUGGING
   // ============================================================
 
   /// Kiem tra ket noi Firestore bang cach doc 1 document.
@@ -1921,21 +1544,56 @@ class DataSeeder {
     }
   }
 
-  /// Xoa toan bo du lieu seed (de reset), bao gom ca sub-collections cua users.
+  // ============================================================
+  // HAM XOA DU LIEU (CAP NHAT MOI)
+  // ============================================================
+
+  /// Xoa toan bo du lieu da seed, bao gom cac root collection va sub-collections.
+  /// Cac root collection: users, customer_profiles, driver_profiles, merchant_profiles,
+  /// admin_profiles, system_categories, stores, products, banners, vouchers, reviews, orders.
   static Future<void> clearAllSeededData() async {
     debugPrint('=== Xoa toan bo du lieu seed ===');
 
-    final collections = [
+    // Danh sach cac root collection can xoa
+    final rootCollections = [
       'system_categories',
       'stores',
       'products',
       'banners',
       'vouchers',
-      'driver_profiles',
+      'reviews',
+      'orders',
     ];
 
-    // Xoa cac collection thong thuong
-    for (final coll in collections) {
+    // Danh sach cac bang nhanh can xoa (co sub-collections)
+    const userSubCollections = [
+      'addresses',
+      'payment_methods',
+      'notifications',
+      'search_history',
+      'expenses',
+      'my_vouchers',
+      'cart',
+    ];
+
+    const driverSubCollections = [
+      'notifications',
+    ];
+
+    const merchantSubCollections = [
+      'notifications',
+    ];
+
+    const customerSubCollections = [
+      'addresses',
+      'payment_methods',
+      'notifications',
+      'cart',
+      'my_vouchers',
+    ];
+
+    // Xoa cac root collection thong thuong
+    for (final coll in rootCollections) {
       try {
         final snap = await _firestore.collection(coll).get();
         int count = 0;
@@ -1949,24 +1607,13 @@ class DataSeeder {
       }
     }
 
-    // Xoa users va sub-collections cua users
+    // Xoa bang nhanh users va sub-collections
     try {
       final userSnap = await _firestore.collection('users').get();
       int userCount = 0;
 
       for (final userDoc in userSnap.docs) {
-        // Xoa tat ca sub-collections cua user nay
-        final subCollNames = [
-          'addresses',
-          'payment_methods',
-          'notifications',
-          'search_history',
-          'expenses',
-          'my_vouchers',
-          'cart',
-        ];
-
-        for (final subCollName in subCollNames) {
+        for (final subCollName in userSubCollections) {
           try {
             final subSnap = await userDoc.reference.collection(subCollName).get();
             for (final subDoc in subSnap.docs) {
@@ -1976,8 +1623,6 @@ class DataSeeder {
             // Neu sub-collection khong ton tai thi bo qua
           }
         }
-
-        // Xoa document goc cua user
         await userDoc.reference.delete();
         userCount++;
       }
@@ -1986,5 +1631,95 @@ class DataSeeder {
     } catch (e) {
       debugPrint('Loi khi xoa users: $e');
     }
+
+    // Xoa bang nhanh customer_profiles va sub-collections
+    try {
+      final cpSnap = await _firestore.collection('customer_profiles').get();
+      int cpCount = 0;
+
+      for (final cpDoc in cpSnap.docs) {
+        for (final subCollName in customerSubCollections) {
+          try {
+            final subSnap = await cpDoc.reference.collection(subCollName).get();
+            for (final subDoc in subSnap.docs) {
+              await subDoc.reference.delete();
+            }
+          } catch (_) {
+            // Neu sub-collection khong ton tai thi bo qua
+          }
+        }
+        await cpDoc.reference.delete();
+        cpCount++;
+      }
+
+      debugPrint('Da xoa $cpCount documents tu customer_profiles (va sub-collections)');
+    } catch (e) {
+      debugPrint('Loi khi xoa customer_profiles: $e');
+    }
+
+    // Xoa bang nhanh driver_profiles va sub-collections
+    try {
+      final dpSnap = await _firestore.collection('driver_profiles').get();
+      int dpCount = 0;
+
+      for (final dpDoc in dpSnap.docs) {
+        for (final subCollName in driverSubCollections) {
+          try {
+            final subSnap = await dpDoc.reference.collection(subCollName).get();
+            for (final subDoc in subSnap.docs) {
+              await subDoc.reference.delete();
+            }
+          } catch (_) {
+            // Neu sub-collection khong ton tai thi bo qua
+          }
+        }
+        await dpDoc.reference.delete();
+        dpCount++;
+      }
+
+      debugPrint('Da xoa $dpCount documents tu driver_profiles (va sub-collections)');
+    } catch (e) {
+      debugPrint('Loi khi xoa driver_profiles: $e');
+    }
+
+    // Xoa bang nhanh merchant_profiles va sub-collections
+    try {
+      final mpSnap = await _firestore.collection('merchant_profiles').get();
+      int mpCount = 0;
+
+      for (final mpDoc in mpSnap.docs) {
+        for (final subCollName in merchantSubCollections) {
+          try {
+            final subSnap = await mpDoc.reference.collection(subCollName).get();
+            for (final subDoc in subSnap.docs) {
+              await subDoc.reference.delete();
+            }
+          } catch (_) {
+            // Neu sub-collection khong ton tai thi bo qua
+          }
+        }
+        await mpDoc.reference.delete();
+        mpCount++;
+      }
+
+      debugPrint('Da xoa $mpCount documents tu merchant_profiles (va sub-collections)');
+    } catch (e) {
+      debugPrint('Loi khi xoa merchant_profiles: $e');
+    }
+
+    // Xoa bang nhanh admin_profiles (khong co sub-collections)
+    try {
+      final apSnap = await _firestore.collection('admin_profiles').get();
+      int apCount = 0;
+      for (final apDoc in apSnap.docs) {
+        await apDoc.reference.delete();
+        apCount++;
+      }
+      debugPrint('Da xoa $apCount documents tu admin_profiles');
+    } catch (e) {
+      debugPrint('Loi khi xoa admin_profiles: $e');
+    }
+
+    debugPrint('=== Da hoan tat xoa du lieu seed ===');
   }
 }
