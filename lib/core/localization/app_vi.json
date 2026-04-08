@@ -703,5 +703,21 @@
   "reward_discount_label": "GIAM",
 
   "activity_cancel_order_hint": "Huy don hang $1",
-  "driver_chat_send_image": "Gui hinh anh"
+  "driver_chat_send_image": "Gui hinh anh",
+
+  "status_0": "Cho xac nhan",
+  "status_1": "Dang chuan bi",
+  "status_2": "Dang giao",
+  "status_3": "Hoan thanh",
+  "status_4": "Da huy",
+  "notif_type_0": "He thong",
+  "notif_type_1": "Khuyen mai",
+  "notif_type_2": "Cap nhat don hang",
+  "payment_1": "Tien mat",
+  "payment_2": "Vi dien tu",
+  "payment_3": "The ngan hang",
+  "tier_0": "Thanh vien",
+  "tier_1": "Bac",
+  "tier_2": "Vang",
+  "tier_3": "Kim cuong"
 }

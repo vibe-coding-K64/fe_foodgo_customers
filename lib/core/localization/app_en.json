@@ -695,5 +695,21 @@
   "reward_discount_label": "OFF",
 
   "activity_cancel_order_hint": "Cancel order $1",
-  "driver_chat_send_image": "Send image"
+  "driver_chat_send_image": "Send image",
+
+  "status_0": "Pending",
+  "status_1": "Preparing",
+  "status_2": "Delivering",
+  "status_3": "Completed",
+  "status_4": "Cancelled",
+  "notif_type_0": "System",
+  "notif_type_1": "Promotion",
+  "notif_type_2": "Order Update",
+  "payment_1": "Cash",
+  "payment_2": "E-Wallet",
+  "payment_3": "Credit/Debit Card",
+  "tier_0": "Member",
+  "tier_1": "Silver",
+  "tier_2": "Gold",
+  "tier_3": "Diamond"
 }

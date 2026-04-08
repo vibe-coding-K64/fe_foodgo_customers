@@ -718,6 +718,8 @@ class DataSeeder {
         'phoneNumber': '0123456789',
         'password': 'password123',
         'refreshToken': 'dummy_refresh_token_string_for_testing',
+        'loyaltyPoints': 1500,
+        'membershipTier': 1,  // 0: Dong, 1: Bac, 2: Vang, 3: Kim Cuong
         'photoUrl': 'https://example.com/avatar/user001.jpg',
         'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
         'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
@@ -752,7 +754,7 @@ class DataSeeder {
         'payment_methods': [
           {
             'id': 'pm_001',
-            'type': 'wallet',
+            'type': 2,  // 1: Tien mat, 2: Vi dien tu, 3: The ngan hang
             'isDefault': true,
             'cardBrand': null,
             'last4Digits': null,
@@ -763,7 +765,7 @@ class DataSeeder {
           },
           {
             'id': 'pm_002',
-            'type': 'card',
+            'type': 3,  // 1: Tien mat, 2: Vi dien tu, 3: The ngan hang
             'isDefault': false,
             'cardBrand': 'Visa',
             'last4Digits': '1234',
@@ -778,27 +780,24 @@ class DataSeeder {
         'notifications': [
           {
             'id': 'notif_001',
-            'type': 'order',
-            'title': 'Don hang dang den',
-            'body': 'Tai xe dang giao don hang FoodGo cho ban.',
+            'type': 2,  // 0: He thong, 1: Khuyen mai, 2: Don hang
+            'referenceId': 'order_001',
             'isRead': false,
             'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
             'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
           },
           {
             'id': 'notif_002',
-            'type': 'promotion',
-            'title': 'Uu dai dac biet',
-            'body': 'Giam 20% cho don hang dau tien cua ban hom nay.',
+            'type': 1,  // 0: He thong, 1: Khuyen mai, 2: Don hang
+            'referenceId': 'voucher_001',
             'isRead': true,
             'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
             'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
           },
           {
             'id': 'notif_003',
-            'type': 'reward',
-            'title': 'Ban da doi duoc voucher',
-            'body': 'Chuc mung ban da doi thanh cong voucher Freeship.',
+            'type': 0,  // 0: He thong, 1: Khuyen mai, 2: Don hang
+            'referenceId': 'voucher_002',
             'isRead': false,
             'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
             'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
@@ -924,6 +923,8 @@ class DataSeeder {
         'phoneNumber': '0987654321',
         'password': 'password123',
         'refreshToken': 'dummy_refresh_token_string_for_testing',
+        'loyaltyPoints': 3200,
+        'membershipTier': 2,  // 0: Dong, 1: Bac, 2: Vang, 3: Kim Cuong
         'photoUrl': 'https://example.com/avatar/user002.jpg',
         'createdAt': Timestamp.fromDate(DateTime.parse('2026-03-01T00:00:00Z')),
         'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
@@ -969,7 +970,7 @@ class DataSeeder {
         'payment_methods': [
           {
             'id': 'pm_003',
-            'type': 'card',
+            'type': 3,  // 1: Tien mat, 2: Vi dien tu, 3: The ngan hang
             'isDefault': true,
             'cardBrand': 'MasterCard',
             'last4Digits': '5678',
@@ -980,7 +981,7 @@ class DataSeeder {
           },
           {
             'id': 'pm_004',
-            'type': 'wallet',
+            'type': 2,  // 1: Tien mat, 2: Vi dien tu, 3: The ngan hang
             'isDefault': false,
             'cardBrand': null,
             'last4Digits': null,
@@ -991,7 +992,7 @@ class DataSeeder {
           },
           {
             'id': 'pm_005',
-            'type': 'cash',
+            'type': 1,  // 1: Tien mat, 2: Vi dien tu, 3: The ngan hang
             'isDefault': false,
             'cardBrand': null,
             'last4Digits': null,
@@ -1006,36 +1007,32 @@ class DataSeeder {
         'notifications': [
           {
             'id': 'notif_004',
-            'type': 'order',
-            'title': 'Don hang da giao',
-            'body': 'Don hang cua ban da duoc giao thanh cong.',
+            'type': 2,  // 0: He thong, 1: Khuyen mai, 2: Don hang
+            'referenceId': 'order_002',
             'isRead': true,
             'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
             'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
           },
           {
             'id': 'notif_005',
-            'type': 'system',
-            'title': 'Tai khoan duoc xac minh',
-            'body': 'Tai khoan cua ban da duoc xac minh thanh cong.',
+            'type': 0,  // 0: He thong, 1: Khuyen mai, 2: Don hang
+            'referenceId': 'user_002',
             'isRead': true,
             'createdAt': Timestamp.fromDate(DateTime.parse('2026-03-02T00:00:00Z')),
             'updatedAt': Timestamp.fromDate(DateTime.parse('2026-03-02T00:00:00Z')),
           },
           {
             'id': 'notif_006',
-            'type': 'reward',
-            'title': 'Ban duoc tang 50 diem',
-            'body': 'Cam on ban da mua hang, ban duoc tang 50 diem thuong.',
+            'type': 0,  // 0: He thong, 1: Khuyen mai, 2: Don hang
+            'referenceId': 'reward_001',
             'isRead': false,
             'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
             'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
           },
           {
             'id': 'notif_007',
-            'type': 'promotion',
-            'title': 'Ma khuyen mai moi',
-            'body': 'Ma FREESHIP50 dang cho ban, su dung ngay!',
+            'type': 1,  // 0: He thong, 1: Khuyen mai, 2: Don hang
+            'referenceId': 'voucher_003',
             'isRead': false,
             'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
             'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
@@ -1188,6 +1185,8 @@ class DataSeeder {
         'phoneNumber': '0369258147',
         'password': 'password123',
         'refreshToken': 'dummy_refresh_token_string_for_testing',
+        'loyaltyPoints': 800,
+        'membershipTier': 0,  // 0: Dong, 1: Bac, 2: Vang, 3: Kim Cuong
         'photoUrl': 'https://example.com/avatar/user003.jpg',
         'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
         'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
@@ -1211,7 +1210,7 @@ class DataSeeder {
         'payment_methods': [
           {
             'id': 'pm_006',
-            'type': 'wallet',
+            'type': 2,  // 1: Tien mat, 2: Vi dien tu, 3: The ngan hang
             'isDefault': true,
             'cardBrand': null,
             'last4Digits': null,
@@ -1226,18 +1225,16 @@ class DataSeeder {
         'notifications': [
           {
             'id': 'notif_008',
-            'type': 'system',
-            'title': 'Chao mung ban den voi FoodGo',
-            'body': 'Cam on ban da dang ky tai khoan FoodGo. Han bat dau!',
+            'type': 0,  // 0: He thong, 1: Khuyen mai, 2: Don hang
+            'referenceId': 'user_003',
             'isRead': false,
             'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
             'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
           },
           {
             'id': 'notif_009',
-            'type': 'promotion',
-            'title': 'uu dai khach hang moi',
-            'body': 'Nhan ngay voucher giam 20K cho don hang dau tien cua ban.',
+            'type': 1,  // 0: He thong, 1: Khuyen mai, 2: Don hang
+            'referenceId': 'voucher_005',
             'isRead': false,
             'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
             'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
@@ -1562,7 +1559,7 @@ class DataSeeder {
       ],
       'totalAmount': 140000.0,
       'deliveryFee': 15000.0,
-      'status': 'completed',
+      'status': 3,  // 0: Cho xac nhan, 1: Dang chuan bi, 2: Dang giao, 3: Hoan thanh, 4: Da huy
       'deliveryAddress': 'Ky tuc xa UTC2, Quan 9, TP.HCM',
       'paymentMethod': 'momo',
       'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
@@ -1594,7 +1591,7 @@ class DataSeeder {
       ],
       'totalAmount': 91000.0,
       'deliveryFee': 12000.0,
-      'status': 'delivering',
+      'status': 2,  // 0: Cho xac nhan, 1: Dang chuan bi, 2: Dang giao, 3: Hoan thanh, 4: Da huy
       'deliveryAddress': '123 Duong Nguyen Trai, Quan 1, TP.HCM',
       'paymentMethod': 'card',
       'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
@@ -1626,7 +1623,7 @@ class DataSeeder {
       ],
       'totalAmount': 90000.0,
       'deliveryFee': 14000.0,
-      'status': 'pending',
+      'status': 0,  // 0: Cho xac nhan, 1: Dang chuan bi, 2: Dang giao, 3: Hoan thanh, 4: Da huy
       'deliveryAddress': '78 Le Lai, Quan Tan Binh, TP.HCM',
       'paymentMethod': 'cash',
       'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
@@ -1651,7 +1648,7 @@ class DataSeeder {
       ],
       'totalAmount': 95000.0,
       'deliveryFee': 18000.0,
-      'status': 'cancelled',
+      'status': 4,  // 0: Cho xac nhan, 1: Dang chuan bi, 2: Dang giao, 3: Hoan thanh, 4: Da huy
       'deliveryAddress': 'Ky tuc xa UTC2, Quan 9, TP.HCM',
       'paymentMethod': 'zalo',
       'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
@@ -1683,7 +1680,7 @@ class DataSeeder {
       ],
       'totalAmount': 195000.0,
       'deliveryFee': 18000.0,
-      'status': 'completed',
+      'status': 3,  // 0: Cho xac nhan, 1: Dang chuan bi, 2: Dang giao, 3: Hoan thanh, 4: Da huy
       'deliveryAddress': '123 Duong Nguyen Trai, Quan 1, TP.HCM',
       'paymentMethod': 'card',
       'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-05T00:00:00Z')),
@@ -1708,7 +1705,7 @@ class DataSeeder {
       ],
       'totalAmount': 55000.0,
       'deliveryFee': 15000.0,
-      'status': 'completed',
+      'status': 3,  // 0: Cho xac nhan, 1: Dang chuan bi, 2: Dang giao, 3: Hoan thanh, 4: Da huy
       'deliveryAddress': '78 Le Lai, Quan Tan Binh, TP.HCM',
       'paymentMethod': 'cash',
       'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-04T00:00:00Z')),
@@ -1740,7 +1737,7 @@ class DataSeeder {
       ],
       'totalAmount': 102000.0,
       'deliveryFee': 12000.0,
-      'status': 'pending',
+      'status': 0,  // 0: Cho xac nhan, 1: Dang chuan bi, 2: Dang giao, 3: Hoan thanh, 4: Da huy
       'deliveryAddress': 'Ky tuc xa UTC2, Quan 9, TP.HCM',
       'paymentMethod': 'momo',
       'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-08T00:00:00Z')),
