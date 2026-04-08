@@ -19,6 +19,59 @@ class NotificationCard extends StatelessWidget {
     this.onTap,
   });
 
+  /// Lay tieu de hien thi dua tren loai thong bao.
+  String _getTitle(BuildContext context) {
+    return LanguageService.translate('notif_type_${notification.type}');
+  }
+
+  /// Lay noi dung hien thi dua tren loai va referenceId.
+  String _getBody(BuildContext context) {
+    switch (notification.type) {
+      case 2:
+        // Don hang.
+        return 'Don hang #${notification.referenceId} cua ban co cap nhat moi.';
+      case 1:
+        // Khuyen mai.
+        return 'Ma khuyen mai #${notification.referenceId} dang cho ban. Hay su dung ngay!';
+      case 0:
+      default:
+        // He thong.
+        return 'Thong bao he thong #${notification.referenceId}.';
+    }
+  }
+
+  /// Lay icon dua tren loai thong bao.
+  IconData _getIconData() {
+    switch (notification.type) {
+      case 2:
+        return Icons.receipt_long_outlined;
+      case 1:
+        return Icons.local_offer_outlined;
+      case 0:
+      default:
+        return Icons.settings_outlined;
+    }
+  }
+
+  /// Lay mau icon dua tren loai thong bao.
+  Color _getIconColor() {
+    switch (notification.type) {
+      case 2:
+        return AppColors.info;
+      case 1:
+        return AppColors.primary;
+      case 0:
+      default:
+        return AppColors.textSecondary;
+    }
+  }
+
+  /// Lay mau nen icon dua tren loai thong bao.
+  Color _getIconBgColor() {
+    final iconColor = _getIconColor();
+    return iconColor.withOpacity(0.12);
+  }
+
   @override
   Widget build(BuildContext context) {
     // Mau nen: neu chua doc thi nen xanh nhat, neu da doc thi nen trang.
@@ -57,7 +110,7 @@ class NotificationCard extends StatelessWidget {
                         // Tieu de.
                         Expanded(
                           child: Text(
-                            notification.title,
+                            _getTitle(context),
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: notification.isRead
@@ -71,8 +124,8 @@ class NotificationCard extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.only(left: 8),
                           child: Text(
-                            _formatTime(notification.createdAt),
-                            style: TextStyle(
+                            _formatTime(context, notification.createdAt),
+                            style: const TextStyle(
                               fontSize: 12,
                               color: AppColors.textSecondary,
                             ),
@@ -83,8 +136,8 @@ class NotificationCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     // Noi dung chi tiet.
                     Text(
-                      notification.body,
-                      style: TextStyle(
+                      _getBody(context),
+                      style: const TextStyle(
                         fontSize: 13,
                         color: AppColors.textSecondary,
                         height: 1.4,
@@ -102,39 +155,20 @@ class NotificationCard extends StatelessWidget {
     );
   }
 
-  /// Tao icon ben trai dua tren loai thong bao.
+  /// Widget icon ben trai voi cham do (neu chua doc).
   Widget _buildLeadingIcon() {
-    final IconData iconData;
-    final Color iconColor;
-    final Color bgColor;
-
-    switch (notification.type) {
-      case NotificationType.order:
-        iconData = Icons.receipt_long_outlined;
-        iconColor = AppColors.info;
-        bgColor = AppColors.info.withOpacity(0.12);
-      case NotificationType.promotion:
-        iconData = Icons.local_offer_outlined;
-        iconColor = AppColors.primary;
-        bgColor = AppColors.primary.withOpacity(0.12);
-      case NotificationType.system:
-        iconData = Icons.settings_outlined;
-        iconColor = AppColors.textSecondary;
-        bgColor = AppColors.textSecondary.withOpacity(0.12);
-    }
-
     return Stack(
       children: [
         Container(
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: bgColor,
+            color: _getIconBgColor(),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
-            iconData,
-            color: iconColor,
+            _getIconData(),
+            color: _getIconColor(),
             size: 22,
           ),
         ),
@@ -160,7 +194,7 @@ class NotificationCard extends StatelessWidget {
   }
 
   /// Chuyen doi thoi gian thanh chuoi hien thi.
-  String _formatTime(DateTime dateTime) {
+  String _formatTime(BuildContext context, DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
 
@@ -176,7 +210,9 @@ class NotificationCard extends StatelessWidget {
       return LanguageService.translate('notification_time_days_ago')
           .replaceAll('\$1', difference.inDays.toString());
     } else {
-      return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
+      return '${dateTime.day.toString().padLeft(2, '0')}/'
+          '${dateTime.month.toString().padLeft(2, '0')}/'
+          '${dateTime.year}';
     }
   }
 }
