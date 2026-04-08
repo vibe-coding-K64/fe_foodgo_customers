@@ -15,10 +15,7 @@ class OrderToppingModel {
   final String name;
   final double price;
 
-  const OrderToppingModel({
-    required this.name,
-    required this.price,
-  });
+  const OrderToppingModel({required this.name, required this.price});
 }
 
 /// Model mot mon an trong don hang.
@@ -102,9 +99,9 @@ class OrderDetailModel {
 
 /// Trang thai cua don hang trong trang chi tiet.
 enum OrderDetailStatus {
-  delivering,  // Dang giao.
-  received,    // Da hoan thanh.
-  cancelled,   // Da huy.
+  delivering, // Dang giao.
+  received, // Da hoan thanh.
+  cancelled, // Da huy.
 }
 
 ///=============================================================================
@@ -118,10 +115,7 @@ enum OrderDetailStatus {
 class OrderDetailView extends StatelessWidget {
   final OrderDetailModel order;
 
-  const OrderDetailView({
-    super.key,
-    required this.order,
-  });
+  const OrderDetailView({super.key, required this.order});
 
   @override
   Widget build(BuildContext context) {
@@ -133,10 +127,7 @@ class OrderDetailView extends StatelessWidget {
         elevation: 0,
         title: Text(
           context.t('order_detail_title'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
       ),
@@ -257,18 +248,9 @@ class OrderDetailView extends StatelessWidget {
             margin: const EdgeInsets.only(left: 22),
             child: Row(
               children: [
-                Container(
-                  width: 2,
-                  height: 16,
-                  color: AppColors.divider,
-                ),
+                Container(width: 2, height: 16, color: AppColors.divider),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: Container(
-                    height: 1,
-                    color: AppColors.divider,
-                  ),
-                ),
+                Expanded(child: Container(height: 1, color: AppColors.divider)),
                 const SizedBox(width: 8),
                 Icon(
                   Icons.local_shipping_outlined,
@@ -313,11 +295,7 @@ class OrderDetailView extends StatelessWidget {
             color: iconColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            icon,
-            size: 20,
-            color: iconColor,
-          ),
+          child: Icon(icon, size: 20, color: iconColor),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -344,18 +322,12 @@ class OrderDetailView extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 detail,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 2),
               Text(
                 phone,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -579,11 +551,7 @@ class OrderDetailView extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            methodIcon,
-            size: 22,
-            color: AppColors.textSecondary,
-          ),
+          Icon(methodIcon, size: 22, color: AppColors.textSecondary),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -619,7 +587,9 @@ class OrderDetailView extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: OutlinedButton.icon(
         onPressed: () {
-          debugPrint('OrderDetailView: Nguoi dung bam Tro giup, chuyen sang trang Tro giop voi ma don [${order.id}]');
+          debugPrint(
+            'OrderDetailView: Nguoi dung bam Tro giup, chuyen sang trang Tro giop voi ma don [${order.id}]',
+          );
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -763,7 +733,9 @@ class OrderDetailView extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        debugPrint('OrderDetailView: Mo ban do theo doi tai xe [${driver.name}]');
+                        debugPrint(
+                          'OrderDetailView: Mo ban do theo doi tai xe [${driver.name}]',
+                        );
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -790,7 +762,9 @@ class OrderDetailView extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        debugPrint('OrderDetailView: Chat voi tai xe [${driver.name}]');
+                        debugPrint(
+                          'OrderDetailView: Chat voi tai xe [${driver.name}]',
+                        );
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -831,7 +805,9 @@ class OrderDetailView extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 16),
           child: OutlinedButton(
             onPressed: () {
-              debugPrint('OrderDetailView: Nguoi dung bam Huy don [${order.id}]');
+              debugPrint(
+                'OrderDetailView: Nguoi dung bam Huy don [${order.id}]',
+              );
             },
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.error,
@@ -843,10 +819,7 @@ class OrderDetailView extends StatelessWidget {
             ),
             child: Text(
               context.t('order_cancel_order'),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ),
         ),
@@ -928,7 +901,9 @@ class OrderDetailView extends StatelessWidget {
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   onPressed: () {
-                    debugPrint('OrderDetailView: Nguoi dung bam Danh gia mon an');
+                    debugPrint(
+                      'OrderDetailView: Nguoi dung bam Danh gia mon an',
+                    );
                   },
                   icon: const Icon(Icons.restaurant_outlined, size: 18),
                   label: Text(context.t('order_rate_food')),
@@ -949,7 +924,9 @@ class OrderDetailView extends StatelessWidget {
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      debugPrint('OrderDetailView: Nguoi dung bam Danh gia tai xe');
+                      debugPrint(
+                        'OrderDetailView: Nguoi dung bam Danh gia tai xe',
+                      );
                     },
                     icon: const Icon(Icons.directions_car_outlined, size: 18),
                     label: Text(context.t('order_rate_driver')),
@@ -970,7 +947,9 @@ class OrderDetailView extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    debugPrint('OrderDetailView: Nguoi dung bam Dat lai, chuyen sang Checkout voi ma don [${order.id}]');
+                    debugPrint(
+                      'OrderDetailView: Nguoi dung bam Dat lai, chuyen sang Checkout voi ma don [${order.id}]',
+                    );
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -1011,11 +990,7 @@ class OrderDetailView extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.cancel_outlined,
-            size: 40,
-            color: AppColors.error,
-          ),
+          Icon(Icons.cancel_outlined, size: 40, color: AppColors.error),
           const SizedBox(height: 8),
           Text(
             context.t('order_cancelled_title'),
@@ -1029,10 +1004,7 @@ class OrderDetailView extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               '${context.t('order_cancel_reason')}: ${order.cancelReason}',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
           ],
@@ -1042,7 +1014,9 @@ class OrderDetailView extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () {
-                debugPrint('OrderDetailView: Nguoi dung bam Dat lai tu man hinh da huy, chuyen sang Checkout voi ma don [${order.id}]');
+                debugPrint(
+                  'OrderDetailView: Nguoi dung bam Dat lai tu man hinh da huy, chuyen sang Checkout voi ma don [${order.id}]',
+                );
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -1089,17 +1063,11 @@ class OrderDetailView extends StatelessWidget {
         width: double.infinity,
         child: ElevatedButton(
           onPressed: () {
-            debugPrint('OrderDetailView: Nguoi dung bam Huy don [${order.id}]');
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(context.t('order_cancel_order')),
-                backgroundColor: AppColors.error,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            debugPrint('OrderDetailView: Nguoi dung bam Dong man hinh chi tiet don hang');
+            Navigator.pop(context);
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.error,
+            backgroundColor: AppColors.textSecondary,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
@@ -1108,11 +1076,8 @@ class OrderDetailView extends StatelessWidget {
             elevation: 0,
           ),
           child: Text(
-            context.t('order_cancel_order'),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            context.t('btn_close'),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
         ),
       ),
@@ -1126,7 +1091,9 @@ class OrderDetailView extends StatelessWidget {
   /// Format gia thanh chuoi VND (VD: "85.000 VND").
   String _formatPrice(double price, BuildContext ctx) {
     if (price >= 1000) {
-      final formatted = price.toStringAsFixed(0).replaceAllMapped(
+      final formatted = price
+          .toStringAsFixed(0)
+          .replaceAllMapped(
             RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
             (Match m) => '${m[1]}.',
           );
@@ -1163,9 +1130,7 @@ final mockOrderDelivering = OrderDetailModel(
       name: 'Tra sua tran chau',
       quantity: 1,
       unitPrice: 28000,
-      toppings: [
-        OrderToppingModel(name: 'Tran chau den', price: 5000),
-      ],
+      toppings: [OrderToppingModel(name: 'Tran chau den', price: 5000)],
     ),
   ],
   subtotal: 113000,
@@ -1197,9 +1162,7 @@ final mockOrderReceived = OrderDetailModel(
       name: 'Bun bo hue lon',
       quantity: 1,
       unitPrice: 50000,
-      toppings: [
-        OrderToppingModel(name: 'Vit', price: 15000),
-      ],
+      toppings: [OrderToppingModel(name: 'Vit', price: 15000)],
     ),
     OrderItemModel(
       name: 'Nem chua ran',

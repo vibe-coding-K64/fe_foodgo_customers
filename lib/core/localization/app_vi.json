@@ -702,6 +702,16 @@
   "reward_voucher_unit": "voucher",
   "reward_discount_label": "GIAM",
 
+  "btn_close": "Dong",
+  "btn_cancel_order": "Huy don",
+  "btn_reorder": "Dat lai",
+  "btn_review_food": "Danh gia mon an",
+  "btn_review_driver": "Danh gia tai xe",
+  "msg_order_cancelled": "Don hang nay da bi huy.",
+  "driver_info": "Thong tin tai xe",
+  "map_view": "Mo ban do",
+  "chat_driver": "Chat voi tai xe",
+
   "activity_cancel_order_hint": "Huy don hang $1",
   "driver_chat_send_image": "Gui hinh anh",
 

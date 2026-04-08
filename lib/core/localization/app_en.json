@@ -694,6 +694,16 @@
   "reward_voucher_unit": "voucher",
   "reward_discount_label": "OFF",
 
+  "btn_close": "Close",
+  "btn_cancel_order": "Cancel Order",
+  "btn_reorder": "Reorder",
+  "btn_review_food": "Review Food",
+  "btn_review_driver": "Review Driver",
+  "msg_order_cancelled": "This order has been cancelled.",
+  "driver_info": "Driver Information",
+  "map_view": "Open Map",
+  "chat_driver": "Chat with Driver",
+
   "activity_cancel_order_hint": "Cancel order $1",
   "driver_chat_send_image": "Send image",
 
