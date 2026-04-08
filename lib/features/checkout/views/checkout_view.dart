@@ -1,25 +1,25 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/localization/language_service.dart';
-import '../../../features/profile/models/address_model.dart';
-import '../../activity/views/order_detail_view.dart';
-import 'widgets/checkout_delivery_info.dart';
-import 'widgets/checkout_cart_item.dart';
-import 'widgets/checkout_cart_items.dart';
-import 'widgets/checkout_promotions.dart';
-import 'widgets/checkout_summary.dart';
-import '../../address/views/address_management_view.dart';
+import 'package:fe_foodgo_customers/core/constants/app_colors.dart';
+import 'package:fe_foodgo_customers/core/localization/language_service.dart';
+import 'package:fe_foodgo_customers/features/order/models/order_model.dart';
+import 'package:fe_foodgo_customers/features/profile/models/address_model.dart';
+import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_delivery_info.dart';
+import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_cart_item.dart';
+import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_cart_items.dart';
+import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_promotions.dart';
+import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_summary.dart';
+import 'package:fe_foodgo_customers/features/address/views/address_management_view.dart';
 
 /// Trang checkout (Thanh toan) - buoc cuoi cung cua luong mua hang.
 /// Giao dien gom: thong tin giao hang, danh sach mon, uu dai,
 /// chi tiet hoa don, va sticky bottom bar.
 ///
 /// Thuoc tinh [initialOrder] cho phep dat lai don hang cu:
-///   - Neu la [OrderDetailModel]: hien thi san danh sach mon cu trong gio hang.
+///   - Neu la [OrderModel]: hien thi san danh sach mon cu trong gio hang.
 ///   - Neu la null: su dung gio hang mac dinh (mock data).
 class CheckoutView extends StatefulWidget {
   /// Don hang cu de dat lai. Neu null, su dung gio hang mac dinh.
-  final OrderDetailModel? initialOrder;
+  final OrderModel? initialOrder;
 
   const CheckoutView({super.key, this.initialOrder});
 
@@ -241,16 +241,19 @@ class _CheckoutViewState extends State<CheckoutView> {
   }
 
   /// Chuyen doi danh sach mon cua don hang cu sang dinh dang gio hang checkout.
-  List<CheckoutCartItem> _convertOrderToCartItems(OrderDetailModel order) {
+  List<CheckoutCartItem> _convertOrderToCartItems(OrderModel order) {
     return order.items.map((item) {
       return CheckoutCartItem(
         id: 'reorder_${order.id}_${item.name.hashCode}',
         name: item.name,
-        imageUrl: '',
-        unitPrice: item.unitPrice,
+        imageUrl: item.imageUrl ?? '',
+        unitPrice: item.price,
         quantity: item.quantity,
-        toppings: item.toppings
-            .map((t) => CheckoutTopping(name: t.name, price: t.price))
+        toppings: (item.options ?? [])
+            .map((o) => CheckoutTopping(
+                  name: o['name']?.toString() ?? '',
+                  price: (o['price'] as num?)?.toDouble() ?? 0,
+                ))
             .toList(),
       );
     }).toList();

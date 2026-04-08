@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/localization/language_service.dart';
-import '../../../core/utils/order_converter.dart';
-import '../../../../features/checkout/views/checkout_view.dart';
-import 'order_detail_view.dart';
-import 'widgets/activity_order_card.dart';
+import 'package:fe_foodgo_customers/core/constants/app_colors.dart';
+import 'package:fe_foodgo_customers/core/localization/language_service.dart';
+import 'package:fe_foodgo_customers/features/order/models/order_model.dart';
+import 'package:fe_foodgo_customers/features/order/services/order_service.dart';
+import 'package:fe_foodgo_customers/features/checkout/views/checkout_view.dart';
+import 'package:fe_foodgo_customers/features/activity/views/order_detail_view.dart';
+import 'package:fe_foodgo_customers/features/activity/views/widgets/activity_order_card.dart';
 
 /// Man hinh Hoat dong (Quan ly don hang).
 ///
 /// Hien thi danh sach don hang phan theo 3 trang thai: Da dat, Da nhan, Da huy.
+/// Su dung du lieu tu Firebase Firestore.
 class ActivityView extends StatelessWidget {
   const ActivityView({super.key});
 
@@ -130,12 +132,12 @@ class ActivityView extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            // Tab Da dat.
-            _OrderList(status: OrderStatus.ordered),
-            // Tab Da nhan.
-            _OrderList(status: OrderStatus.received),
-            // Tab Da huy.
-            _OrderList(status: OrderStatus.cancelled),
+            // Tab Da dat (status 0, 1, 2).
+            _OrderList(status: 0),
+            // Tab Da nhan (status 3).
+            _OrderList(status: 1),
+            // Tab Da huy (status 4).
+            _OrderList(status: 2),
           ],
         ),
       ),
@@ -145,59 +147,98 @@ class ActivityView extends StatelessWidget {
 
 /// Widget hien thi danh sach don hang theo trang thai.
 class _OrderList extends StatelessWidget {
-  final OrderStatus status;
+  final int status;
 
   const _OrderList({required this.status});
 
   @override
   Widget build(BuildContext context) {
-    final orders = _getMockOrders(status);
+    return StreamBuilder<List<OrderModel>>(
+      stream: OrderService.getMyOrdersStream(),
+      builder: (context, snapshot) {
+        // Neu co loi thi hien thi loi.
+        if (snapshot.hasError) {
+          debugPrint('ActivityView: Loi khi lay don hang: ${snapshot.error}');
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Loi khi tai du lieu: ${snapshot.error}',
+                style: const TextStyle(color: AppColors.error),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          );
+        }
 
-    if (orders.isEmpty) {
-      return _buildEmptyState(context);
-    }
+        // Neu dang loading thi hien thi vong xoay.
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      itemCount: orders.length,
-      itemBuilder: (context, index) {
-        final order = orders[index];
-        return ActivityOrderCard(
-          order: order,
-          onViewDetail: () {
-            debugPrint('Xem chi tiet don hang: ${order.id}');
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) =>
-                    OrderDetailView(order: orderModelToDetail(order)),
-              ),
-            );
-          },
-          onReorder: () {
-            debugPrint(
-              'ActivityView: Nguoi dung bam Dat lai don hang [${order.id}]',
-            );
-            final orderDetail = orderModelToDetail(order);
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => CheckoutView(initialOrder: orderDetail),
-              ),
-            );
-          },
-          onCancel: () {
-            debugPrint('Huy don hang: ${order.id}');
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  context
-                      .t('activity_cancel_order_hint')
-                      .replaceAll('\$1', order.id),
-                ),
-                backgroundColor: AppColors.error,
-                behavior: SnackBarBehavior.floating,
-              ),
+        // Lay danh sach don hang.
+        final allOrders = snapshot.data ?? [];
+
+        // Phan loai don hang theo trang thai.
+        final activeOrders = allOrders.where((o) => o.isActive).toList();
+        final completedOrders = allOrders.where((o) => o.isCompleted).toList();
+        final cancelledOrders = allOrders.where((o) => o.isCancelled).toList();
+
+        // Chon danh sach phu hop voi tab.
+        List<OrderModel> orders;
+        switch (status) {
+          case 0:
+            orders = activeOrders;
+            break;
+          case 1:
+            orders = completedOrders;
+            break;
+          case 2:
+            orders = cancelledOrders;
+            break;
+          default:
+            orders = [];
+        }
+
+        // Neu khong co don hang thi hien thi trang thai rong.
+        if (orders.isEmpty) {
+          return _buildEmptyState(context);
+        }
+
+        // Hien thi danh sach don hang.
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          itemCount: orders.length,
+          itemBuilder: (context, index) {
+            final order = orders[index];
+            return ActivityOrderCard(
+              order: order,
+              onViewDetail: () {
+                debugPrint('Xem chi tiet don hang: ${order.id}');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => OrderDetailView(order: order),
+                  ),
+                );
+              },
+              onReorder: () {
+                debugPrint(
+                  'ActivityView: Nguoi dung bam Dat lai don hang [${order.id}]',
+                );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CheckoutView(initialOrder: order),
+                  ),
+                );
+              },
+              onCancel: () {
+                debugPrint('Huy don hang: ${order.id}');
+                _showCancelDialog(context, order);
+              },
             );
           },
         );
@@ -205,18 +246,81 @@ class _OrderList extends StatelessWidget {
     );
   }
 
+  /// Hien thi dialog xac nhan huy don hang.
+  Future<void> _showCancelDialog(BuildContext context, OrderModel order) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xac nhan huy don'),
+        content: Text('Ban co chac chan muon huy don hang ${order.id}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Khong'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Co, huy don'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    if (!context.mounted) return;
+
+    // Hien thi loading.
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    // Goi service huy don.
+    final success = await OrderService.cancelOrder(order.id);
+
+    // Dong loading.
+    if (context.mounted) {
+      Navigator.pop(context);
+
+      // Hien thi snackbar thong bao.
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Huy don hang thanh cong'),
+            backgroundColor: AppColors.primary,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Huy don hang that bai, vui long thu lai'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildEmptyState(BuildContext ctx) {
     String emptyText;
     switch (status) {
-      case OrderStatus.ordered:
+      case 0:
         emptyText = ctx.t('activity_empty_ordered');
         break;
-      case OrderStatus.received:
+      case 1:
         emptyText = ctx.t('activity_empty_received');
         break;
-      case OrderStatus.cancelled:
+      case 2:
         emptyText = ctx.t('activity_empty_cancelled');
         break;
+      default:
+        emptyText = 'Khong co don hang';
     }
 
     return Center(
@@ -237,70 +341,5 @@ class _OrderList extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  List<OrderModel> _getMockOrders(OrderStatus targetStatus) {
-    final now = DateTime.now();
-
-    final allOrders = [
-      OrderModel(
-        id: 'ORD001',
-        storeName: 'Com Tam Oi Den',
-        mainItem: 'Com tam bi cha',
-        itemCount: 2,
-        totalPrice: 85000,
-        orderDate: now.subtract(const Duration(hours: 2)),
-        status: OrderStatus.ordered,
-        subStatus: SubOrderStatus.preparing,
-      ),
-      OrderModel(
-        id: 'ORD002',
-        storeName: 'Bun Bo Hue Ba Trieu',
-        mainItem: 'Bun bo hue lon',
-        itemCount: 1,
-        totalPrice: 55000,
-        orderDate: now.subtract(const Duration(days: 1)),
-        status: OrderStatus.ordered,
-        subStatus: SubOrderStatus.driverComing,
-      ),
-      OrderModel(
-        id: 'ORD003',
-        storeName: 'Pho 24 Quan Phu Nhuan',
-        mainItem: 'Pho bo tai nam',
-        itemCount: 3,
-        totalPrice: 150000,
-        orderDate: now.subtract(const Duration(days: 2)),
-        status: OrderStatus.received,
-      ),
-      OrderModel(
-        id: 'ORD004',
-        storeName: 'Mi Quang Ba Giu',
-        mainItem: 'Mi quang ga',
-        itemCount: 1,
-        totalPrice: 45000,
-        orderDate: now.subtract(const Duration(days: 3)),
-        status: OrderStatus.received,
-      ),
-      OrderModel(
-        id: 'ORD005',
-        storeName: 'Banh Mi Cay Tay Dong',
-        mainItem: 'Banh mi thit nguoi',
-        itemCount: 2,
-        totalPrice: 60000,
-        orderDate: now.subtract(const Duration(days: 5)),
-        status: OrderStatus.received,
-      ),
-      OrderModel(
-        id: 'ORD006',
-        storeName: 'Lau De Nha Hang Song Than',
-        mainItem: 'Lau de 4 nguoi',
-        itemCount: 4,
-        totalPrice: 450000,
-        orderDate: now.subtract(const Duration(days: 7)),
-        status: OrderStatus.cancelled,
-      ),
-    ];
-
-    return allOrders.where((o) => o.status == targetStatus).toList();
   }
 }

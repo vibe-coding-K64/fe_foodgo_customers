@@ -1,108 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/localization/language_service.dart';
-import '../../../../features/checkout/views/checkout_view.dart';
-import '../../support/views/support_view.dart';
-import 'driver_chat_view.dart';
-import 'order_tracking_map_view.dart';
-
-///=============================================================================
-/// SECTION: MODELS
-///=============================================================================
-
-/// Model topping cua mot mon an.
-class OrderToppingModel {
-  final String name;
-  final double price;
-
-  const OrderToppingModel({required this.name, required this.price});
-}
-
-/// Model mot mon an trong don hang.
-class OrderItemModel {
-  final String name;
-  final int quantity;
-  final double unitPrice;
-  final List<OrderToppingModel> toppings;
-
-  const OrderItemModel({
-    required this.name,
-    required this.quantity,
-    required this.unitPrice,
-    this.toppings = const [],
-  });
-
-  double get totalPrice {
-    final toppingTotal = toppings.fold<double>(
-      0,
-      (sum, topping) => sum + topping.price,
-    );
-    return (unitPrice + toppingTotal) * quantity;
-  }
-}
-
-/// Model thong tin tai xe.
-class DriverInfoModel {
-  final String name;
-  final String phone;
-  final String avatarUrl;
-  final String vehiclePlate;
-
-  const DriverInfoModel({
-    required this.name,
-    required this.phone,
-    required this.avatarUrl,
-    required this.vehiclePlate,
-  });
-}
-
-/// Model don hang day du cho trang chi tiet.
-class OrderDetailModel {
-  final String id;
-  final String storeName;
-  final String storeAddress;
-  final String storePhone;
-  final String customerName;
-  final String customerPhone;
-  final String deliveryAddress;
-  final List<OrderItemModel> items;
-  final double subtotal;
-  final double deliveryFee;
-  final double voucherDiscount;
-  final double total;
-  final String paymentMethod; // "cash", "wallet"
-  final DateTime orderDate;
-  final OrderDetailStatus status;
-  final DriverInfoModel? driverInfo;
-  final String? cancelReason;
-
-  const OrderDetailModel({
-    required this.id,
-    required this.storeName,
-    required this.storeAddress,
-    required this.storePhone,
-    required this.customerName,
-    required this.customerPhone,
-    required this.deliveryAddress,
-    required this.items,
-    required this.subtotal,
-    required this.deliveryFee,
-    required this.voucherDiscount,
-    required this.total,
-    required this.paymentMethod,
-    required this.orderDate,
-    required this.status,
-    this.driverInfo,
-    this.cancelReason,
-  });
-}
-
-/// Trang thai cua don hang trong trang chi tiet.
-enum OrderDetailStatus {
-  delivering, // Dang giao.
-  received, // Da hoan thanh.
-  cancelled, // Da huy.
-}
+import 'package:fe_foodgo_customers/core/constants/app_colors.dart';
+import 'package:fe_foodgo_customers/core/localization/language_service.dart';
+import 'package:fe_foodgo_customers/features/order/models/order_model.dart';
+import 'package:fe_foodgo_customers/features/order/services/order_service.dart';
+import 'package:fe_foodgo_customers/features/checkout/views/checkout_view.dart';
+import 'package:fe_foodgo_customers/features/support/views/support_view.dart';
+import 'package:fe_foodgo_customers/features/activity/views/driver_chat_view.dart';
+import 'package:fe_foodgo_customers/features/activity/views/order_tracking_map_view.dart';
 
 ///=============================================================================
 /// SECTION: VIEW
@@ -110,10 +14,10 @@ enum OrderDetailStatus {
 
 /// Man hinh chi tiet don hang.
 ///
-/// Hien thi day du thong tin don hang cung cac hanh dong theo trang thai.
-/// Phan giao dien dong (driver section, rating, huy don) thay doi theo status.
+/// Hien thi day du thong tin don hang tu Firebase Firestore.
+/// Cac hanh dong thay doi theo trang thai don hang.
 class OrderDetailView extends StatelessWidget {
-  final OrderDetailModel order;
+  final OrderModel order;
 
   const OrderDetailView({super.key, required this.order});
 
@@ -150,7 +54,7 @@ class OrderDetailView extends StatelessWidget {
             // Phan co dinh: phuong thuc thanh toan.
             _buildPaymentMethodSection(context),
             const SizedBox(height: 12),
-            // Phan dong: nut Tro giup.
+            // Phan co dinh: nut Tro giup.
             _buildHelpSection(context),
             const SizedBox(height: 12),
             // Phan giao dien dong theo trang thai.
@@ -239,8 +143,8 @@ class OrderDetailView extends StatelessWidget {
             iconColor: AppColors.primary,
             label: ctx.t('order_from'),
             name: order.storeName,
-            detail: order.storeAddress,
-            phone: order.storePhone,
+            detail: order.deliveryAddress,
+            phone: '',
           ),
           const SizedBox(height: 12),
           // Duong noi.
@@ -267,9 +171,9 @@ class OrderDetailView extends StatelessWidget {
             icon: Icons.location_on_outlined,
             iconColor: AppColors.error,
             label: ctx.t('order_to'),
-            name: order.customerName,
+            name: 'Khach hang',
             detail: order.deliveryAddress,
-            phone: order.customerPhone,
+            phone: '',
           ),
         ],
       ),
@@ -324,11 +228,13 @@ class OrderDetailView extends StatelessWidget {
                 detail,
                 style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
               ),
-              const SizedBox(height: 2),
-              Text(
-                phone,
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-              ),
+              if (phone.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  phone,
+                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                ),
+              ],
             ],
           ),
         ),
@@ -404,11 +310,11 @@ class OrderDetailView extends StatelessWidget {
                     color: AppColors.textPrimary,
                   ),
                 ),
-                if (item.toppings.isNotEmpty) ...[
+                if (item.options != null && item.options!.isNotEmpty) ...[
                   const SizedBox(height: 2),
-                  ...item.toppings.map(
-                    (topping) => Text(
-                      '+ ${topping.name}',
+                  ...item.options!.map(
+                    (option) => Text(
+                      '+ ${option['name'] ?? ''}',
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -421,7 +327,7 @@ class OrderDetailView extends StatelessWidget {
           ),
           // Don gia.
           Text(
-            _formatPrice(item.unitPrice, ctx),
+            _formatPrice(item.price, ctx),
             style: const TextStyle(
               fontSize: 13,
               color: AppColors.textSecondary,
@@ -433,6 +339,8 @@ class OrderDetailView extends StatelessWidget {
   }
 
   Widget _buildPaymentDetailSection(BuildContext ctx) {
+    final subtotal = order.totalAmount - order.deliveryFee;
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -447,7 +355,7 @@ class OrderDetailView extends StatelessWidget {
           _buildPaymentRow(
             ctx: ctx,
             label: ctx.t('order_subtotal'),
-            value: _formatPrice(order.subtotal, ctx),
+            value: _formatPrice(subtotal, ctx),
             valueColor: AppColors.textPrimary,
           ),
           const SizedBox(height: 8),
@@ -457,16 +365,6 @@ class OrderDetailView extends StatelessWidget {
             value: _formatPrice(order.deliveryFee, ctx),
             valueColor: AppColors.textPrimary,
           ),
-          if (order.voucherDiscount > 0) ...[
-            const SizedBox(height: 8),
-            _buildPaymentRow(
-              ctx: ctx,
-              label: ctx.t('order_voucher_discount'),
-              value: '- ${_formatPrice(order.voucherDiscount, ctx)}',
-              valueColor: AppColors.error,
-              isDiscount: true,
-            ),
-          ],
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Divider(height: 1, color: AppColors.divider),
@@ -483,7 +381,7 @@ class OrderDetailView extends StatelessWidget {
                 ),
               ),
               Text(
-                _formatPrice(order.total, ctx),
+                _formatPrice(order.totalAmount, ctx),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -616,24 +514,31 @@ class OrderDetailView extends StatelessWidget {
   ///=============================================================================
 
   Widget _buildDynamicSection(BuildContext context) {
+    // Phan loai theo trang thai tu OrderModel
     switch (order.status) {
-      case OrderDetailStatus.delivering:
+      case 0:
+      case 1:
+      case 2:
+        // Don hang dang xu ly: hien thi phan tai xe + nut huy
         return _buildDeliveringSection(context);
-      case OrderDetailStatus.received:
+      case 3:
+        // Don hang da hoan thanh: hien thi phan danh gia
         return _buildReceivedSection(context);
-      case OrderDetailStatus.cancelled:
+      case 4:
+        // Don hang da huy: hien thi thong tin huy
         return _buildCancelledSection(context);
+      default:
+        return const SizedBox.shrink();
     }
   }
 
-  /// Giao diện khi đang giao: khối tài xế đầy đủ + nút Map/Chat + Hủy đơn.
+  /// Giao dien khi don hang dang xu ly: hien thi thong tin tai xe (neu co) + nut huy.
   Widget _buildDeliveringSection(BuildContext context) {
-    final driver = order.driverInfo;
-    if (driver == null) return const SizedBox.shrink();
+    final hasDriver = order.hasDriverInfo;
 
     return Column(
       children: [
-        // Khối thông tin tài xế.
+        // Khoi thong tin tai xe.
         Container(
           width: double.infinity,
           margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -655,146 +560,168 @@ class OrderDetailView extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 14),
-              Row(
-                children: [
-                  // Avatar tài xế.
-                  CircleAvatar(
-                    radius: 26,
-                    backgroundColor: AppColors.surfaceVariant,
-                    backgroundImage: driver.avatarUrl.isNotEmpty
-                        ? NetworkImage(driver.avatarUrl)
-                        : null,
-                    child: driver.avatarUrl.isEmpty
-                        ? const Icon(
-                            Icons.person,
-                            size: 28,
-                            color: AppColors.textSecondary,
-                          )
-                        : null,
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          driver.name,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.directions_car_outlined,
-                              size: 14,
-                              color: AppColors.textSecondary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              driver.vehiclePlate,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.phone_outlined,
-                              size: 14,
-                              color: AppColors.textSecondary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              driver.phone,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+              if (!hasDriver) ...[
+                // Khong co thong tin tai xe: hien thi loading
+                Row(
+                  children: [
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primary,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              // Nút Mo ban do va Chat voi tai xe.
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        debugPrint(
-                          'OrderDetailView: Mo ban do theo doi tai xe [${driver.name}]',
-                        );
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => OrderTrackingMapView(
-                              order: order,
-                              etaMinutes: 15,
+                    const SizedBox(width: 12),
+                    Text(
+                      'Dang tim tai xe...',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                // Co thong tin tai xe: hien thi day du
+                Row(
+                  children: [
+                    // Avatar tai xe.
+                    CircleAvatar(
+                      radius: 26,
+                      backgroundColor: AppColors.surfaceVariant,
+                      child: const Icon(
+                        Icons.person,
+                        size: 28,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            order.driverName ?? 'Tai xe',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
                             ),
                           ),
-                        );
-                      },
-                      icon: const Icon(Icons.map_outlined, size: 18),
-                      label: Text(context.t('order_open_map')),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.directions_car_outlined,
+                                size: 14,
+                                color: AppColors.textSecondary,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                order.vehiclePlate ?? '',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.phone_outlined,
+                                size: 14,
+                                color: AppColors.textSecondary,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                order.driverPhone ?? '',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                // Nut Mo ban do va Chat voi tai xe.
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          debugPrint(
+                            'OrderDetailView: Mo ban do theo doi tai xe [${order.driverName}]',
+                          );
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => OrderTrackingMapView(
+                                orderId: order.id,
+                                driverName: order.driverName ?? '',
+                                driverPhone: order.driverPhone ?? '',
+                                vehiclePlate: order.vehiclePlate ?? '',
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.map_outlined, size: 18),
+                        label: Text(context.t('order_open_map')),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        debugPrint(
-                          'OrderDetailView: Chat voi tai xe [${driver.name}]',
-                        );
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DriverChatView(
-                              chat: DriverChatModel(
-                                driverName: driver.name,
-                                vehiclePlate: driver.vehiclePlate,
-                                driverPhone: driver.phone,
-                                driverAvatarUrl: driver.avatarUrl,
-                                messages: const [],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          debugPrint(
+                            'OrderDetailView: Chat voi tai xe [${order.driverName}]',
+                          );
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DriverChatView(
+                                chat: DriverChatModel(
+                                  driverName: order.driverName ?? '',
+                                  vehiclePlate: order.vehiclePlate ?? '',
+                                  driverPhone: order.driverPhone ?? '',
+                                  driverAvatarUrl: '',
+                                  messages: const [],
+                                ),
                               ),
                             ),
+                          );
+                        },
+                        icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                        label: Text(context.t('order_chat_driver')),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        );
-                      },
-                      icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                      label: Text(context.t('order_chat_driver')),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          elevation: 0,
                         ),
-                        elevation: 0,
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -808,6 +735,7 @@ class OrderDetailView extends StatelessWidget {
               debugPrint(
                 'OrderDetailView: Nguoi dung bam Huy don [${order.id}]',
               );
+              _showCancelDialog(context);
             },
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.error,
@@ -827,157 +755,173 @@ class OrderDetailView extends StatelessWidget {
     );
   }
 
-  /// Giao diện khi đã hoàn thành: khối tài xế ẩn SĐT/nút + 2 nút đánh giá.
-  Widget _buildReceivedSection(BuildContext context) {
-    final driver = order.driverInfo;
-
-    return Column(
-      children: [
-        if (driver != null) ...[
-          // Khối tài xế rút gọn (chỉ Avatar + Tên).
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.divider),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: AppColors.surfaceVariant,
-                  backgroundImage: driver.avatarUrl.isNotEmpty
-                      ? NetworkImage(driver.avatarUrl)
-                      : null,
-                  child: driver.avatarUrl.isEmpty
-                      ? const Icon(
-                          Icons.person,
-                          size: 26,
-                          color: AppColors.textSecondary,
-                        )
-                      : null,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  driver.name,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
+  /// Hien thi dialog xac nhan huy don hang.
+  Future<void> _showCancelDialog(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xac nhan huy don'),
+        content: Text('Ban co chac chan muon huy don hang ${order.id}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Khong'),
           ),
-          const SizedBox(height: 12),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Co, huy don'),
+          ),
         ],
-        // Khối 2 nút đánh giá.
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.divider),
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    if (!context.mounted) return;
+
+    // Hien thi loading.
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    // Goi service huy don.
+    final success = await OrderService.cancelOrder(order.id);
+
+    // Dong loading.
+    if (context.mounted) {
+      Navigator.pop(context);
+
+      // Hien thi snackbar thong bao.
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Huy don hang thanh cong'),
+            backgroundColor: AppColors.primary,
+            behavior: SnackBarBehavior.floating,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.t('order_rating_title'),
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 14),
-              // Nút đánh giá món ăn.
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    debugPrint(
-                      'OrderDetailView: Nguoi dung bam Danh gia mon an',
-                    );
-                  },
-                  icon: const Icon(Icons.restaurant_outlined, size: 18),
-                  label: Text(context.t('order_rate_food')),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              // Nut danh gia tai xe.
-              if (driver != null)
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      debugPrint(
-                        'OrderDetailView: Nguoi dung bam Danh gia tai xe',
-                      );
-                    },
-                    icon: const Icon(Icons.directions_car_outlined, size: 18),
-                    label: Text(context.t('order_rate_driver')),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.secondary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      elevation: 0,
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 12),
-              // Nut Dat lai don hang.
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    debugPrint(
-                      'OrderDetailView: Nguoi dung bam Dat lai, chuyen sang Checkout voi ma don [${order.id}]',
-                    );
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CheckoutView(initialOrder: order),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.replay_outlined, size: 18),
-                  label: Text(context.t('order_reorder_btn')),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    elevation: 0,
-                  ),
-                ),
-              ),
-            ],
+        );
+        // Dong man hinh chi tiet sau khi huy thanh cong.
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Huy don hang that bai, vui long thu lai'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
           ),
-        ),
-      ],
+        );
+      }
+    }
+  }
+
+  /// Giao dien khi don hang da hoan thanh: hien thi phan danh gia + nut dat lai.
+  Widget _buildReceivedSection(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.t('order_rating_title'),
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 14),
+          // Nut danh gia mon an.
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                debugPrint(
+                  'OrderDetailView: Nguoi dung bam Danh gia mon an',
+                );
+              },
+              icon: const Icon(Icons.restaurant_outlined, size: 18),
+              label: Text(context.t('order_rate_food')),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Nut danh gia tai xe (neu co thong tin tai xe).
+          if (order.hasDriverInfo) ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  debugPrint(
+                    'OrderDetailView: Nguoi dung bam Danh gia tai xe',
+                  );
+                },
+                icon: const Icon(Icons.directions_car_outlined, size: 18),
+                label: Text(context.t('order_rate_driver')),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.secondary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+          // Nut Dat lai don hang.
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                debugPrint(
+                  'OrderDetailView: Nguoi dung bam Dat lai, chuyen sang Checkout voi ma don [${order.id}]',
+                );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CheckoutView(initialOrder: order),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.replay_outlined, size: 18),
+              label: Text(context.t('order_reorder_btn')),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  /// Giao dien khi da huy: dong text do noi bat + ly do huy + nut Dat lai.
+  /// Giao dien khi don hang da huy: hien thi thong tin huy + nut dat lai.
   Widget _buildCancelledSection(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -1000,14 +944,6 @@ class OrderDetailView extends StatelessWidget {
               color: AppColors.error,
             ),
           ),
-          if (order.cancelReason != null && order.cancelReason!.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              '${context.t('order_cancel_reason')}: ${order.cancelReason}',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-              textAlign: TextAlign.center,
-            ),
-          ],
           const SizedBox(height: 16),
           // Nut Dat lai don hang.
           SizedBox(
@@ -1102,113 +1038,3 @@ class OrderDetailView extends StatelessWidget {
     return '${price.toStringAsFixed(0)} ${ctx.t('unit_currency')}';
   }
 }
-
-///=============================================================================
-/// SECTION: MOCK DATA
-///=============================================================================
-
-/// Mock data 1: Trang thai DANG GIAO (tai xe dang giao).
-final mockOrderDelivering = OrderDetailModel(
-  id: 'ORD-123456',
-  storeName: 'Com Tam Oi Den',
-  storeAddress: '123 Nguyen Hue, Quan 1, TP.HCM',
-  storePhone: '028 1234 5678',
-  customerName: 'Nguyen Van A',
-  customerPhone: '090 123 4567',
-  deliveryAddress: '456 Le Dai Hanh, Quan 11, TP.HCM',
-  items: const [
-    OrderItemModel(
-      name: 'Com tam bi cha',
-      quantity: 2,
-      unitPrice: 35000,
-      toppings: [
-        OrderToppingModel(name: 'Trung cut', price: 5000),
-        OrderToppingModel(name: 'Dua chuot', price: 3000),
-      ],
-    ),
-    OrderItemModel(
-      name: 'Tra sua tran chau',
-      quantity: 1,
-      unitPrice: 28000,
-      toppings: [OrderToppingModel(name: 'Tran chau den', price: 5000)],
-    ),
-  ],
-  subtotal: 113000,
-  deliveryFee: 15000,
-  voucherDiscount: 10000,
-  total: 118000,
-  paymentMethod: 'cash',
-  orderDate: DateTime.now().subtract(const Duration(hours: 3)),
-  status: OrderDetailStatus.delivering,
-  driverInfo: const DriverInfoModel(
-    name: 'Le Van B',
-    phone: '091 234 5678',
-    avatarUrl: '',
-    vehiclePlate: '59A-123.45',
-  ),
-);
-
-/// Mock data 2: Trang thai DA HOAN THANH (da nhan hang).
-final mockOrderReceived = OrderDetailModel(
-  id: 'ORD-789012',
-  storeName: 'Bun Bo Hue Ba Trieu',
-  storeAddress: '88 Ba Trieu, Quan 5, TP.HCM',
-  storePhone: '028 2345 6789',
-  customerName: 'Tran Thi C',
-  customerPhone: '093 456 7890',
-  deliveryAddress: '22 Hoang Van Thu, Quan Phu Nhuan, TP.HCM',
-  items: const [
-    OrderItemModel(
-      name: 'Bun bo hue lon',
-      quantity: 1,
-      unitPrice: 50000,
-      toppings: [OrderToppingModel(name: 'Vit', price: 15000)],
-    ),
-    OrderItemModel(
-      name: 'Nem chua ran',
-      quantity: 1,
-      unitPrice: 25000,
-      toppings: [],
-    ),
-  ],
-  subtotal: 90000,
-  deliveryFee: 20000,
-  voucherDiscount: 0,
-  total: 110000,
-  paymentMethod: 'wallet',
-  orderDate: DateTime.now().subtract(const Duration(days: 2)),
-  status: OrderDetailStatus.received,
-  driverInfo: const DriverInfoModel(
-    name: 'Pham Van D',
-    phone: '097 345 6789',
-    avatarUrl: '',
-    vehiclePlate: '58B-234.56',
-  ),
-);
-
-/// Mock data 3: Trang thai DA HUY (da huy don).
-final mockOrderCancelled = OrderDetailModel(
-  id: 'ORD-345678',
-  storeName: 'Lau De Nha Hang Song Than',
-  storeAddress: '999 Dien Bien Phu, Quan 3, TP.HCM',
-  storePhone: '028 3456 7890',
-  customerName: 'Ho Van E',
-  customerPhone: '095 567 8901',
-  deliveryAddress: '12 Nguyen Van Qua, Quan 3, TP.HCM',
-  items: const [
-    OrderItemModel(
-      name: 'Lau de 4 nguoi',
-      quantity: 1,
-      unitPrice: 350000,
-      toppings: [],
-    ),
-  ],
-  subtotal: 350000,
-  deliveryFee: 30000,
-  voucherDiscount: 50000,
-  total: 330000,
-  paymentMethod: 'cash',
-  orderDate: DateTime.now().subtract(const Duration(days: 7)),
-  status: OrderDetailStatus.cancelled,
-  cancelReason: 'Khong co nguoi nhan duoc hang',
-);

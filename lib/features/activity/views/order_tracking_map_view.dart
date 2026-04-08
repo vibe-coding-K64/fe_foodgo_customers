@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/localization/language_service.dart';
-import 'driver_chat_view.dart';
-import 'order_detail_view.dart';
+import 'package:fe_foodgo_customers/core/constants/app_colors.dart';
+import 'package:fe_foodgo_customers/core/localization/language_service.dart';
+import 'package:fe_foodgo_customers/features/activity/views/driver_chat_view.dart';
 
 ///=============================================================================
 /// SECTION: MODELS
@@ -40,15 +39,27 @@ class MapMarkerModel {
 ///
 /// Giao dien chi la Mock UI, chua tich hop Google Maps API.
 class OrderTrackingMapView extends StatelessWidget {
-  /// Thong tin don hang (bat buoc).
-  final OrderDetailModel order;
+  /// ID don hang.
+  final String orderId;
+
+  /// Ten tai xe.
+  final String driverName;
+
+  /// So dien thoai tai xe.
+  final String driverPhone;
+
+  /// Bien so xe.
+  final String vehiclePlate;
 
   /// Thoi gian du kien con lai (phut).
   final int etaMinutes;
 
   const OrderTrackingMapView({
     super.key,
-    required this.order,
+    required this.orderId,
+    required this.driverName,
+    required this.driverPhone,
+    required this.vehiclePlate,
     this.etaMinutes = 15,
   });
 
@@ -286,12 +297,8 @@ class OrderTrackingMapView extends StatelessWidget {
 
   /// Bottom Card: Thong tin tai xe va nut hanh dong.
   Widget _buildBottomCard(BuildContext context) {
-    final driver = order.driverInfo;
-    // Neu khong co thong tin tai xe, hien thi gia tri mac dinh.
-    final driverName = driver?.name ?? context.t('track_map_driver_name');
-    final vehiclePlate =
-        driver?.vehiclePlate ?? context.t('track_map_vehicle_plate');
-    final driverPhone = driver?.phone ?? '';
+    final displayDriverName = driverName.isNotEmpty ? driverName : context.t('track_map_driver_name');
+    final displayVehiclePlate = vehiclePlate.isNotEmpty ? vehiclePlate : context.t('track_map_vehicle_plate');
 
     return Container(
       width: double.infinity,
@@ -345,16 +352,11 @@ class OrderTrackingMapView extends StatelessWidget {
               CircleAvatar(
                 radius: 24,
                 backgroundColor: AppColors.surfaceVariant,
-                backgroundImage: (driver?.avatarUrl.isNotEmpty ?? false)
-                    ? NetworkImage(driver!.avatarUrl)
-                    : null,
-                child: (driver?.avatarUrl.isEmpty ?? true)
-                    ? Icon(
-                        Icons.person,
-                        size: 26,
-                        color: AppColors.textSecondary,
-                      )
-                    : null,
+                child: Icon(
+                  Icons.person,
+                  size: 26,
+                  color: AppColors.textSecondary,
+                ),
               ),
               const SizedBox(width: 14),
               // Ten va bien so.
@@ -363,7 +365,7 @@ class OrderTrackingMapView extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      driverName,
+                      displayDriverName,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -380,7 +382,7 @@ class OrderTrackingMapView extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          vehiclePlate,
+                          displayVehiclePlate,
                           style: TextStyle(
                             fontSize: 13,
                             color: AppColors.textSecondary,
@@ -404,7 +406,6 @@ class OrderTrackingMapView extends StatelessWidget {
                     debugPrint(
                       'OrderTrackingMapView: Nguoi dung goi tai xe [$driverPhone]',
                     );
-                    // TODO: Mo url tel hoac app goi dien.
                   },
                   icon: const Icon(Icons.phone, size: 22, color: Colors.white),
                   padding: EdgeInsets.zero,
@@ -426,10 +427,10 @@ class OrderTrackingMapView extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (context) => DriverChatView(
                       chat: DriverChatModel(
-                        driverName: driverName,
-                        vehiclePlate: vehiclePlate,
+                        driverName: displayDriverName,
+                        vehiclePlate: displayVehiclePlate,
                         driverPhone: driverPhone,
-                        driverAvatarUrl: driver?.avatarUrl ?? '',
+                        driverAvatarUrl: '',
                         messages: const [],
                       ),
                     ),
