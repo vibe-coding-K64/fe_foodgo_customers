@@ -8,6 +8,8 @@ class ProfileHeader extends StatelessWidget {
   final String phoneNumber;
   final String avatarUrl;
   final VoidCallback? onEditProfile;
+  final bool isDriver;
+  final bool isCustomer;
 
   const ProfileHeader({
     super.key,
@@ -15,6 +17,8 @@ class ProfileHeader extends StatelessWidget {
     required this.phoneNumber,
     required this.avatarUrl,
     this.onEditProfile,
+    this.isDriver = false,
+    this.isCustomer = true,
   });
 
   @override
@@ -75,6 +79,9 @@ class ProfileHeader extends StatelessWidget {
                   ),
                 ),
               const SizedBox(height: 12),
+              // Badge hien thi quyen cua nguoi dung.
+              _buildRoleBadge(),
+              const SizedBox(height: 8),
               // Nut chinh sua ho so.
               OutlinedButton.icon(
                 onPressed: onEditProfile,
@@ -99,5 +106,47 @@ class ProfileHeader extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Tao badge hien thi quyen cua nguoi dung.
+  Widget _buildRoleBadge() {
+    if (isDriver) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.5),
+            width: 1,
+          ),
+        ),
+        child: const Text(
+          'Khach hang & Doi tac',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+    } else if (isCustomer) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Text(
+          'Khach hang',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 }

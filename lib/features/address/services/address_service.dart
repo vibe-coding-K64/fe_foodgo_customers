@@ -20,7 +20,7 @@ class AddressService {
     if (userId == null || userId.isEmpty) {
       throw Exception('AddressService: Nguoi dung chua dang nhap');
     }
-    return _firestore.collection('users').doc(userId).collection('addresses');
+    return _firestore.collection('customer_profiles').doc(userId).collection('addresses');
   }
 
   /// Stream lang nghe danh sach dia chi cua nguoi dung hien tai.

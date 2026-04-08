@@ -20,7 +20,7 @@ class PaymentService {
     if (userId == null || userId.isEmpty) {
       throw Exception('PaymentService: Nguoi dung chua dang nhap');
     }
-    return _firestore.collection('users').doc(userId).collection('payment_methods');
+    return _firestore.collection('customer_profiles').doc(userId).collection('payment_methods');
   }
 
   /// Stream lang nghe danh sach phuong thuc thanh toan cua nguoi dung hien tai.

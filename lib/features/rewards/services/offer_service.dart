@@ -48,7 +48,8 @@ class OfferService {
     debugPrint('OfferService: Lay thong tin diem cho userId = $userId');
 
     try {
-      final doc = await _firestore.collection('users').doc(userId).get();
+      // Lay thong tin diem thanh vien tu nhanh customer_profiles.
+      final doc = await _firestore.collection('customer_profiles').doc(userId).get();
 
       if (!doc.exists) {
         debugPrint('OfferService: Khong tim thay document user $userId');
@@ -110,7 +111,7 @@ class OfferService {
 
     try {
       final snapshot = await _firestore
-          .collection('users')
+          .collection('customer_profiles')
           .doc(userId)
           .collection('my_vouchers')
           .get();

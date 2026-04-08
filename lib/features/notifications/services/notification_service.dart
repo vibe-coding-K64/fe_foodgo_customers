@@ -25,7 +25,7 @@ class NotificationService {
     debugPrint('NotificationService: Tao Stream thong bao cho userId = $userId');
 
     return _firestore
-        .collection('users')
+        .collection('customer_profiles')
         .doc(userId)
         .collection('notifications')
         .orderBy('createdAt', descending: true)
@@ -51,7 +51,7 @@ class NotificationService {
 
     try {
       await _firestore
-          .collection('users')
+          .collection('customer_profiles')
           .doc(userId)
           .collection('notifications')
           .doc(notifId)
@@ -77,7 +77,7 @@ class NotificationService {
 
     try {
       final snapshot = await _firestore
-          .collection('users')
+          .collection('customer_profiles')
           .doc(userId)
           .collection('notifications')
           .where('isRead', isEqualTo: false)

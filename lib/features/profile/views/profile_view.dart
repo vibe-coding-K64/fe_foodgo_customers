@@ -227,6 +227,8 @@ class _ProfileViewState extends State<ProfileView> {
                       : '',
                   avatarUrl: user.photoUrl ?? '',
                   onEditProfile: () => _onEditProfile(user),
+                  isDriver: user.isDriver,
+                  isCustomer: user.isCustomer,
                 );
               },
             ),
