@@ -537,6 +537,8 @@
   "unit_people": "people",
   "voucher_apply_title": "Apply: $1",
   "voucher_auto_apply_note": "Voucher will be automatically applied at Checkout step",
+  "empty_stores": "No stores found.",
+  "empty_products": "No products found.",
   "activity_status_preparing": "Seller is preparing",
   "activity_status_driver_coming": "Driver is coming to the restaurant",
   "activity_status_delivering": "Driver is delivering",
