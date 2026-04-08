@@ -6,8 +6,6 @@ import '../services/offer_service.dart';
 import 'my_vouchers_view.dart';
 import 'reward_detail_view.dart';
 import 'widgets/rewards_point_card.dart';
-import 'widgets/rewards_exchange_section.dart';
-import 'widgets/rewards_my_vouchers.dart';
 import 'widgets/rewards_voucher_card.dart';
 import 'voucher_applicable_products_view.dart';
 
