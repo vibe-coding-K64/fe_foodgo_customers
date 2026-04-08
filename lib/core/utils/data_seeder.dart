@@ -36,7 +36,9 @@ class DataSeeder {
     allSuccess &= await _seedWithLog('vouchers', _buildVouchers());
     allSuccess &= await _seedWithLog('reviews', _buildReviews());
     allSuccess &= await _seedWithLog('orders', _buildOrders());
+    allSuccess &= await _seedWithLog('users', []);
     allSuccess &= await _seedUsersCustom();
+    allSuccess &= await _seedDriverProfiles();
 
     return allSuccess;
   }
@@ -710,7 +712,7 @@ class DataSeeder {
 
     // Dinh nghia 2-3 user khac nhau
     final List<Map<String, dynamic>> users = [
-      // User 1 - Khach hang tieu bieu
+      // User 1 - Khach hang tieu bieu, dong thoi la tai xe
       {
         'id': 'user_001',
         'email': 'khachhang@gmail.com',
@@ -721,6 +723,7 @@ class DataSeeder {
         'loyaltyPoints': 1500,
         'membershipTier': 1,  // 0: Dong, 1: Bac, 2: Vang, 3: Kim Cuong
         'photoUrl': 'https://example.com/avatar/user001.jpg',
+        'roles': [1, 2],  // 1=Khach hang, 2=Tai xe
         'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
         'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
 
@@ -930,6 +933,7 @@ class DataSeeder {
         'loyaltyPoints': 3200,
         'membershipTier': 2,  // 0: Dong, 1: Bac, 2: Vang, 3: Kim Cuong
         'photoUrl': 'https://example.com/avatar/user002.jpg',
+        'roles': [1],  // 1=Khach hang
         'createdAt': Timestamp.fromDate(DateTime.parse('2026-03-01T00:00:00Z')),
         'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
 
@@ -1198,6 +1202,7 @@ class DataSeeder {
         'loyaltyPoints': 800,
         'membershipTier': 0,  // 0: Dong, 1: Bac, 2: Vang, 3: Kim Cuong
         'photoUrl': 'https://example.com/avatar/user003.jpg',
+        'roles': [1],  // 1=Khach hang
         'createdAt': Timestamp.fromDate(DateTime.parse('2026-04-06T00:00:00Z')),
         'updatedAt': Timestamp.fromDate(DateTime.parse('2026-04-07T00:00:00Z')),
 
@@ -1398,6 +1403,40 @@ class DataSeeder {
       '--- users: $userSuccessCount user OK, $userFailCount user LOI ---',
     );
     return userFailCount == 0;
+  }
+
+  // ============================================================
+  // DU LIEU DRIVER PROFILES
+  // ============================================================
+
+  /// Seed thong tin tai xe (driver_profiles).
+  /// Tao document co ID = "user_001" trung voi user co roles [1, 2].
+  static Future<bool> _seedDriverProfiles() async {
+    debugPrint('--- Dang seed driver_profiles ---');
+
+    try {
+      await _firestore
+          .collection('driver_profiles')
+          .doc('user_001')
+          .set(
+            {
+              'id': 'user_001',
+              'vehiclePlate': '59A-123.45',
+              'vehicleType': 'Honda Wave Alpha',
+              'isActive': true,
+              'currentLat': null,
+              'currentLng': null,
+              'rating': 4.9,
+              'totalTrips': 150,
+            },
+            SetOptions(merge: true),
+          );
+      debugPrint('  OK - driver_profiles/user_001');
+      return true;
+    } catch (e) {
+      debugPrint('  LOI - driver_profiles/user_001: $e');
+      return false;
+    }
   }
 
   // ============================================================
@@ -1892,6 +1931,7 @@ class DataSeeder {
       'products',
       'banners',
       'vouchers',
+      'driver_profiles',
     ];
 
     // Xoa cac collection thong thuong
