@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
 import '../../../../features/main/views/main_view.dart';
+import '../services/auth_service.dart';
 import 'register_view.dart';
 import 'forgot_password_view.dart';
 
@@ -37,6 +38,9 @@ class _LoginViewState extends State<LoginView> {
   /// Form key de validate form.
   final _formKey = GlobalKey<FormState>();
 
+  /// Trang thai loading khi dang nhap.
+  bool _isLoading = false;
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -47,14 +51,57 @@ class _LoginViewState extends State<LoginView> {
   /// Xu ly bam nut Dang nhap.
   void _onLoginPressed() {
     if (_formKey.currentState?.validate() ?? false) {
-      debugPrint('LoginView: Nguoi dung bam Dang nhap');
-      debugPrint('  So dien thoai/Email: ${_emailController.text}');
-      debugPrint('  Mat khau: [${_passwordController.text.replaceAll(RegExp(r'.'), '*')}]');
-      // Chuyen sang man hinh chinh, xoa toan bo lich su Auth ra khoi stack.
-      Navigator.pushReplacement(
+      _handleLogin();
+    }
+  }
+
+  /// Xu ly dang nhap thuc te: goi AuthService, hien thi loading, xu ly loi.
+  Future<void> _handleLogin() async {
+    final username = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    debugPrint('LoginView: Nguoi dung bam Dang nhap');
+    debugPrint('  Username: $username');
+
+    setState(() => _isLoading = true);
+
+    try {
+      await AuthService.login(username, password);
+
+      // Dang nhap thanh cong. Chuyen sang MainView, xoa lich su stack.
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const MainView()),
+        (route) => false,
       );
+    } on LoginException catch (e) {
+      // Loi tu AuthService - hien thi thong bao.
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      // Loi khong xac dinh.
+      if (!mounted) return;
+      debugPrint('LoginView: Loi bat ngooi khi dang nhap = $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Da xay ra loi, vui long thu lai sau'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -109,56 +156,70 @@ class _LoginViewState extends State<LoginView> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 48),
-                // Phan Logo va tieu de.
-                _buildHeader(),
-                const SizedBox(height: 40),
-                // O nhap so dien thoai/email.
-                _buildPhoneEmailField(),
-                const SizedBox(height: 16),
-                // O nhap mat khau.
-                _buildPasswordField(),
-                // Nut Quen mat khau.
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: _onForgotPasswordPressed,
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                    ),
-                    child: Text(
-                      context.t('auth_forgot_password_link'),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w500,
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 48),
+                    // Phan Logo va tieu de.
+                    _buildHeader(),
+                    const SizedBox(height: 40),
+                    // O nhap so dien thoai/email.
+                    _buildPhoneEmailField(),
+                    const SizedBox(height: 16),
+                    // O nhap mat khau.
+                    _buildPasswordField(),
+                    // Nut Quen mat khau.
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _onForgotPasswordPressed,
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                        ),
+                        child: Text(
+                          context.t('auth_forgot_password_link'),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ),
                     ),
+                    const SizedBox(height: 24),
+                    // Nut Dang nhap.
+                    _buildLoginButton(),
+                    const SizedBox(height: 24),
+                    // Dong chia隔.
+                    _buildDivider(),
+                    const SizedBox(height: 24),
+                    // Nut Dang nhap mang xa hoi.
+                    _buildSocialLoginButtons(),
+                    const SizedBox(height: 32),
+                    // Dong chuyen sang Dang ky.
+                    _buildRegisterFooter(),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ),
+            // Hien thi loading overlay khi dang xu ly.
+            if (_isLoading)
+              Container(
+                color: Colors.black.withOpacity(0.3),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.primary,
                   ),
                 ),
-                const SizedBox(height: 24),
-                // Nut Dang nhap.
-                _buildLoginButton(),
-                const SizedBox(height: 24),
-                // Dong chia隔.
-                _buildDivider(),
-                const SizedBox(height: 24),
-                // Nut Dang nhap mang xa hoi.
-                _buildSocialLoginButtons(),
-                const SizedBox(height: 32),
-                // Dong chuyen sang Dang ky.
-                _buildRegisterFooter(),
-                const SizedBox(height: 32),
-              ],
-            ),
-          ),
+              ),
+          ],
         ),
       ),
     );

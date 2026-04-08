@@ -3,10 +3,12 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'features/main/views/main_view.dart';
+import 'features/auth/views/login_view.dart';
 import 'core/localization/language_service.dart';
 import 'core/state/locale_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/data_seeder.dart';
+import 'core/utils/auth_storage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +17,9 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Khoi tao AuthStorage de doc trang thai dang nhap.
+  await AuthStorage.init();
 
   // Khoi tao service ngon ngu.
   await LanguageService.init();
@@ -65,7 +70,9 @@ class FoodGoApp extends StatelessWidget {
           ],
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,
-          home: const MainView(),
+          home: AuthStorage.isLoggedIn()
+              ? const MainView()
+              : const LoginView(),
         );
       },
     );
