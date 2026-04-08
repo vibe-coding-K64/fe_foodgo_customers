@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
-import '../../../features/profile/models/address_model.dart';
+import '../models/address_model.dart' as new_addr;
 
 /// Man hinh form Them moi / Cap nhat dia chi.
 ///
@@ -11,7 +11,7 @@ import '../../../features/profile/models/address_model.dart';
 ///   2. [onSave] - callback khi nguoi dung bam "Luu dia chi"
 ///
 /// Thu tu tra du lieu (sau khi luu):
-///   - Tra ve AddressModel da duoc tao / cap nhat thong qua callback [onSave].
+///   - Tra ve new_addr.AddressModel da duoc tao / cap nhat thong qua callback [onSave].
 ///   - Hoac tra ve [null] neu nguoi dung bam Back.
 ///
 /// Duoc goi tu:
@@ -19,10 +19,10 @@ import '../../../features/profile/models/address_model.dart';
 ///   - AddressManagementView: bam nut "Sua" tren card (truyen address)
 class AddressFormView extends StatefulWidget {
   /// Dia chi can sua (null neu la tao moi).
-  final AddressModel? address;
+  final new_addr.AddressModel? address;
 
   /// Callback khi nguoi dung luu thanh cong.
-  final void Function(AddressModel address)? onSave;
+  final void Function(new_addr.AddressModel address)? onSave;
 
   const AddressFormView({
     super.key,
@@ -39,8 +39,9 @@ class AddressFormView extends StatefulWidget {
 
 class _AddressFormViewState extends State<AddressFormView> {
   /// Controller cac o nhap lieu.
-  late final TextEditingController _nameController;
+  late final TextEditingController _receiverNameController;
   late final TextEditingController _phoneController;
+  late final TextEditingController _labelController;
   late final TextEditingController _streetController;
   late final TextEditingController _wardController;
   late final TextEditingController _districtController;
@@ -67,9 +68,10 @@ class _AddressFormViewState extends State<AddressFormView> {
     final addr = widget.address;
 
     // Khoi tao controller voi du lieu cu (neu la sua).
-    _nameController = TextEditingController(text: addr?.name ?? '');
-    _phoneController = TextEditingController(text: addr?.userId ?? '');
-    _streetController = TextEditingController(text: addr?.address ?? '');
+    _receiverNameController = TextEditingController(text: addr?.receiverName ?? '');
+    _phoneController = TextEditingController(text: addr?.receiverPhone ?? '');
+    _labelController = TextEditingController(text: addr?.label ?? '');
+    _streetController = TextEditingController(text: addr?.addressText ?? '');
     _wardController = TextEditingController();
     _districtController = TextEditingController();
     _cityController = TextEditingController();
@@ -77,11 +79,43 @@ class _AddressFormViewState extends State<AddressFormView> {
     if (addr != null) {
       _isDefault = addr.isDefault;
       // Phan tich dia chi day du de tach cac thanh phan.
-      _parseAddress(addr.address);
+      _parseAddress(addr.addressText);
+      // Xac dinh chip label tuong ung voi label hien tai.
+      _selectedLabel = _inferLabelIndex(addr.label);
     }
 
     debugPrint(
         'AddressFormView: Che do ${widget.isEditMode ? 'sua' : 'them moi'}.');
+  }
+
+  /// Xac dinh chi so chip label tu gia tri label hien tai.
+  int _inferLabelIndex(String label) {
+    if (label.isEmpty) return 0;
+    if (label.contains('Công ty') ||
+        label.contains('Office') ||
+        label.contains('Cong ty')) {
+      return 1;
+    }
+    if (label.contains('Nhà') ||
+        label.contains('Home') ||
+        label.contains('Nha')) {
+      return 0;
+    }
+    return 2; // Khac
+  }
+
+  /// Lay gia tri label tu chi so chip.
+  String _getLabelValue(int index, BuildContext ctx) {
+    switch (index) {
+      case 0:
+        return ctx.t('address_name_home');
+      case 1:
+        return ctx.t('address_name_office');
+      case 2:
+        return ctx.t('address_name_other');
+      default:
+        return '';
+    }
   }
 
   /// Phan tich dia chi day du thanh tung thanh phan.
@@ -114,8 +148,9 @@ class _AddressFormViewState extends State<AddressFormView> {
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _receiverNameController.dispose();
     _phoneController.dispose();
+    _labelController.dispose();
     _streetController.dispose();
     _wardController.dispose();
     _districtController.dispose();
@@ -132,7 +167,7 @@ class _AddressFormViewState extends State<AddressFormView> {
     final t = context.t;
     final errors = <int, String>{};
 
-    if (_nameController.text.trim().isEmpty) {
+    if (_receiverNameController.text.trim().isEmpty) {
       errors[0] = t('address_form_name_required');
     }
     if (_phoneController.text.trim().isEmpty) {
@@ -165,20 +200,19 @@ class _AddressFormViewState extends State<AddressFormView> {
     setState(() => _isSaving = true);
 
     final now = DateTime.now();
-    final addr = AddressModel(
+    final addr = new_addr.AddressModel(
       id: widget.address?.id ?? 'addr_${now.millisecondsSinceEpoch}',
-      userId: _phoneController.text.trim(),
-      name: _nameController.text.trim(),
-      address: _buildFullAddress(),
-      lat: widget.address?.lat ?? 0,
-      lng: widget.address?.lng ?? 0,
+      label: _getLabelValue(_selectedLabel, context),
+      addressText: _buildFullAddress(),
+      receiverName: _receiverNameController.text.trim(),
+      receiverPhone: _phoneController.text.trim(),
+      lat: widget.address?.lat,
+      lng: widget.address?.lng,
       isDefault: _isDefault,
-      createdAt: widget.address?.createdAt ?? now,
-      updatedAt: now,
     );
 
     debugPrint(
-        'AddressFormView: Luu dia chi [${addr.id}] - ${addr.name}, ${addr.address}, mac dinh=${addr.isDefault}');
+        'AddressFormView: Luu dia chi [${addr.id}] - ${addr.label}, ${addr.addressText}, mac dinh=${addr.isDefault}');
 
     // Thong bao thanh cong.
     ScaffoldMessenger.of(context).showSnackBar(
@@ -365,7 +399,7 @@ class _AddressFormViewState extends State<AddressFormView> {
   /// O nhap Ten nguoi nhan.
   Widget _buildNameField(BuildContext ctx) {
     return TextField(
-      controller: _nameController,
+      controller: _receiverNameController,
       focusNode: _focusNodes[0],
       textInputAction: TextInputAction.next,
       textCapitalization: TextCapitalization.words,

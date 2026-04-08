@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
-import '../../../profile/models/address_model.dart';
+import '../../models/address_model.dart';
 
 /// Widget hien thi mot dia chi trong danh sach quan ly dia chi.
 /// Hien thi: Radio chon mac dinh, ten, SDT, dia chi chi tiet, nhan,
@@ -20,15 +20,34 @@ class AddressCardWidget extends StatelessWidget {
     required this.onDelete,
   });
 
-  /// Tra ve nhan dia chi (nha / cong ty / khac).
+  /// Tra ve nhan dia chi. Uu tien label tu Firestore, neu rong thi su dung logic heuristic.
   String _getLabel(BuildContext context) {
-    if (address.name.contains('Công ty') || address.name.contains('Office')) {
+    if (address.label.isEmpty) {
+      return context.t('address_name_other');
+    }
+    if (address.label.contains('Công ty') ||
+        address.label.contains('Office') ||
+        address.label.contains('Cong ty')) {
       return context.t('address_name_office');
     }
-    if (address.name.contains('Nhà') || address.name.contains('Home')) {
+    if (address.label.contains('Nhà') ||
+        address.label.contains('Home') ||
+        address.label.contains('Nha')) {
       return context.t('address_name_home');
     }
-    return context.t('address_name_other');
+    return address.label;
+  }
+
+  /// Dinh dang so dien thoai: 0901234567 -> 0901 234 567.
+  String _formatPhone(String phone) {
+    final digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.length >= 10) {
+      return digits.replaceAllMapped(
+        RegExp(r'(\d{4})(\d{3})(\d{3})'),
+        (match) => '${match[1]} ${match[2]} ${match[3]}',
+      );
+    }
+    return phone;
   }
 
   @override
@@ -96,7 +115,7 @@ class AddressCardWidget extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            address.name,
+                            address.receiverName,
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -105,11 +124,7 @@ class AddressCardWidget extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '0${address.userId.substring(0, 9)}'.replaceAllMapped(
-                              RegExp(r'(\d{4})(\d{3})(\d{3})'),
-                              (match) =>
-                                  '${match[1]} ${match[2]} ${match[3]}',
-                            ),
+                            _formatPhone(address.receiverPhone),
                             style: const TextStyle(
                               fontSize: 14,
                               color: AppColors.textSecondary,
@@ -197,7 +212,7 @@ class AddressCardWidget extends StatelessWidget {
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
-                    address.address,
+                    address.addressText,
                     style: const TextStyle(
                       fontSize: 13,
                       color: AppColors.textSecondary,
