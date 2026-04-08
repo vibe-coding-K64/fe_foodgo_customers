@@ -151,7 +151,7 @@ class OrderDetailView extends StatelessWidget {
             _buildAddressSection(context),
             const SizedBox(height: 12),
             // Phan co dinh: danh sach mon.
-            _buildProductListSection(),
+            _buildProductListSection(context),
             const SizedBox(height: 12),
             // Phan co dinh: chi tiet thanh toan.
             _buildPaymentDetailSection(context),
@@ -243,9 +243,10 @@ class OrderDetailView extends StatelessWidget {
         children: [
           // Tu: Thong tin cua hang.
           _buildAddressItem(
+            ctx: ctx,
             icon: Icons.store_outlined,
             iconColor: AppColors.primary,
-            label: LanguageService.translate('order_from'),
+            label: ctx.t('order_from'),
             name: order.storeName,
             detail: order.storeAddress,
             phone: order.storePhone,
@@ -280,9 +281,10 @@ class OrderDetailView extends StatelessWidget {
           const SizedBox(height: 12),
           // Den: Dia chi giao hang cua khach.
           _buildAddressItem(
+            ctx: ctx,
             icon: Icons.location_on_outlined,
             iconColor: AppColors.error,
-            label: LanguageService.translate('order_to'),
+            label: ctx.t('order_to'),
             name: order.customerName,
             detail: order.deliveryAddress,
             phone: order.customerPhone,
@@ -293,6 +295,7 @@ class OrderDetailView extends StatelessWidget {
   }
 
   Widget _buildAddressItem({
+    required BuildContext ctx,
     required IconData icon,
     required Color iconColor,
     required String label,
@@ -361,7 +364,7 @@ class OrderDetailView extends StatelessWidget {
     );
   }
 
-  Widget _buildProductListSection() {
+  Widget _buildProductListSection(BuildContext ctx) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -375,7 +378,7 @@ class OrderDetailView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            LanguageService.translate('order_items'),
+            ctx.t('order_items'),
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
@@ -384,13 +387,13 @@ class OrderDetailView extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           const Divider(height: 1, color: AppColors.divider),
-          ...order.items.map((item) => _buildProductItem(item)).toList(),
+          ...order.items.map((item) => _buildProductItem(ctx, item)).toList(),
         ],
       ),
     );
   }
 
-  Widget _buildProductItem(OrderItemModel item) {
+  Widget _buildProductItem(BuildContext ctx, OrderItemModel item) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -446,7 +449,7 @@ class OrderDetailView extends StatelessWidget {
           ),
           // Don gia.
           Text(
-            _formatPrice(item.unitPrice),
+            _formatPrice(item.unitPrice, ctx),
             style: const TextStyle(
               fontSize: 13,
               color: AppColors.textSecondary,
@@ -470,21 +473,24 @@ class OrderDetailView extends StatelessWidget {
       child: Column(
         children: [
           _buildPaymentRow(
-            label: LanguageService.translate('order_subtotal'),
-            value: _formatPrice(order.subtotal),
+            ctx: ctx,
+            label: ctx.t('order_subtotal'),
+            value: _formatPrice(order.subtotal, ctx),
             valueColor: AppColors.textPrimary,
           ),
           const SizedBox(height: 8),
           _buildPaymentRow(
-            label: LanguageService.translate('order_delivery_fee'),
-            value: _formatPrice(order.deliveryFee),
+            ctx: ctx,
+            label: ctx.t('order_delivery_fee'),
+            value: _formatPrice(order.deliveryFee, ctx),
             valueColor: AppColors.textPrimary,
           ),
           if (order.voucherDiscount > 0) ...[
             const SizedBox(height: 8),
             _buildPaymentRow(
-              label: LanguageService.translate('order_voucher_discount'),
-              value: '- ${_formatPrice(order.voucherDiscount)}',
+              ctx: ctx,
+              label: ctx.t('order_voucher_discount'),
+              value: '- ${_formatPrice(order.voucherDiscount, ctx)}',
               valueColor: AppColors.error,
               isDiscount: true,
             ),
@@ -497,7 +503,7 @@ class OrderDetailView extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                LanguageService.translate('order_total'),
+                ctx.t('order_total'),
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -505,7 +511,7 @@ class OrderDetailView extends StatelessWidget {
                 ),
               ),
               Text(
-                _formatPrice(order.total),
+                _formatPrice(order.total, ctx),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -520,6 +526,7 @@ class OrderDetailView extends StatelessWidget {
   }
 
   Widget _buildPaymentRow({
+    required BuildContext ctx,
     required String label,
     required String value,
     required Color valueColor,
@@ -554,10 +561,10 @@ class OrderDetailView extends StatelessWidget {
     IconData methodIcon;
 
     if (order.paymentMethod == 'cash') {
-      methodText = LanguageService.translate('order_cash_on_delivery');
+      methodText = ctx.t('order_cash_on_delivery');
       methodIcon = Icons.payments_outlined;
     } else {
-      methodText = LanguageService.translate('order_wallet');
+      methodText = ctx.t('order_wallet');
       methodIcon = Icons.account_balance_wallet_outlined;
     }
 
@@ -583,7 +590,7 @@ class OrderDetailView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  LanguageService.translate('order_payment_method'),
+                  ctx.t('order_payment_method'),
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
@@ -1117,15 +1124,15 @@ class OrderDetailView extends StatelessWidget {
   ///=============================================================================
 
   /// Format gia thanh chuoi VND (VD: "85.000 VND").
-  String _formatPrice(double price) {
+  String _formatPrice(double price, BuildContext ctx) {
     if (price >= 1000) {
       final formatted = price.toStringAsFixed(0).replaceAllMapped(
             RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
             (Match m) => '${m[1]}.',
           );
-      return '$formatted ${LanguageService.translate('unit_currency')}';
+      return '$formatted ${ctx.t('unit_currency')}';
     }
-    return '${price.toStringAsFixed(0)} ${LanguageService.translate('unit_currency')}';
+    return '${price.toStringAsFixed(0)} ${ctx.t('unit_currency')}';
   }
 }
 
