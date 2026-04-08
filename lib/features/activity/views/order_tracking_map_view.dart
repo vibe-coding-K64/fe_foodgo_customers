@@ -54,28 +54,28 @@ class OrderTrackingMapView extends StatelessWidget {
 
   /// Danh sach 3 Marker mock.
   List<MapMarkerModel> get _markers => [
-        MapMarkerModel(
-          xRatio: 0.25,
-          yRatio: 0.25,
-          icon: Icons.store_outlined,
-          color: AppColors.primary,
-          labelKey: 'track_map_marker_shop',
-        ),
-        MapMarkerModel(
-          xRatio: 0.75,
-          yRatio: 0.75,
-          icon: Icons.home_outlined,
-          color: AppColors.primaryDark,
-          labelKey: 'track_map_marker_customer',
-        ),
-        MapMarkerModel(
-          xRatio: 0.50,
-          yRatio: 0.45,
-          icon: Icons.two_wheeler,
-          color: AppColors.info,
-          labelKey: 'track_map_marker_driver',
-        ),
-      ];
+    MapMarkerModel(
+      xRatio: 0.25,
+      yRatio: 0.25,
+      icon: Icons.store_outlined,
+      color: AppColors.primary,
+      labelKey: 'track_map_marker_shop',
+    ),
+    MapMarkerModel(
+      xRatio: 0.75,
+      yRatio: 0.75,
+      icon: Icons.home_outlined,
+      color: AppColors.primaryDark,
+      labelKey: 'track_map_marker_customer',
+    ),
+    MapMarkerModel(
+      xRatio: 0.50,
+      yRatio: 0.45,
+      icon: Icons.two_wheeler,
+      color: AppColors.info,
+      labelKey: 'track_map_marker_driver',
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -176,11 +176,7 @@ class OrderTrackingMapView extends StatelessWidget {
             ],
           ),
           child: Center(
-            child: Icon(
-              marker.icon,
-              size: 26,
-              color: marker.color,
-            ),
+            child: Icon(marker.icon, size: 26, color: marker.color),
           ),
         ),
         const SizedBox(height: 4),
@@ -270,11 +266,7 @@ class OrderTrackingMapView extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.access_time,
-                size: 20,
-                color: AppColors.primary,
-              ),
+              Icon(Icons.access_time, size: 20, color: AppColors.primary),
               const SizedBox(width: 8),
               Text(
                 '${context.t('track_map_eta_label')} '
@@ -297,7 +289,8 @@ class OrderTrackingMapView extends StatelessWidget {
     final driver = order.driverInfo;
     // Neu khong co thong tin tai xe, hien thi gia tri mac dinh.
     final driverName = driver?.name ?? context.t('track_map_driver_name');
-    final vehiclePlate = driver?.vehiclePlate ?? context.t('track_map_vehicle_plate');
+    final vehiclePlate =
+        driver?.vehiclePlate ?? context.t('track_map_vehicle_plate');
     final driverPhone = driver?.phone ?? '';
 
     return Container(
@@ -409,14 +402,11 @@ class OrderTrackingMapView extends StatelessWidget {
                 child: IconButton(
                   onPressed: () {
                     debugPrint(
-                        'OrderTrackingMapView: Nguoi dung goi tai xe [$driverPhone]');
+                      'OrderTrackingMapView: Nguoi dung goi tai xe [$driverPhone]',
+                    );
                     // TODO: Mo url tel hoac app goi dien.
                   },
-                  icon: const Icon(
-                    Icons.phone,
-                    size: 22,
-                    color: Colors.white,
-                  ),
+                  icon: const Icon(Icons.phone, size: 22, color: Colors.white),
                   padding: EdgeInsets.zero,
                 ),
               ),
@@ -429,7 +419,8 @@ class OrderTrackingMapView extends StatelessWidget {
             child: ElevatedButton.icon(
               onPressed: () {
                 debugPrint(
-                    'OrderTrackingMapView: Nguoi dung bam nut nhan tin voi tai xe');
+                  'OrderTrackingMapView: Nguoi dung bam nut nhan tin voi tai xe',
+                );
                 Navigator.push(
                   context,
                   MaterialPageRoute(

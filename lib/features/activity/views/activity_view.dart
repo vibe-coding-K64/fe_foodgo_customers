@@ -82,8 +82,7 @@ class ActivityView extends StatelessWidget {
                           ),
                           child: TextField(
                             decoration: InputDecoration(
-                              hintText: context.t(
-                                  'activity_search_hint'),
+                              hintText: context.t('activity_search_hint'),
                               hintStyle: TextStyle(
                                 fontSize: 13,
                                 color: Colors.grey.shade500,
@@ -170,14 +169,15 @@ class _OrderList extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => OrderDetailView(
-                  order: orderModelToDetail(order),
-                ),
+                builder: (context) =>
+                    OrderDetailView(order: orderModelToDetail(order)),
               ),
             );
           },
           onReorder: () {
-            debugPrint('ActivityView: Nguoi dung bam Dat lai don hang [${order.id}]');
+            debugPrint(
+              'ActivityView: Nguoi dung bam Dat lai don hang [${order.id}]',
+            );
             final orderDetail = orderModelToDetail(order);
             Navigator.push(
               context,
@@ -190,7 +190,11 @@ class _OrderList extends StatelessWidget {
             debugPrint('Huy don hang: ${order.id}');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(context.t('activity_cancel_order_hint').replaceAll('\$1', order.id)),
+                content: Text(
+                  context
+                      .t('activity_cancel_order_hint')
+                      .replaceAll('\$1', order.id),
+                ),
                 backgroundColor: AppColors.error,
                 behavior: SnackBarBehavior.floating,
               ),
@@ -227,10 +231,7 @@ class _OrderList extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             emptyText,
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 15, color: Colors.grey.shade600),
             textAlign: TextAlign.center,
           ),
         ],

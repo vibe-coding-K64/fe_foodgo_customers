@@ -5,9 +5,9 @@ import '../../../../core/localization/language_service.dart';
 /// Trang thai chi tiet cua don hang (hien thi dong sub-status).
 /// Chi ap dung cho don dang xu ly.
 enum SubOrderStatus {
-  preparing,     // Nguoi ban dang chuan bi.
-  driverComing,  // Tai xe dang toi nha hang.
-  delivering,    // Tai xe dang giao hang.
+  preparing, // Nguoi ban dang chuan bi.
+  driverComing, // Tai xe dang toi nha hang.
+  delivering, // Tai xe dang giao hang.
 }
 
 /// Model mock cho don hang.
@@ -35,8 +35,8 @@ class OrderModel {
 
 /// Trang thai don hang.
 enum OrderStatus {
-  ordered,   // Da dat (dang xu ly).
-  received,  // Da nhan (hoan thanh).
+  ordered, // Da dat (dang xu ly).
+  received, // Da nhan (hoan thanh).
   cancelled, // Da huy.
 }
 
@@ -189,9 +189,7 @@ class ActivityOrderCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 // Nut hanh dong thu hai: Huy don (neu ordered) hoac Dat lai (neu received/cancelled).
-                Expanded(
-                  child: _buildActionButton(context),
-                ),
+                Expanded(child: _buildActionButton(context)),
               ],
             ),
           ),
@@ -265,11 +263,7 @@ class ActivityOrderCard extends StatelessWidget {
 
     return Row(
       children: [
-        Icon(
-          Icons.arrow_forward_ios,
-          size: 10,
-          color: textColor,
-        ),
+        Icon(Icons.arrow_forward_ios, size: 10, color: textColor),
         const SizedBox(width: 4),
         Text(
           text,
@@ -298,16 +292,11 @@ class ActivityOrderCard extends StatelessWidget {
           foregroundColor: AppColors.error,
           side: const BorderSide(color: AppColors.error),
           padding: const EdgeInsets.symmetric(vertical: 10),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: Text(
           context.t('activity_btn_cancel'),
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
         ),
       );
     }
@@ -322,23 +311,20 @@ class ActivityOrderCard extends StatelessWidget {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 10),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         elevation: 0,
       ),
       child: Text(
         context.t('activity_btn_reorder'),
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-        ),
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
       ),
     );
   }
 
   String _formatPrice(double price, BuildContext context) {
-    final formatted = price.toStringAsFixed(0).replaceAllMapped(
+    final formatted = price
+        .toStringAsFixed(0)
+        .replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]}.',
         );
@@ -354,7 +340,8 @@ class ActivityOrderCard extends StatelessWidget {
     if (order.itemCount <= 1) {
       return order.mainItem;
     }
-    final suffix = context.t('order_item_count_suffix')
+    final suffix = context
+        .t('order_item_count_suffix')
         .replaceAll('\$1', (order.itemCount - 1).toString());
     return '${order.mainItem} + $suffix';
   }

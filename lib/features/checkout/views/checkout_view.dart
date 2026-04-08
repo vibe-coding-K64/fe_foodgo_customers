@@ -21,10 +21,7 @@ class CheckoutView extends StatefulWidget {
   /// Don hang cu de dat lai. Neu null, su dung gio hang mac dinh.
   final OrderDetailModel? initialOrder;
 
-  const CheckoutView({
-    super.key,
-    this.initialOrder,
-  });
+  const CheckoutView({super.key, this.initialOrder});
 
   @override
   State<CheckoutView> createState() => _CheckoutViewState();
@@ -202,7 +199,9 @@ class _CheckoutViewState extends State<CheckoutView> {
 
     // Neu co don hang cu thi chuyen doi sang gio hang, nguoc lai su dung mock.
     if (widget.initialOrder != null) {
-      debugPrint('Checkout: Dat lai don hang [${widget.initialOrder!.id}], ten quan [${widget.initialOrder!.storeName}]');
+      debugPrint(
+        'Checkout: Dat lai don hang [${widget.initialOrder!.id}], ten quan [${widget.initialOrder!.storeName}]',
+      );
       _cartItems = _convertOrderToCartItems(widget.initialOrder!);
     } else {
       debugPrint('Checkout: Khoi tao gio hang mac dinh');
@@ -224,9 +223,7 @@ class _CheckoutViewState extends State<CheckoutView> {
           imageUrl: 'https://picsum.photos/seed/coffee2/200',
           unitPrice: 29000,
           quantity: 1,
-          toppings: [
-            CheckoutTopping(name: 'Da', price: 0),
-          ],
+          toppings: [CheckoutTopping(name: 'Da', price: 0)],
         ),
         CheckoutCartItem(
           id: 'item_003',
@@ -252,16 +249,17 @@ class _CheckoutViewState extends State<CheckoutView> {
         imageUrl: '',
         unitPrice: item.unitPrice,
         quantity: item.quantity,
-        toppings: item.toppings.map((t) => CheckoutTopping(
-          name: t.name,
-          price: t.price,
-        )).toList(),
+        toppings: item.toppings
+            .map((t) => CheckoutTopping(name: t.name, price: t.price))
+            .toList(),
       );
     }).toList();
   }
 
   String _formatPrice(double price) {
-    final str = price.toStringAsFixed(0).replaceAllMapped(
+    final str = price
+        .toStringAsFixed(0)
+        .replaceAllMapped(
           RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
           (match) => '${match[1]}.',
         );
@@ -279,7 +277,9 @@ class _CheckoutViewState extends State<CheckoutView> {
         toppings: _cartItems[index].toppings,
       );
     });
-    debugPrint('Checkout: Cap nhat so luong mon [${_cartItems[index].name}] = $newQuantity');
+    debugPrint(
+      'Checkout: Cap nhat so luong mon [${_cartItems[index].name}] = $newQuantity',
+    );
   }
 
   void _onItemRemoved(int index) {
@@ -322,7 +322,9 @@ class _CheckoutViewState extends State<CheckoutView> {
     debugPrint('Dia chi giao hang: ${_deliveryAddress.address}');
     debugPrint('So mon: ${_cartItems.length}');
     for (final item in _cartItems) {
-      debugPrint('  - ${item.name} x${item.quantity} = ${_formatPrice(item.totalPrice)} VND');
+      debugPrint(
+        '  - ${item.name} x${item.quantity} = ${_formatPrice(item.totalPrice)} VND',
+      );
     }
     debugPrint('Tam tinh: ${_formatPrice(_subtotal)} VND');
     debugPrint('Phi giao hang: ${_formatPrice(_deliveryFee)} VND');
@@ -330,7 +332,9 @@ class _CheckoutViewState extends State<CheckoutView> {
     debugPrint('Tong thanh toan: ${_formatPrice(_totalPayment)} VND');
     debugPrint('Phuong thuc thanh toan: $_selectedPaymentMethod');
     debugPrint('Diem tich luy: ${_isPointsEnabled ? "co" : "khong"}');
-    debugPrint('Voucher: ${_selectedVoucher.isEmpty ? "khong" : _selectedVoucher}');
+    debugPrint(
+      'Voucher: ${_selectedVoucher.isEmpty ? "khong" : _selectedVoucher}',
+    );
     debugPrint('==========================================');
   }
 
@@ -377,7 +381,8 @@ class _CheckoutViewState extends State<CheckoutView> {
                           _deliveryAddress = selected;
                         });
                         debugPrint(
-                            'Checkout: Da cap nhat dia chi thanh [${selected.name}] - ${selected.address}');
+                          'Checkout: Da cap nhat dia chi thanh [${selected.name}] - ${selected.address}',
+                        );
                       }
                     },
                   ),
@@ -396,8 +401,9 @@ class _CheckoutViewState extends State<CheckoutView> {
                     onPaymentMethodTap: _onPaymentMethodTap,
                     onPointsToggle: _onPointsToggle,
                     isPointsEnabled: _isPointsEnabled,
-                    selectedVoucher:
-                        _selectedVoucher.isEmpty ? null : _selectedVoucher,
+                    selectedVoucher: _selectedVoucher.isEmpty
+                        ? null
+                        : _selectedVoucher,
                     selectedPaymentMethod: _selectedPaymentMethod,
                   ),
                   const SizedBox(height: 20),
@@ -524,10 +530,15 @@ class _CheckoutViewState extends State<CheckoutView> {
                   ),
                   IconButton(
                     onPressed: () {
-                      debugPrint('Checkout: Dong BottomSheet phuong thuc thanh toan');
+                      debugPrint(
+                        'Checkout: Dong BottomSheet phuong thuc thanh toan',
+                      );
                       Navigator.pop(context);
                     },
-                    icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                    icon: const Icon(
+                      Icons.close,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -545,22 +556,38 @@ class _CheckoutViewState extends State<CheckoutView> {
                 return ListTile(
                   leading: Icon(
                     method.icon,
-                    color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
                     size: 24,
                   ),
                   title: Text(
                     context.t(method.name),
                     style: TextStyle(
                       fontSize: 15,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                      color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.textPrimary,
                     ),
                   ),
                   trailing: isSelected
-                      ? const Icon(Icons.check_circle, color: AppColors.primary, size: 22)
-                      : Icon(Icons.radio_button_off, color: AppColors.textHint, size: 22),
+                      ? const Icon(
+                          Icons.check_circle,
+                          color: AppColors.primary,
+                          size: 22,
+                        )
+                      : Icon(
+                          Icons.radio_button_off,
+                          color: AppColors.textHint,
+                          size: 22,
+                        ),
                   onTap: () {
-                    debugPrint('Checkout: Chon phuong thuc thanh toan [${method.id}] - ${context.t(method.name)}');
+                    debugPrint(
+                      'Checkout: Chon phuong thuc thanh toan [${method.id}] - ${context.t(method.name)}',
+                    );
                     setState(() {
                       _selectedPaymentMethod = method.id;
                     });
@@ -619,7 +646,10 @@ class _CheckoutViewState extends State<CheckoutView> {
                         debugPrint('Checkout: Dong BottomSheet voucher');
                         Navigator.pop(context);
                       },
-                      icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                      icon: const Icon(
+                        Icons.close,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -634,8 +664,14 @@ class _CheckoutViewState extends State<CheckoutView> {
                       unselectedLabelColor: AppColors.textSecondary,
                       indicatorColor: AppColors.primary,
                       indicatorWeight: 3,
-                      labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                      unselectedLabelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+                      labelStyle: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                      ),
                       tabs: [
                         Tab(text: context.t('checkout_voucher_freeship')),
                         Tab(text: context.t('checkout_voucher_discount')),
@@ -683,10 +719,7 @@ class _CheckoutViewState extends State<CheckoutView> {
       return Center(
         child: Text(
           emptyLabel,
-          style: const TextStyle(
-            fontSize: 14,
-            color: AppColors.textHint,
-          ),
+          style: const TextStyle(fontSize: 14, color: AppColors.textHint),
         ),
       );
     }
@@ -701,7 +734,9 @@ class _CheckoutViewState extends State<CheckoutView> {
           voucher: voucher,
           isSelected: _selectedVoucher == voucher.code,
           onApply: () {
-            debugPrint('Checkout: Ap dung voucher [${voucher.code}] - ${voucher.name}');
+            debugPrint(
+              'Checkout: Ap dung voucher [${voucher.code}] - ${voucher.name}',
+            );
             setState(() {
               _selectedVoucher = voucher.code;
             });
@@ -719,7 +754,9 @@ class _CheckoutViewState extends State<CheckoutView> {
   /// Hien thi BottomSheet sua chi tiet mot mon (topping + ghi chu).
   void _showEditItemBottomSheet(int itemIndex) {
     final originalItem = _cartItems[itemIndex];
-    debugPrint('Checkout: Mo BottomSheet sua mon [$itemIndex] - ${originalItem.name}');
+    debugPrint(
+      'Checkout: Mo BottomSheet sua mon [$itemIndex] - ${originalItem.name}',
+    );
 
     // Tao danh sach topping tuy chon cho mon nay.
     final availableToppings = _getToppingOptions(originalItem.id);
@@ -767,7 +804,10 @@ class _CheckoutViewState extends State<CheckoutView> {
                           debugPrint('Checkout: Dong BottomSheet sua mon');
                           Navigator.pop(context);
                         },
-                        icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                        icon: const Icon(
+                          Icons.close,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -797,7 +837,11 @@ class _CheckoutViewState extends State<CheckoutView> {
                                     color: AppColors.surfaceVariant,
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: const Icon(Icons.fastfood, color: AppColors.textHint, size: 32),
+                                  child: const Icon(
+                                    Icons.fastfood,
+                                    color: AppColors.textHint,
+                                    size: 32,
+                                  ),
                                 ),
                               ),
                             ),
@@ -841,7 +885,9 @@ class _CheckoutViewState extends State<CheckoutView> {
                         const SizedBox(height: 10),
                         // Danh sach topping checkbox.
                         ...availableToppings.map((option) {
-                          final isSelected = selectedToppings.any((t) => t.name == option.name);
+                          final isSelected = selectedToppings.any(
+                            (t) => t.name == option.name,
+                          );
                           return Container(
                             margin: const EdgeInsets.only(bottom: 8),
                             decoration: BoxDecoration(
@@ -850,7 +896,9 @@ class _CheckoutViewState extends State<CheckoutView> {
                                   : AppColors.background,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: isSelected ? AppColors.primary : AppColors.border,
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : AppColors.border,
                                 width: isSelected ? 1.5 : 1,
                               ),
                             ),
@@ -859,21 +907,29 @@ class _CheckoutViewState extends State<CheckoutView> {
                               onChanged: (checked) {
                                 setModalState(() {
                                   if (checked == true) {
-                                    selectedToppings.add(CheckoutTopping(
-                                      name: option.name,
-                                      price: option.price,
-                                    ));
+                                    selectedToppings.add(
+                                      CheckoutTopping(
+                                        name: option.name,
+                                        price: option.price,
+                                      ),
+                                    );
                                   } else {
-                                    selectedToppings.removeWhere((t) => t.name == option.name);
+                                    selectedToppings.removeWhere(
+                                      (t) => t.name == option.name,
+                                    );
                                   }
                                 });
-                                debugPrint('Checkout: Topping [${option.name}] ${checked == true ? "chon" : "bo chon"}');
+                                debugPrint(
+                                  'Checkout: Topping [${option.name}] ${checked == true ? "chon" : "bo chon"}',
+                                );
                               },
                               title: Text(
                                 option.name,
                                 style: TextStyle(
                                   fontSize: 14,
-                                  fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w500
+                                      : FontWeight.w400,
                                   color: AppColors.textPrimary,
                                 ),
                               ),
@@ -888,7 +944,9 @@ class _CheckoutViewState extends State<CheckoutView> {
                                   : null,
                               activeColor: AppColors.primary,
                               dense: true,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
                               controlAffinity: ListTileControlAffinity.leading,
                             ),
                           );
@@ -919,15 +977,22 @@ class _CheckoutViewState extends State<CheckoutView> {
                             contentPadding: const EdgeInsets.all(12),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(color: AppColors.border),
+                              borderSide: const BorderSide(
+                                color: AppColors.border,
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(color: AppColors.border),
+                              borderSide: const BorderSide(
+                                color: AppColors.border,
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                              borderSide: const BorderSide(
+                                color: AppColors.primary,
+                                width: 2,
+                              ),
                             ),
                           ),
                         ),
@@ -960,7 +1025,9 @@ class _CheckoutViewState extends State<CheckoutView> {
                             ],
                           ),
                         ),
-                        SizedBox(height: 16 + MediaQuery.of(context).padding.bottom),
+                        SizedBox(
+                          height: 16 + MediaQuery.of(context).padding.bottom,
+                        ),
                       ],
                     ),
                   ),
@@ -988,8 +1055,12 @@ class _CheckoutViewState extends State<CheckoutView> {
                     height: 52,
                     child: ElevatedButton(
                       onPressed: () {
-                        debugPrint('Checkout: Cap nhat mon [$itemIndex] - ${originalItem.name}');
-                        debugPrint('  Topping moi: ${selectedToppings.map((t) => t.name).join(", ")}');
+                        debugPrint(
+                          'Checkout: Cap nhat mon [$itemIndex] - ${originalItem.name}',
+                        );
+                        debugPrint(
+                          '  Topping moi: ${selectedToppings.map((t) => t.name).join(", ")}',
+                        );
                         debugPrint('  Ghi chu: ${noteController.text}');
                         setState(() {
                           _cartItems[itemIndex] = originalItem.copyWith(
@@ -1084,7 +1155,9 @@ class _VoucherCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isSelected ? AppColors.primary.withAlpha(15) : AppColors.background,
+        color: isSelected
+            ? AppColors.primary.withAlpha(15)
+            : AppColors.background,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isSelected ? AppColors.primary : AppColors.border,
@@ -1145,26 +1218,24 @@ class _VoucherCard extends StatelessWidget {
           // Hang duoi: han su dung + nut ap dung.
           Row(
             children: [
-              Icon(
-                Icons.schedule,
-                size: 13,
-                color: AppColors.textHint,
-              ),
+              Icon(Icons.schedule, size: 13, color: AppColors.textHint),
               const SizedBox(width: 4),
               Text(
                 'Het han: ${voucher.expireDate.day}/${voucher.expireDate.month}/${voucher.expireDate.year}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textHint,
-                ),
+                style: const TextStyle(fontSize: 12, color: AppColors.textHint),
               ),
               const Spacer(),
               GestureDetector(
                 onTap: onApply,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.textSecondary : AppColors.primary,
+                    color: isSelected
+                        ? AppColors.textSecondary
+                        : AppColors.primary,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -1187,7 +1258,9 @@ class _VoucherCard extends StatelessWidget {
   }
 
   String _formatPrice(double price) {
-    final str = price.toStringAsFixed(0).replaceAllMapped(
+    final str = price
+        .toStringAsFixed(0)
+        .replaceAllMapped(
           RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
           (match) => '${match[1]}.',
         );
@@ -1217,8 +1290,5 @@ class _ToppingOption {
   final String name;
   final double price;
 
-  const _ToppingOption({
-    required this.name,
-    required this.price,
-  });
+  const _ToppingOption({required this.name, required this.price});
 }
