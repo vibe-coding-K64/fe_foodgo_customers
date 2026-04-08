@@ -109,10 +109,10 @@ class ActivityOrderCard extends StatelessWidget {
                       // Hien thi sub-status neu co (chi cho don dang xu ly).
                       if (order.subStatus != null) ...[
                         const SizedBox(height: 2),
-                        _buildSubStatusRow(),
+                        _buildSubStatusRow(context),
                       ],
                       Text(
-                        _formatItemCountText(),
+                        _formatItemCountText(context),
                         style: const TextStyle(
                           fontSize: 13,
                           color: AppColors.textSecondary,
@@ -122,7 +122,7 @@ class ActivityOrderCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _formatPrice(order.totalPrice),
+                        _formatPrice(order.totalPrice, context),
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
@@ -133,7 +133,7 @@ class ActivityOrderCard extends StatelessWidget {
                   ),
                 ),
                 // Badge trang thai.
-                _buildStatusBadge(),
+                _buildStatusBadge(context),
               ],
             ),
           ),
@@ -190,7 +190,7 @@ class ActivityOrderCard extends StatelessWidget {
                 const SizedBox(width: 12),
                 // Nut hanh dong thu hai: Huy don (neu ordered) hoac Dat lai (neu received/cancelled).
                 Expanded(
-                  child: _buildActionButton(),
+                  child: _buildActionButton(context),
                 ),
               ],
             ),
@@ -200,7 +200,7 @@ class ActivityOrderCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusBadge() {
+  Widget _buildStatusBadge(BuildContext context) {
     Color bgColor;
     Color textColor;
     String statusText;
@@ -209,17 +209,17 @@ class ActivityOrderCard extends StatelessWidget {
       case OrderStatus.ordered:
         bgColor = Colors.blue.shade50;
         textColor = Colors.blue.shade700;
-        statusText = LanguageService.translate('activity_status_ordered');
+        statusText = context.t('activity_status_ordered');
         break;
       case OrderStatus.received:
         bgColor = Colors.green.shade50;
         textColor = Colors.green.shade700;
-        statusText = LanguageService.translate('activity_status_received');
+        statusText = context.t('activity_status_received');
         break;
       case OrderStatus.cancelled:
         bgColor = Colors.red.shade50;
         textColor = Colors.red.shade700;
-        statusText = LanguageService.translate('activity_status_cancelled');
+        statusText = context.t('activity_status_cancelled');
         break;
     }
 
@@ -241,7 +241,7 @@ class ActivityOrderCard extends StatelessWidget {
   }
 
   /// Dong sub-status hien thi trang thai chi tiet cua don dang xu ly.
-  Widget _buildSubStatusRow() {
+  Widget _buildSubStatusRow(BuildContext context) {
     // Chi hien thi neu subStatus co gia tri (don dang xu ly).
     if (order.subStatus == null) return const SizedBox.shrink();
 
@@ -250,15 +250,15 @@ class ActivityOrderCard extends StatelessWidget {
 
     switch (order.subStatus!) {
       case SubOrderStatus.preparing:
-        text = LanguageService.translate('activity_status_preparing');
+        text = context.t('activity_status_preparing');
         textColor = Colors.blue.shade700;
         break;
       case SubOrderStatus.driverComing:
-        text = LanguageService.translate('activity_status_driver_coming');
+        text = context.t('activity_status_driver_coming');
         textColor = Colors.orange.shade700;
         break;
       case SubOrderStatus.delivering:
-        text = LanguageService.translate('activity_status_delivering');
+        text = context.t('activity_status_delivering');
         textColor = Colors.orange.shade700;
         break;
     }
@@ -286,7 +286,7 @@ class ActivityOrderCard extends StatelessWidget {
   /// Nut hanh dong thu hai, thay doi theo trang thai don hang:
   ///   - ordered: nut "Huy don" (OutlineButton, chu do).
   ///   - received/cancelled: nut "Dat lai" (ElevatedButton, xanh la).
-  Widget _buildActionButton() {
+  Widget _buildActionButton(BuildContext context) {
     if (order.status == OrderStatus.ordered) {
       // Nut Huy don: OutlineButton voi chu mau do.
       return OutlinedButton(
@@ -303,7 +303,7 @@ class ActivityOrderCard extends StatelessWidget {
           ),
         ),
         child: Text(
-          LanguageService.translate('activity_btn_cancel'),
+          context.t('activity_btn_cancel'),
           style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
@@ -328,7 +328,7 @@ class ActivityOrderCard extends StatelessWidget {
         elevation: 0,
       ),
       child: Text(
-        LanguageService.translate('activity_btn_reorder'),
+        context.t('activity_btn_reorder'),
         style: const TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
@@ -337,12 +337,12 @@ class ActivityOrderCard extends StatelessWidget {
     );
   }
 
-  String _formatPrice(double price) {
+  String _formatPrice(double price, BuildContext context) {
     final formatted = price.toStringAsFixed(0).replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]}.',
         );
-    return '$formatted ${LanguageService.translate('unit_currency')}';
+    return '$formatted ${context.t('unit_currency')}';
   }
 
   String _formatDateTime(DateTime dt) {
@@ -350,11 +350,11 @@ class ActivityOrderCard extends StatelessWidget {
   }
 
   /// Format text so luong mon an them (VD: "+ 2 mon" hoac "+ 2 items").
-  String _formatItemCountText() {
+  String _formatItemCountText(BuildContext context) {
     if (order.itemCount <= 1) {
       return order.mainItem;
     }
-    final suffix = LanguageService.translate('order_item_count_suffix')
+    final suffix = context.t('order_item_count_suffix')
         .replaceAll('\$1', (order.itemCount - 1).toString());
     return '${order.mainItem} + $suffix';
   }

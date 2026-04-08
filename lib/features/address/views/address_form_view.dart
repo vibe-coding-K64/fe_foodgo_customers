@@ -128,9 +128,9 @@ class _AddressFormViewState extends State<AddressFormView> {
 
   /// Validate tat ca cac truong bat buoc.
   /// Tra ve true neu tat ca deu hop le.
-  bool _validate() {
+  bool _validate(BuildContext context) {
+    final t = context.t;
     final errors = <int, String>{};
-    final t = LanguageService.translate;
 
     if (_nameController.text.trim().isEmpty) {
       errors[0] = t('address_form_name_required');
@@ -160,7 +160,7 @@ class _AddressFormViewState extends State<AddressFormView> {
 
   /// Xu ly khi nguoi dung bam nut "Luu dia chi".
   void _onSave() {
-    if (!_validate()) return;
+    if (!_validate(context)) return;
 
     setState(() => _isSaving = true);
 
@@ -183,7 +183,7 @@ class _AddressFormViewState extends State<AddressFormView> {
     // Thong bao thanh cong.
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(LanguageService.translate('address_form_saved')),
+        content: Text(context.t('address_form_saved')),
         backgroundColor: AppColors.primary,
         duration: const Duration(seconds: 1),
         behavior: SnackBarBehavior.floating,
@@ -199,13 +199,14 @@ class _AddressFormViewState extends State<AddressFormView> {
 
   /// Khoi tao style cho TextField.
   InputDecoration _buildInputDecoration({
+    required BuildContext ctx,
     required String labelKey,
     required String hintKey,
     int? errorFieldIndex,
   }) {
     return InputDecoration(
-      labelText: LanguageService.translate(labelKey),
-      hintText: LanguageService.translate(hintKey),
+      labelText: ctx.t(labelKey),
+      hintText: ctx.t(hintKey),
       labelStyle: const TextStyle(fontSize: 14),
       hintStyle: const TextStyle(fontSize: 14, color: AppColors.textHint),
       filled: true,
@@ -249,8 +250,8 @@ class _AddressFormViewState extends State<AddressFormView> {
         ),
         title: Text(
           widget.isEditMode
-              ? LanguageService.translate('address_form_title_edit')
-              : LanguageService.translate('address_form_title_add'),
+              ? context.t('address_form_title_edit')
+              : context.t('address_form_title_add'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -265,33 +266,33 @@ class _AddressFormViewState extends State<AddressFormView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // MUC 1: Thong tin lien he.
-            _buildSectionHeader('address_form_contact_info'),
+            _buildSectionHeader(context, 'address_form_contact_info'),
             const SizedBox(height: 12),
-            _buildNameField(),
+            _buildNameField(context),
             const SizedBox(height: 14),
-            _buildPhoneField(),
+            _buildPhoneField(context),
             const SizedBox(height: 24),
 
             // MUC 2: Vi tri.
-            _buildSectionHeader('address_form_location'),
+            _buildSectionHeader(context, 'address_form_location'),
             const SizedBox(height: 12),
-            _buildMapPicker(),
+            _buildMapPicker(context),
             const SizedBox(height: 14),
-            _buildStreetField(),
+            _buildStreetField(context),
             const SizedBox(height: 14),
-            _buildWardField(),
+            _buildWardField(context),
             const SizedBox(height: 14),
-            _buildDistrictField(),
+            _buildDistrictField(context),
             const SizedBox(height: 14),
-            _buildCityField(),
+            _buildCityField(context),
             const SizedBox(height: 24),
 
             // MUC 3: Cai dat bo sung.
-            _buildSectionHeader('address_form_label'),
+            _buildSectionHeader(context, 'address_form_label'),
             const SizedBox(height: 12),
-            _buildLabelChips(),
+            _buildLabelChips(context),
             const SizedBox(height: 20),
-            _buildDefaultSwitch(),
+            _buildDefaultSwitch(context),
             const SizedBox(height: 24),
 
             // Khoang trong duoi cung de sticky bar.
@@ -304,9 +305,9 @@ class _AddressFormViewState extends State<AddressFormView> {
   }
 
   /// Tieu de cua tung muc (section header).
-  Widget _buildSectionHeader(String labelKey) {
+  Widget _buildSectionHeader(BuildContext ctx, String labelKey) {
     return Text(
-      LanguageService.translate(labelKey),
+      ctx.t(labelKey),
       style: const TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.w600,
@@ -316,7 +317,7 @@ class _AddressFormViewState extends State<AddressFormView> {
   }
 
   /// Nut chon vi tri tren ban do.
-  Widget _buildMapPicker() {
+  Widget _buildMapPicker(BuildContext ctx) {
     return GestureDetector(
       onTap: () {
         debugPrint('AddressFormView: Nguoi dung bam chon ban do (chua ho tro)');
@@ -342,7 +343,7 @@ class _AddressFormViewState extends State<AddressFormView> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                LanguageService.translate('address_form_select_map'),
+                ctx.t('address_form_select_map'),
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -362,7 +363,7 @@ class _AddressFormViewState extends State<AddressFormView> {
   }
 
   /// O nhap Ten nguoi nhan.
-  Widget _buildNameField() {
+  Widget _buildNameField(BuildContext ctx) {
     return TextField(
       controller: _nameController,
       focusNode: _focusNodes[0],
@@ -370,6 +371,7 @@ class _AddressFormViewState extends State<AddressFormView> {
       textCapitalization: TextCapitalization.words,
       onSubmitted: (_) => _focusNodes[1].requestFocus(),
       decoration: _buildInputDecoration(
+        ctx: ctx,
         labelKey: 'address_form_receiver_name',
         hintKey: 'address_form_receiver_name_hint',
         errorFieldIndex: 0,
@@ -378,7 +380,7 @@ class _AddressFormViewState extends State<AddressFormView> {
   }
 
   /// O nhap So dien thoai.
-  Widget _buildPhoneField() {
+  Widget _buildPhoneField(BuildContext ctx) {
     return TextField(
       controller: _phoneController,
       focusNode: _focusNodes[1],
@@ -390,6 +392,7 @@ class _AddressFormViewState extends State<AddressFormView> {
       ],
       onSubmitted: (_) => _focusNodes[2].requestFocus(),
       decoration: _buildInputDecoration(
+        ctx: ctx,
         labelKey: 'address_form_phone',
         hintKey: 'address_form_phone_hint',
         errorFieldIndex: 1,
@@ -398,7 +401,7 @@ class _AddressFormViewState extends State<AddressFormView> {
   }
 
   /// O nhap So nha / Ten duong.
-  Widget _buildStreetField() {
+  Widget _buildStreetField(BuildContext ctx) {
     return TextField(
       controller: _streetController,
       focusNode: _focusNodes[2],
@@ -406,6 +409,7 @@ class _AddressFormViewState extends State<AddressFormView> {
       textCapitalization: TextCapitalization.words,
       onSubmitted: (_) => _focusNodes[3].requestFocus(),
       decoration: _buildInputDecoration(
+        ctx: ctx,
         labelKey: 'address_form_street',
         hintKey: 'address_form_street_hint',
         errorFieldIndex: 2,
@@ -414,7 +418,7 @@ class _AddressFormViewState extends State<AddressFormView> {
   }
 
   /// O nhap Phuong / Xa.
-  Widget _buildWardField() {
+  Widget _buildWardField(BuildContext ctx) {
     return TextField(
       controller: _wardController,
       focusNode: _focusNodes[3],
@@ -422,6 +426,7 @@ class _AddressFormViewState extends State<AddressFormView> {
       textCapitalization: TextCapitalization.words,
       onSubmitted: (_) => _focusNodes[4].requestFocus(),
       decoration: _buildInputDecoration(
+        ctx: ctx,
         labelKey: 'address_form_ward',
         hintKey: 'address_form_ward_hint',
       ),
@@ -429,7 +434,7 @@ class _AddressFormViewState extends State<AddressFormView> {
   }
 
   /// O nhap Quan / Huyen.
-  Widget _buildDistrictField() {
+  Widget _buildDistrictField(BuildContext ctx) {
     return TextField(
       controller: _districtController,
       focusNode: _focusNodes[4],
@@ -437,6 +442,7 @@ class _AddressFormViewState extends State<AddressFormView> {
       textCapitalization: TextCapitalization.words,
       onSubmitted: (_) => _focusNodes[0].requestFocus(),
       decoration: _buildInputDecoration(
+        ctx: ctx,
         labelKey: 'address_form_district',
         hintKey: 'address_form_district_hint',
         errorFieldIndex: 3,
@@ -445,13 +451,14 @@ class _AddressFormViewState extends State<AddressFormView> {
   }
 
   /// O nhap Tinh / Thanh pho.
-  Widget _buildCityField() {
+  Widget _buildCityField(BuildContext ctx) {
     return TextField(
       controller: _cityController,
       textInputAction: TextInputAction.done,
       textCapitalization: TextCapitalization.words,
       onSubmitted: (_) => FocusScope.of(context).unfocus(),
       decoration: _buildInputDecoration(
+        ctx: ctx,
         labelKey: 'address_form_city',
         hintKey: 'address_form_city_hint',
         errorFieldIndex: 4,
@@ -460,11 +467,11 @@ class _AddressFormViewState extends State<AddressFormView> {
   }
 
   /// Nhom ChoiceChip: Nha / Van phong / Khac.
-  Widget _buildLabelChips() {
+  Widget _buildLabelChips(BuildContext ctx) {
     final labels = [
-      LanguageService.translate('address_name_home'),
-      LanguageService.translate('address_name_office'),
-      LanguageService.translate('address_name_other'),
+      ctx.t('address_name_home'),
+      ctx.t('address_name_office'),
+      ctx.t('address_name_other'),
     ];
 
     return Wrap(
@@ -507,7 +514,7 @@ class _AddressFormViewState extends State<AddressFormView> {
   }
 
   /// Dong Switch "Dat lam dia chi mac dinh".
-  Widget _buildDefaultSwitch() {
+  Widget _buildDefaultSwitch(BuildContext ctx) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
@@ -519,7 +526,7 @@ class _AddressFormViewState extends State<AddressFormView> {
         children: [
           Expanded(
             child: Text(
-              LanguageService.translate('address_form_default_switch'),
+              ctx.t('address_form_default_switch'),
               style: const TextStyle(
                 fontSize: 14,
                 color: AppColors.textPrimary,
@@ -545,7 +552,7 @@ class _AddressFormViewState extends State<AddressFormView> {
   }
 
   /// Sticky Bottom Bar: Nut "Luu dia chi".
-  Widget _buildStickyBottomBar(BuildContext context) {
+  Widget _buildStickyBottomBar(BuildContext ctx) {
     return Container(
       padding: EdgeInsets.fromLTRB(
         16,
@@ -587,7 +594,7 @@ class _AddressFormViewState extends State<AddressFormView> {
                   ),
                 )
               : Text(
-                  LanguageService.translate('address_form_save_btn'),
+                  ctx.t('address_form_save_btn'),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 16,

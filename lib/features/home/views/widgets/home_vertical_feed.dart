@@ -75,14 +75,14 @@ class _StoresVerticalStreamBuilder extends StatelessWidget {
           debugPrint(
               'HomeVerticalFeed: loi khi load danh sach quan: ${snapshot.error}');
           return _ErrorWidget(
-            message: LanguageService.translate('error_load_stores'),
+            message: context.t('error_load_stores'),
           );
         }
 
         final stores = snapshot.data!;
         if (stores.isEmpty) {
           return _EmptyWidget(
-            message: LanguageService.translate('empty_stores'),
+            message: context.t('empty_stores'),
           );
         }
 
@@ -136,14 +136,14 @@ class _ProductsVerticalStreamBuilder extends StatelessWidget {
           debugPrint(
               'HomeVerticalFeed: loi khi load danh sach san pham: ${snapshot.error}');
           return _ErrorWidget(
-            message: LanguageService.translate('error_load_products'),
+            message: context.t('error_load_products'),
           );
         }
 
         final products = snapshot.data!;
         if (products.isEmpty) {
           return _EmptyWidget(
-            message: LanguageService.translate('empty_products'),
+            message: context.t('empty_products'),
           );
         }
 
@@ -237,7 +237,7 @@ class _VerticalStoreItem extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '(${store.reviewCount} ${LanguageService.translate('unit_rating')})',
+                        '(${store.reviewCount} ${context.t('unit_rating')})',
                         style:
                             TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
@@ -256,8 +256,8 @@ class _VerticalStoreItem extends StatelessWidget {
                         ),
                         child: Text(
                           store.isOpen
-                              ? LanguageService.translate('home_open')
-                              : LanguageService.translate('home_closed'),
+                              ? context.t('home_open')
+                              : context.t('home_closed'),
                           style: TextStyle(
                             fontSize: 11,
                             color: store.isOpen ? Colors.green : Colors.red,
@@ -333,7 +333,7 @@ class _VerticalProductItem extends StatelessWidget {
                         ),
                         child: Center(
                           child: Text(
-                            LanguageService.translate('home_out_of_stock'),
+                            context.t('home_out_of_stock'),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 11,
@@ -374,7 +374,7 @@ class _VerticalProductItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${product.basePrice.toStringAsFixed(0)} ${LanguageService.translate('unit_currency')}',
+                    '${product.basePrice.toStringAsFixed(0)} ${context.t('unit_currency')}',
                     style: TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,

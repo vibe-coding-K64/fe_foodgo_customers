@@ -100,29 +100,29 @@ class _PaymentMethodsViewState extends State<PaymentMethodsView> {
   }
 
   /// Xoa mot phuong thuc thanh toan.
-  void _onDelete(PaymentMethodModel method) {
+  void _onDelete(BuildContext ctx, PaymentMethodModel method) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         title: Text(
-          LanguageService.translate('payment_delete'),
+          ctx.t('payment_delete'),
           style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
         ),
         content: Text(
-          LanguageService.translate('payment_delete_confirm'),
+          ctx.t('payment_delete_confirm'),
           style: const TextStyle(fontSize: 14),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () => Navigator.pop(dialogCtx),
             child: Text(
-              LanguageService.translate('common_cancel'),
+              ctx.t('common_cancel'),
               style: const TextStyle(color: AppColors.textSecondary),
             ),
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(ctx);
+              Navigator.pop(dialogCtx);
               setState(() {
                 _methods.removeWhere((m) => m.id == method.id);
               });
@@ -131,7 +131,7 @@ class _PaymentMethodsViewState extends State<PaymentMethodsView> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content:
-                      Text(LanguageService.translate('payment_deleted')),
+                      Text(ctx.t('payment_deleted')),
                   backgroundColor: AppColors.textSecondary,
                   duration: const Duration(seconds: 2),
                   behavior: SnackBarBehavior.floating,
@@ -139,7 +139,7 @@ class _PaymentMethodsViewState extends State<PaymentMethodsView> {
               );
             },
             child: Text(
-              LanguageService.translate('common_delete'),
+              ctx.t('common_delete'),
               style: const TextStyle(color: AppColors.error),
             ),
           ),
@@ -186,7 +186,7 @@ class _PaymentMethodsViewState extends State<PaymentMethodsView> {
           },
         ),
         title: Text(
-          LanguageService.translate('payment_title'),
+          context.t('payment_title'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -230,7 +230,7 @@ class _PaymentMethodsViewState extends State<PaymentMethodsView> {
             ),
             const SizedBox(height: 16),
             Text(
-              LanguageService.translate('payment_title'),
+              context.t('payment_title'),
               style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
@@ -239,7 +239,7 @@ class _PaymentMethodsViewState extends State<PaymentMethodsView> {
             ),
             const SizedBox(height: 8),
             Text(
-              LanguageService.translate('payment_add_new'),
+              context.t('payment_add_new'),
               style: const TextStyle(
                 fontSize: 14,
                 color: AppColors.textSecondary,
@@ -278,7 +278,7 @@ class _PaymentMethodsViewState extends State<PaymentMethodsView> {
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Text(
-                _getGroupTitle(type),
+                _getGroupTitle(context, type),
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -300,7 +300,7 @@ class _PaymentMethodsViewState extends State<PaymentMethodsView> {
                   },
                   onDelete: method.type == PaymentMethodType.cash
                       ? null
-                      : () => _onDelete(method),
+                      : () => _onDelete(context, method),
                 ),
               );
             }),
@@ -313,14 +313,14 @@ class _PaymentMethodsViewState extends State<PaymentMethodsView> {
   }
 
   /// Lay tieu de nhom theo loai.
-  String _getGroupTitle(PaymentMethodType type) {
+  String _getGroupTitle(BuildContext ctx, PaymentMethodType type) {
     switch (type) {
       case PaymentMethodType.cash:
-        return LanguageService.translate('payment_group_cash').toUpperCase();
+        return ctx.t('payment_group_cash').toUpperCase();
       case PaymentMethodType.card:
-        return LanguageService.translate('payment_group_card').toUpperCase();
+        return ctx.t('payment_group_card').toUpperCase();
       case PaymentMethodType.wallet:
-        return LanguageService.translate('payment_group_wallet').toUpperCase();
+        return ctx.t('payment_group_wallet').toUpperCase();
     }
   }
 
@@ -362,7 +362,7 @@ class _PaymentMethodsViewState extends State<PaymentMethodsView> {
               ),
               const SizedBox(width: 8),
               Text(
-                LanguageService.translate('payment_add_new'),
+                context.t('payment_add_new'),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,

@@ -42,25 +42,25 @@ class PaymentMethodCard extends StatelessWidget {
         ),
         child: Padding(
           padding: const EdgeInsets.all(14),
-          child: _buildContent(),
+          child: _buildContent(context),
         ),
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(BuildContext context) {
     switch (method.type) {
       case PaymentMethodType.cash:
-        return _buildCashContent();
+        return _buildCashContent(context);
       case PaymentMethodType.card:
-        return _buildCardContent();
+        return _buildCardContent(context);
       case PaymentMethodType.wallet:
-        return _buildWalletContent();
+        return _buildWalletContent(context);
     }
   }
 
   /// Noi dung cho phuong thuc tien mat.
-  Widget _buildCashContent() {
+  Widget _buildCashContent(BuildContext ctx) {
     return Row(
       children: [
         // Icon tien mat.
@@ -83,7 +83,7 @@ class PaymentMethodCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                LanguageService.translate('payment_cash'),
+                ctx.t('payment_cash'),
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -92,7 +92,7 @@ class PaymentMethodCard extends StatelessWidget {
               ),
               const SizedBox(height: 3),
               Text(
-                LanguageService.translate('payment_cash_desc'),
+                ctx.t('payment_cash_desc'),
                 style: const TextStyle(
                   fontSize: 12,
                   color: AppColors.textSecondary,
@@ -108,7 +108,7 @@ class PaymentMethodCard extends StatelessWidget {
   }
 
   /// Noi dung cho phuong thuc the.
-  Widget _buildCardContent() {
+  Widget _buildCardContent(BuildContext ctx) {
     return Row(
       children: [
         // Logo the.
@@ -136,7 +136,7 @@ class PaymentMethodCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                _getCardBrandName(),
+                _getCardBrandName(ctx),
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -184,7 +184,7 @@ class PaymentMethodCard extends StatelessWidget {
   }
 
   /// Noi dung cho phuong thuc vi dien tu.
-  Widget _buildWalletContent() {
+  Widget _buildWalletContent(BuildContext ctx) {
     return Row(
       children: [
         // Icon vi.
@@ -209,7 +209,7 @@ class PaymentMethodCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                _getWalletName(),
+                _getWalletName(ctx),
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -227,8 +227,8 @@ class PaymentMethodCard extends StatelessWidget {
                 ),
                 child: Text(
                   method.isLinked
-                      ? LanguageService.translate('payment_linked')
-                      : LanguageService.translate('payment_not_linked'),
+                      ? ctx.t('payment_linked')
+                      : ctx.t('payment_not_linked'),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,

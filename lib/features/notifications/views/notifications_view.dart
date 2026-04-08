@@ -74,7 +74,7 @@ class _NotificationsViewState extends State<NotificationsView> {
           ),
         ),
         title: Text(
-          LanguageService.translate('notification_title'),
+          context.t('notification_title'),
           style: const TextStyle(
             color: Colors.white,
             fontSize: 22,
@@ -87,7 +87,7 @@ class _NotificationsViewState extends State<NotificationsView> {
           TextButton(
             onPressed: _markAllAsRead,
             child: Text(
-              LanguageService.translate('notification_mark_all_read'),
+              context.t('notification_mark_all_read'),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 13,
@@ -154,7 +154,7 @@ class _NotificationsViewState extends State<NotificationsView> {
           ),
           const SizedBox(height: 12),
           Text(
-            LanguageService.translate('error_unknown'),
+            context.t('error_unknown'),
             style: TextStyle(
               fontSize: 15,
               color: Colors.grey.shade600,
@@ -167,7 +167,7 @@ class _NotificationsViewState extends State<NotificationsView> {
                 _notificationsStream = NotificationService.getNotificationsStream();
               });
             },
-            child: Text(LanguageService.translate('common_retry')),
+            child: Text(context.t('common_retry')),
           ),
         ],
       ),
@@ -187,7 +187,7 @@ class _NotificationsViewState extends State<NotificationsView> {
           ),
           const SizedBox(height: 12),
           Text(
-            LanguageService.translate('notification_empty'),
+            context.t('notification_empty'),
             style: TextStyle(
               fontSize: 15,
               color: Colors.grey.shade600,

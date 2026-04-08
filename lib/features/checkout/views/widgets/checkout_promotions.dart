@@ -80,7 +80,7 @@ class CheckoutPromotions extends StatelessWidget {
           icon: Icons.payment_outlined,
           label: context.t('checkout_payment_method'),
           iconColor: AppColors.primary,
-          value: _getPaymentLabel(selectedPaymentMethod),
+          value: _getPaymentLabel(context, selectedPaymentMethod),
           valueColor: AppColors.textPrimary,
           onTap: () {
             debugPrint('Checkout: Nguoi dung bam doi phuong thuc thanh toan');
@@ -104,7 +104,7 @@ class CheckoutPromotions extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      _getPaymentLabel(selectedPaymentMethod),
+                      _getPaymentLabel(context, selectedPaymentMethod),
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -127,14 +127,14 @@ class CheckoutPromotions extends StatelessWidget {
     );
   }
 
-  String _getPaymentLabel(String method) {
+  String _getPaymentLabel(BuildContext context, String method) {
     switch (method) {
       case 'cash':
-        return LanguageService.translate('checkout_payment_cash');
+        return context.t('checkout_payment_cash');
       case 'wallet':
-        return LanguageService.translate('checkout_payment_wallet');
+        return context.t('checkout_payment_wallet');
       case 'card':
-        return LanguageService.translate('checkout_payment_card');
+        return context.t('checkout_payment_card');
       default:
         return method;
     }

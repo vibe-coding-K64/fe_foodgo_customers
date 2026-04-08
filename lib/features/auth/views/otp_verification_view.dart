@@ -105,7 +105,7 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
     _startCountdown();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(LanguageService.translate('auth_verification_email_sent')),
+        content: Text(context.t('auth_verification_email_sent')),
         backgroundColor: AppColors.primary,
         behavior: SnackBarBehavior.floating,
       ),
@@ -117,7 +117,7 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
     if (!_isOtpComplete) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(LanguageService.translate('auth_otp_empty')),
+          content: Text(context.t('auth_otp_empty')),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
@@ -198,7 +198,7 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
 
               // Tieu de.
               Text(
-                LanguageService.translate('auth_otp_title'),
+                context.t('auth_otp_title'),
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
@@ -210,7 +210,7 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
 
               // Mo ta.
               Text(
-                LanguageService.translate('auth_otp_desc'),
+                context.t('auth_otp_desc'),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -236,7 +236,7 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                           padding: const EdgeInsets.symmetric(vertical: 4),
                         ),
                         child: Text(
-                          LanguageService.translate('auth_otp_resend'),
+                          context.t('auth_otp_resend'),
                           style: const TextStyle(
                             fontSize: 14,
                             color: AppColors.primary,
@@ -246,7 +246,7 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                       )
                     : RichText(
                         text: TextSpan(
-                          text: LanguageService.translate('auth_otp_resend_countdown'),
+                          text: context.t('auth_otp_resend_countdown'),
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: AppColors.textSecondary,
                           ),
@@ -282,7 +282,7 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                           ),
                         )
                       : Text(
-                          LanguageService.translate('auth_confirm'),
+                          context.t('auth_confirm'),
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,

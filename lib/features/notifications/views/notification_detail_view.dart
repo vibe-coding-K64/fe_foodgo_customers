@@ -25,7 +25,7 @@ class NotificationDetailView extends StatelessWidget {
 
   /// Lay tieu de hien thi dua tren loai thong bao.
   String _getTitle(BuildContext context) {
-    return LanguageService.translate('notif_type_${notification.type}');
+    return context.t('notif_type_${notification.type}');
   }
 
   /// Lay noi dung hien thi dua tren loai va referenceId.
@@ -42,15 +42,15 @@ class NotificationDetailView extends StatelessWidget {
   }
 
   /// Lay nut hanh dong dua tren loai thong bao.
-  String _getActionLabel() {
+  String _getActionLabel(BuildContext context) {
     switch (notification.type) {
       case 2:
-        return LanguageService.translate('notif_action_view_order');
+        return context.t('notif_action_view_order');
       case 1:
-        return LanguageService.translate('notif_action_use_voucher');
+        return context.t('notif_action_use_voucher');
       case 0:
       default:
-        return LanguageService.translate('notif_action_go_home');
+        return context.t('notif_action_go_home');
     }
   }
 
@@ -98,21 +98,21 @@ class NotificationDetailView extends StatelessWidget {
   }
 
   /// Format thoi gian thanh chuoi "X gio truoc - dd/MM/yyyy".
-  String _formatDateTime(DateTime dateTime) {
+  String _formatDateTime(BuildContext context, DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
 
     String timeAgo;
     if (difference.inMinutes < 1) {
-      timeAgo = LanguageService.translate('notification_time_just_now');
+      timeAgo = context.t('notification_time_just_now');
     } else if (difference.inHours < 24) {
-      timeAgo = LanguageService.translate('notification_time_hours_ago')
+      timeAgo = context.t('notification_time_hours_ago')
           .replaceAll('\$1', difference.inHours.toString());
     } else if (difference.inDays < 7) {
-      timeAgo = LanguageService.translate('notification_time_days_ago')
+      timeAgo = context.t('notification_time_days_ago')
           .replaceAll('\$1', difference.inDays.toString());
     } else {
-      timeAgo = LanguageService.translate('notification_time_days_ago')
+      timeAgo = context.t('notification_time_days_ago')
           .replaceAll('\$1', difference.inDays.toString());
     }
 
@@ -172,7 +172,7 @@ class NotificationDetailView extends StatelessWidget {
           },
         ),
         title: Text(
-          LanguageService.translate('notif_detail_title'),
+          context.t('notif_detail_title'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -197,7 +197,7 @@ class NotificationDetailView extends StatelessWidget {
                   _buildTitle(context),
                   const SizedBox(height: 8),
                   // Thoi gian nhan.
-                  _buildTimeLabel(),
+                  _buildTimeLabel(context),
                   const SizedBox(height: 16),
                   // Divider.
                   _buildDivider(),
@@ -319,9 +319,9 @@ class NotificationDetailView extends StatelessWidget {
   }
 
   /// Widget thoi gian nhan (text xam nho).
-  Widget _buildTimeLabel() {
+  Widget _buildTimeLabel(BuildContext context) {
     return Text(
-      _formatDateTime(notification.createdAt),
+      _formatDateTime(context, notification.createdAt),
       style: const TextStyle(
         fontSize: 13,
         color: AppColors.textSecondary,
@@ -374,7 +374,7 @@ class NotificationDetailView extends StatelessWidget {
           ),
         ],
       ),
-      child: ElevatedButton(
+        child: ElevatedButton(
         onPressed: () => _onActionTap(context),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
@@ -386,7 +386,7 @@ class NotificationDetailView extends StatelessWidget {
           elevation: 0,
         ),
         child: Text(
-          _getActionLabel(),
+          _getActionLabel(context),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,

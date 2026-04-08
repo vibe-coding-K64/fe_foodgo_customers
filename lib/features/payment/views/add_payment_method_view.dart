@@ -91,14 +91,15 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
 
   /// Tao style InputDecoration.
   InputDecoration _buildDecoration({
+    required BuildContext ctx,
     required String labelKey,
     required String hintKey,
     int? errorFieldIndex,
     Widget? suffix,
   }) {
     return InputDecoration(
-      labelText: LanguageService.translate(labelKey),
-      hintText: LanguageService.translate(hintKey),
+      labelText: ctx.t(labelKey),
+      hintText: ctx.t(hintKey),
       labelStyle: const TextStyle(fontSize: 14),
       hintStyle: const TextStyle(fontSize: 14, color: AppColors.textHint),
       filled: true,
@@ -178,8 +179,8 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
   }
 
   /// Validate form.
-  bool _validate() {
-    final t = LanguageService.translate;
+  bool _validate(BuildContext context) {
+    final t = context.t;
     final errors = <int, String>{};
 
     if (_cardNumberController.text.replaceAll(' ', '').length < 13) {
@@ -223,7 +224,7 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
 
   /// Xu ly xac nhan them the.
   void _onConfirm() {
-    if (!_validate()) return;
+    if (!_validate(context)) return;
 
     setState(() => _isConfirming = true);
 
@@ -244,7 +245,7 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(LanguageService.translate('payment_add_card_saved')),
+        content: Text(context.t('payment_add_card_saved')),
         backgroundColor: AppColors.primary,
         duration: const Duration(seconds: 1),
         behavior: SnackBarBehavior.floating,
@@ -256,11 +257,11 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
   }
 
   /// Xu ly lien ket vi dien tu.
-  void _onLinkWallet(WalletBrand brand) {
+  void _onLinkWallet(BuildContext context, WalletBrand brand) {
     debugPrint('AddPaymentMethod: Nguoi dung bam lien ket vi ${brand.name}');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(LanguageService.translate('payment_add_wallet_linked')),
+        content: Text(context.t('payment_add_wallet_linked')),
         backgroundColor: AppColors.primary,
         duration: const Duration(seconds: 1),
         behavior: SnackBarBehavior.floating,
@@ -295,7 +296,7 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
           },
         ),
         title: Text(
-          LanguageService.translate('payment_add_title'),
+          context.t('payment_add_title'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -310,21 +311,21 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ===== PHAN 1: FORM THE =====
-            _buildSectionTitle('payment_add_card_section_title'),
+            _buildSectionTitle(context, 'payment_add_card_section_title'),
             const SizedBox(height: 14),
-            _buildCardNumberField(),
+            _buildCardNumberField(context),
             const SizedBox(height: 14),
-            _buildCardHolderField(),
+            _buildCardHolderField(context),
             const SizedBox(height: 14),
-            _buildExpiryAndCvvRow(),
+            _buildExpiryAndCvvRow(context),
             const SizedBox(height: 14),
-            _buildSaveCardSwitch(),
+            _buildSaveCardSwitch(context),
             const SizedBox(height: 28),
 
             // ===== PHAN 2: LIEN KET VI =====
-            _buildSectionTitle('payment_add_wallet_section_title'),
+            _buildSectionTitle(context, 'payment_add_wallet_section_title'),
             const SizedBox(height: 14),
-            _buildWalletLinkSection(),
+            _buildWalletLinkSection(context),
             const SizedBox(height: 24),
 
             SizedBox(height: 80 + MediaQuery.of(context).padding.bottom),
@@ -335,9 +336,9 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
     );
   }
 
-  Widget _buildSectionTitle(String labelKey) {
+  Widget _buildSectionTitle(BuildContext ctx, String labelKey) {
     return Text(
-      LanguageService.translate(labelKey),
+      ctx.t(labelKey),
       style: const TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.w600,
@@ -347,7 +348,7 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
   }
 
   /// O nhap so the.
-  Widget _buildCardNumberField() {
+  Widget _buildCardNumberField(BuildContext ctx) {
     return TextField(
       controller: _cardNumberController,
       focusNode: _cardNumberFocus,
@@ -360,6 +361,7 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
       ],
       onSubmitted: (_) => _cardHolderFocus.requestFocus(),
       decoration: _buildDecoration(
+        ctx: ctx,
         labelKey: 'payment_add_card_number',
         hintKey: 'payment_add_card_number_hint',
         errorFieldIndex: 0,
@@ -372,7 +374,7 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
   }
 
   /// O nhap ten chu the.
-  Widget _buildCardHolderField() {
+  Widget _buildCardHolderField(BuildContext ctx) {
     return TextField(
       controller: _cardHolderController,
       focusNode: _cardHolderFocus,
@@ -380,6 +382,7 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
       textCapitalization: TextCapitalization.characters,
       onSubmitted: (_) => _expiryFocus.requestFocus(),
       decoration: _buildDecoration(
+        ctx: ctx,
         labelKey: 'payment_add_card_holder',
         hintKey: 'payment_add_card_holder_hint',
         errorFieldIndex: 1,
@@ -388,7 +391,7 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
   }
 
   /// Row chia 2: Ngay het han | CVV.
-  Widget _buildExpiryAndCvvRow() {
+  Widget _buildExpiryAndCvvRow(BuildContext ctx) {
     return Row(
       children: [
         Expanded(
@@ -404,6 +407,7 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
             ],
             onSubmitted: (_) => _cvvFocus.requestFocus(),
             decoration: _buildDecoration(
+              ctx: ctx,
               labelKey: 'payment_expire_label',
               hintKey: 'payment_add_card_expiry_hint',
               errorFieldIndex: 2,
@@ -427,6 +431,7 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
               _onConfirm();
             },
             decoration: _buildDecoration(
+              ctx: ctx,
               labelKey: 'payment_cvv_label',
               hintKey: 'payment_add_card_cvv_hint',
               errorFieldIndex: 3,
@@ -438,7 +443,7 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
   }
 
   /// Switch luu the.
-  Widget _buildSaveCardSwitch() {
+  Widget _buildSaveCardSwitch(BuildContext ctx) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
@@ -450,7 +455,7 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
         children: [
           Expanded(
             child: Text(
-              LanguageService.translate('payment_add_save_card'),
+              ctx.t('payment_add_save_card'),
               style: const TextStyle(
                 fontSize: 14,
                 color: AppColors.textPrimary,
@@ -475,26 +480,26 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
   }
 
   /// Nut lien ket MoMo / ZaloPay.
-  Widget _buildWalletLinkSection() {
+  Widget _buildWalletLinkSection(BuildContext ctx) {
     return Row(
       children: [
-        Expanded(child: _buildWalletButton(WalletBrand.momo)),
+        Expanded(child: _buildWalletButton(ctx, WalletBrand.momo)),
         const SizedBox(width: 12),
-        Expanded(child: _buildWalletButton(WalletBrand.zalopay)),
+        Expanded(child: _buildWalletButton(ctx, WalletBrand.zalopay)),
       ],
     );
   }
 
-  Widget _buildWalletButton(WalletBrand brand) {
+  Widget _buildWalletButton(BuildContext ctx, WalletBrand brand) {
     final isMoMo = brand == WalletBrand.momo;
     final bgColor = isMoMo ? const Color(0xFFA50064) : const Color(0xFF0068FF);
     final icon = isMoMo ? Icons.savings_outlined : Icons.account_balance_wallet_outlined;
     final label = isMoMo
-        ? LanguageService.translate('payment_momo')
-        : LanguageService.translate('payment_zalopay');
+        ? ctx.t('payment_momo')
+        : ctx.t('payment_zalopay');
 
     return GestureDetector(
-      onTap: () => _onLinkWallet(brand),
+      onTap: () => _onLinkWallet(context, brand),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
@@ -516,7 +521,7 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
             ),
             const SizedBox(height: 2),
             Text(
-              LanguageService.translate('payment_add_wallet_link_now'),
+              ctx.t('payment_add_wallet_link_now'),
               style: TextStyle(
                 fontSize: 11,
                 color: bgColor.withAlpha(180),
@@ -529,7 +534,7 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
   }
 
   /// Sticky Bottom Bar.
-  Widget _buildStickyBottomBar(BuildContext context) {
+  Widget _buildStickyBottomBar(BuildContext ctx) {
     return Container(
       padding: EdgeInsets.fromLTRB(
         16,
@@ -570,7 +575,7 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
                   ),
                 )
               : Text(
-                  LanguageService.translate('payment_add_confirm_btn'),
+                  ctx.t('payment_add_confirm_btn'),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 16,

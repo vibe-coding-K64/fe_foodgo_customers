@@ -218,7 +218,7 @@ class MapPickerView extends StatelessWidget {
         color: AppColors.textPrimary,
       ),
       decoration: InputDecoration(
-        hintText: LanguageService.translate('map_search_hint'),
+        hintText: context.t('map_search_hint'),
         hintStyle: TextStyle(
           fontSize: 15,
           color: AppColors.textHint,
@@ -320,7 +320,7 @@ class MapPickerView extends StatelessWidget {
           const SizedBox(height: 16),
           // Tieu de.
           Text(
-            LanguageService.translate('map_pinned_address'),
+            context.t('map_pinned_address'),
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
@@ -373,7 +373,7 @@ class MapPickerView extends StatelessWidget {
                 elevation: 0,
               ),
               child: Text(
-                LanguageService.translate('map_confirm_btn'),
+                context.t('map_confirm_btn'),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,

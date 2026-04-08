@@ -21,7 +21,7 @@ class NotificationCard extends StatelessWidget {
 
   /// Lay tieu de hien thi dua tren loai thong bao.
   String _getTitle(BuildContext context) {
-    return LanguageService.translate('notif_type_${notification.type}');
+    return context.t('notif_type_${notification.type}');
   }
 
   /// Lay noi dung hien thi dua tren loai va referenceId.
@@ -199,15 +199,15 @@ class NotificationCard extends StatelessWidget {
     final difference = now.difference(dateTime);
 
     if (difference.inMinutes < 1) {
-      return LanguageService.translate('notification_time_just_now');
+      return context.t('notification_time_just_now');
     } else if (difference.inMinutes < 60) {
-      return LanguageService.translate('notification_time_minutes_ago')
+      return context.t('notification_time_minutes_ago')
           .replaceAll('\$1', difference.inMinutes.toString());
     } else if (difference.inHours < 24) {
-      return LanguageService.translate('notification_time_hours_ago')
+      return context.t('notification_time_hours_ago')
           .replaceAll('\$1', difference.inHours.toString());
     } else if (difference.inDays < 7) {
-      return LanguageService.translate('notification_time_days_ago')
+      return context.t('notification_time_days_ago')
           .replaceAll('\$1', difference.inDays.toString());
     } else {
       return '${dateTime.day.toString().padLeft(2, '0')}/'

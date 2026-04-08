@@ -21,14 +21,14 @@ class AddressCardWidget extends StatelessWidget {
   });
 
   /// Tra ve nhan dia chi (nha / cong ty / khac).
-  String _getLabel() {
+  String _getLabel(BuildContext context) {
     if (address.name.contains('Công ty') || address.name.contains('Office')) {
-      return LanguageService.translate('address_name_office');
+      return context.t('address_name_office');
     }
     if (address.name.contains('Nhà') || address.name.contains('Home')) {
-      return LanguageService.translate('address_name_home');
+      return context.t('address_name_home');
     }
-    return LanguageService.translate('address_name_other');
+    return context.t('address_name_other');
   }
 
   @override
@@ -175,7 +175,7 @@ class AddressCardWidget extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
-                _getLabel(),
+                _getLabel(context),
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -221,7 +221,7 @@ class AddressCardWidget extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    LanguageService.translate('address_set_default'),
+                    context.t('address_set_default'),
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.primary,

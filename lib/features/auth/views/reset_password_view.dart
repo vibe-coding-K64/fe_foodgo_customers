@@ -58,7 +58,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
           setState(() => _isLoading = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(LanguageService.translate('auth_update_password')),
+              content: Text(context.t('auth_update_password')),
               backgroundColor: AppColors.primary,
               behavior: SnackBarBehavior.floating,
             ),
@@ -114,7 +114,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
 
                 // Tieu de.
                 Text(
-                  LanguageService.translate('auth_reset_password_title'),
+                  context.t('auth_reset_password_title'),
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
@@ -126,7 +126,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
 
                 // Mo ta.
                 Text(
-                  LanguageService.translate('auth_reset_password_desc'),
+                  context.t('auth_reset_password_desc'),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -141,7 +141,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                   obscureText: _obscureNewPassword,
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
-                    labelText: LanguageService.translate('auth_new_password_hint'),
+                    labelText: context.t('auth_new_password_hint'),
                     labelStyle: const TextStyle(
                       fontSize: 14,
                       color: AppColors.textSecondary,
@@ -199,10 +199,10 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return LanguageService.translate('auth_error_empty_field');
+                      return context.t('auth_error_empty_field');
                     }
                     if (value.length < 8) {
-                      return LanguageService.translate('auth_error_password_weak');
+                      return context.t('auth_error_password_weak');
                     }
                     return null;
                   },
@@ -217,7 +217,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) => _onUpdatePasswordPressed(),
                   decoration: InputDecoration(
-                    labelText: LanguageService.translate('auth_confirm_new_password_hint'),
+                    labelText: context.t('auth_confirm_new_password_hint'),
                     labelStyle: const TextStyle(
                       fontSize: 14,
                       color: AppColors.textSecondary,
@@ -275,10 +275,10 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return LanguageService.translate('auth_error_empty_field');
+                      return context.t('auth_error_empty_field');
                     }
                     if (value != _newPasswordController.text) {
-                      return LanguageService.translate('auth_error_password_mismatch');
+                      return context.t('auth_error_password_mismatch');
                     }
                     return null;
                   },
@@ -310,7 +310,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                             ),
                           )
                         : Text(
-                            LanguageService.translate('auth_update_password'),
+                            context.t('auth_update_password'),
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,

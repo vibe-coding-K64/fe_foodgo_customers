@@ -513,7 +513,7 @@ class _DriverChatViewState extends State<DriverChatView> {
                     ),
                   ),
                   title: Text(
-                    LanguageService.translate('driver_chat_send_image'),
+                    context.t('driver_chat_send_image'),
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
@@ -594,7 +594,7 @@ class _ChatBubbleWidget extends StatelessWidget {
               crossAxisAlignment:
                   isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
-                _buildBubbleContent(),
+                _buildBubbleContent(context),
                 const SizedBox(height: 2),
                 // Thoi gian gui tin nhan.
                 Text(
@@ -612,10 +612,10 @@ class _ChatBubbleWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildBubbleContent() {
+  Widget _buildBubbleContent(BuildContext context) {
     // Neu la tin nhan vi tri.
     if (message.type == ChatMessageType.location) {
-      return _buildLocationBubble();
+      return _buildLocationBubble(context);
     }
 
     // Neu la tin nhan hinh anh.
@@ -645,7 +645,7 @@ class _ChatBubbleWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildLocationBubble() {
+  Widget _buildLocationBubble(BuildContext context) {
     return Container(
       width: 220,
       padding: const EdgeInsets.all(12),
@@ -677,7 +677,7 @@ class _ChatBubbleWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  LanguageService.translate('order_delivery_address'),
+                  context.t('order_delivery_address'),
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,

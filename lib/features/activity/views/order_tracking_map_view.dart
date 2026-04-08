@@ -150,13 +150,13 @@ class OrderTrackingMapView extends StatelessWidget {
       return Positioned(
         left: size.width * marker.xRatio - 24,
         top: size.height * marker.yRatio - 24,
-        child: _buildMarkerIcon(marker),
+        child: _buildMarkerIcon(context, marker),
       );
     }).toList();
   }
 
   /// Icon Marker don le.
-  Widget _buildMarkerIcon(MapMarkerModel marker) {
+  Widget _buildMarkerIcon(BuildContext context, MapMarkerModel marker) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -199,7 +199,7 @@ class OrderTrackingMapView extends StatelessWidget {
             ],
           ),
           child: Text(
-            LanguageService.translate(marker.labelKey),
+            context.t(marker.labelKey),
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w500,
