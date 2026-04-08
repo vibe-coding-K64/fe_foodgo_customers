@@ -659,8 +659,6 @@
   "auth_or_label": "Or",
   "auth_google_label": "Google",
   "auth_facebook_label": "Facebook",
-  "auth_dont_have_account": "Don't have an account?",
-  "auth_sign_up_now": "Sign up now",
 
   "auth_register_btn": "Sign Up",
   "auth_create_account_title": "Create your account",
@@ -668,8 +666,6 @@
   "auth_phone_number_label": "Phone number",
   "auth_password_label": "Password",
   "auth_confirm_password_label": "Confirm password",
-  "auth_already_have_account": "Already have an account?",
-  "auth_sign_in_now": "Sign in now",
 
   "main_nav_home": "Home",
   "main_nav_activity": "Activity",
@@ -721,5 +717,11 @@
   "tier_0": "Member",
   "tier_1": "Silver",
   "tier_2": "Gold",
-  "tier_3": "Diamond"
+  "tier_3": "Diamond",
+  "status_pending": "Pending",
+  "status_preparing": "Preparing",
+  "status_delivering": "Delivering",
+  "status_completed": "Completed",
+  "status_cancelled": "Cancelled",
+  "finding_driver": "Finding driver..."
 }

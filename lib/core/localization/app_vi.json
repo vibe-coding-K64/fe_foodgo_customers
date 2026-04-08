@@ -41,10 +41,6 @@
   "auth_full_name": "Họ và tên",
   "auth_phone_number": "Số điện thoại",
   "auth_or": "Hoặc",
-  "auth_dont_have_account": "Chưa có tài khoản?",
-  "auth_already_have_account": "Đã có tài khoản?",
-  "auth_sign_up_now": "Đăng ký ngay",
-  "auth_sign_in_now": "Đăng nhập ngay",
   "auth_welcome_back": "Chào trở lại!",
   "auth_create_account": "Tạo tài khoản của bạn",
   "auth_reset_password": "Đặt lại mật khẩu",
@@ -729,5 +725,11 @@
   "tier_0": "Thanh vien",
   "tier_1": "Bac",
   "tier_2": "Vang",
-  "tier_3": "Kim cuong"
+  "tier_3": "Kim cuong",
+  "status_pending": "Dang xu ly",
+  "status_preparing": "Dang chuan bi",
+  "status_delivering": "Dang giao",
+  "status_completed": "Hoan thanh",
+  "status_cancelled": "Da huy",
+  "finding_driver": "Dang tim tai xe..."
 }

@@ -119,6 +119,25 @@ class OrderModel {
       driverName!.isNotEmpty &&
       driverId != null &&
       driverId!.isNotEmpty;
+
+  /// Tra ve key ngon ngu cho trang thai don hang.
+  /// Su dung voi ham dich cua ung dung de hien thi text phu hop.
+  String get statusTextKey {
+    switch (status) {
+      case 0:
+        return 'status_pending';
+      case 1:
+        return 'status_preparing';
+      case 2:
+        return 'status_delivering';
+      case 3:
+        return 'status_completed';
+      case 4:
+        return 'status_cancelled';
+      default:
+        return 'status_pending';
+    }
+  }
 }
 
 /// Model mon an trong don hang.

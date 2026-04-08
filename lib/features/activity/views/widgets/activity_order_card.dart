@@ -167,38 +167,31 @@ class ActivityOrderCard extends StatelessWidget {
   Widget _buildStatusBadge(BuildContext context) {
     Color bgColor;
     Color textColor;
-    String statusText;
 
     switch (order.status) {
       case 0:
         bgColor = Colors.blue.shade50;
         textColor = Colors.blue.shade700;
-        statusText = context.t('activity_status_ordered');
         break;
       case 1:
         bgColor = Colors.blue.shade50;
         textColor = Colors.blue.shade700;
-        statusText = context.t('activity_status_preparing');
         break;
       case 2:
         bgColor = Colors.orange.shade50;
         textColor = Colors.orange.shade700;
-        statusText = context.t('activity_status_delivering');
         break;
       case 3:
         bgColor = Colors.green.shade50;
         textColor = Colors.green.shade700;
-        statusText = context.t('activity_status_received');
         break;
       case 4:
         bgColor = Colors.red.shade50;
         textColor = Colors.red.shade700;
-        statusText = context.t('activity_status_cancelled');
         break;
       default:
         bgColor = Colors.grey.shade50;
         textColor = Colors.grey.shade700;
-        statusText = 'Khong ro';
     }
 
     return Container(
@@ -208,7 +201,7 @@ class ActivityOrderCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        statusText,
+        context.t(order.statusTextKey),
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
@@ -220,20 +213,16 @@ class ActivityOrderCard extends StatelessWidget {
 
   /// Dong sub-status hien thi trang thai chi tiet cua don dang xu ly.
   Widget _buildSubStatusRow(BuildContext context) {
-    String text;
     Color textColor;
 
     switch (order.status) {
       case 0:
-        text = context.t('activity_status_confirming');
         textColor = Colors.blue.shade700;
         break;
       case 1:
-        text = context.t('activity_status_preparing');
         textColor = Colors.blue.shade700;
         break;
       case 2:
-        text = context.t('activity_status_delivering');
         textColor = Colors.orange.shade700;
         break;
       default:
@@ -245,7 +234,7 @@ class ActivityOrderCard extends StatelessWidget {
         Icon(Icons.arrow_forward_ios, size: 10, color: textColor),
         const SizedBox(width: 4),
         Text(
-          text,
+          context.t(order.statusTextKey),
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
