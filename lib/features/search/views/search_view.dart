@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../../cart/views/cart_view.dart';
+import '../models/search_history_model.dart';
+import '../services/services.dart';
 import 'search_result_view.dart';
 
 /// Man hinh tim kiem chinh.
@@ -27,6 +29,9 @@ class _SearchViewState extends State<SearchView> {
   /// FocusNode de tu dong focus vao o tim kiem khi vao man hinh.
   final FocusNode _focusNode = FocusNode();
 
+  /// Service quan ly lich su tim kiem.
+  final SearchService _searchService = const SearchService();
+
   @override
   void initState() {
     super.initState();
@@ -44,11 +49,19 @@ class _SearchViewState extends State<SearchView> {
   }
 
   /// Xu ly khi nguoi dung nhan nut tim kiem.
-  void _onSearch() {
+  Future<void> _onSearch() async {
     final query = _searchController.text.trim();
     if (query.isEmpty) {
       return;
     }
+
+    // Luu tu khoa vao lich su truoc khi chuyen sang man hinh ket qua.
+    try {
+      await _searchService.addSearchKeyword(query);
+    } catch (e) {
+      debugPrint('SearchView: Loi khi luu lich su tim kiem - $e');
+    }
+
     _navigateToResult(query);
   }
 
@@ -95,7 +108,7 @@ class _SearchViewState extends State<SearchView> {
           ),
         ],
       ),
-      body: _buildRecentSearches(),
+      body: _buildSearchHistorySection(),
     );
   }
 
@@ -173,122 +186,251 @@ class _SearchViewState extends State<SearchView> {
     );
   }
 
-  /// Widget hien thi lich su tim kiem gan day.
-  Widget _buildRecentSearches() {
-    // TODO: Thay bang lich su tu local storage hoac API khi co.
-    final recentSearches = <String>[
-      'Tra sua',
-      'Gia rán',
-      'Cơm tấm',
-      'Bún bò',
-    ];
+  /// Widget hien thi phan lich su tim kiem (lang nghe tu Stream).
+  ///
+  /// Hien thi:
+  /// - Loading indicator khi dang tai.
+  /// - Empty state neu khong co lich su.
+  /// - Danh sach lich su voi tieu de va nut xoa tat ca.
+  Widget _buildSearchHistorySection() {
+    return StreamBuilder<List<SearchHistoryModel>>(
+      stream: _searchService.getSearchHistoryStream(),
+      builder: (context, snapshot) {
+        // Dang tai.
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Tieu de lich su tim kiem gan day.
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        // Co loi.
+        if (snapshot.hasError) {
+          debugPrint('SearchView: Loi Stream lich su - ${snapshot.error}');
+          return const SizedBox.shrink();
+        }
+
+        final histories = snapshot.data ?? [];
+
+        // Rong -> khong hien gi.
+        if (histories.isEmpty) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Hien thi tracuu rong.
+                _buildEmptyHistoryHint(),
+                const SizedBox(height: 24),
+                // Tieu de tim kiem pho bien.
+                _buildPopularSearchTitle(),
+                const SizedBox(height: 12),
+                _buildPopularSearchChips(),
+              ],
+            ),
+          );
+        }
+
+        // Co du lieu -> hien thi lich su + pho bien.
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                context.t('search_recent'),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  debugPrint('Xoa lich su tim kiem');
-                },
-                child: Text(
-                  context.t('search_clear_history'),
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
+              // Tieu de + nut xoa tat ca.
+              _buildHistoryHeader(histories.length),
+              const SizedBox(height: 12),
+              // Danh sach lich su.
+              _buildHistoryList(histories),
+              const SizedBox(height: 24),
+              // Tieu de tim kiem pho bien.
+              _buildPopularSearchTitle(),
+              const SizedBox(height: 12),
+              _buildPopularSearchChips(),
             ],
           ),
-          const SizedBox(height: 12),
-          // Danh sach lich su.
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: recentSearches.map((keyword) {
-              return _RecentSearchChip(
-                keyword: keyword,
-                onTap: () => _navigateToResult(keyword),
-              );
-            }).toList(),
+        );
+      },
+    );
+  }
+
+  /// Hien thi goi y khi chua co lich su.
+  Widget _buildEmptyHistoryHint() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Text(
+        'Chua co lich su tim kiem',
+        style: TextStyle(
+          fontSize: 14,
+          color: AppColors.textHint,
+          fontStyle: FontStyle.italic,
+        ),
+      ),
+    );
+  }
+
+  /// Tieu de lich su tim kiem voi nut xoa tat ca.
+  Widget _buildHistoryHeader(int itemCount) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Lich su tim kiem',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
           ),
-          const SizedBox(height: 24),
-          // Tieu de tim kiem pho bien.
-          Text(
-            context.t('search_popular'),
+        ),
+        TextButton(
+          onPressed: _onClearAllHistory,
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.zero,
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(
+            'Xoa tat ca',
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              fontSize: 13,
+              color: AppColors.error.withOpacity(0.7),
+              fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 12),
-          // Danh sach tim kiem pho bien.
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _PopularSearchChip(
-                keyword: 'Phở',
-                icon: Icons.local_fire_department,
-                onTap: () => _navigateToResult('Phở'),
-              ),
-              _PopularSearchChip(
-                keyword: 'Bánh mì',
-                icon: Icons.bakery_dining,
-                onTap: () => _navigateToResult('Bánh mì'),
-              ),
-              _PopularSearchChip(
-                keyword: 'Cà phê',
-                icon: Icons.coffee,
-                onTap: () => _navigateToResult('Cà phê'),
-              ),
-              _PopularSearchChip(
-                keyword: 'Gỏi',
-                icon: Icons.eco,
-                onTap: () => _navigateToResult('Gỏi'),
-              ),
-              _PopularSearchChip(
-                keyword: 'Lẩu',
-                icon: Icons.soup_kitchen,
-                onTap: () => _navigateToResult('Lẩu'),
-              ),
-              _PopularSearchChip(
-                keyword: 'Nước ép',
-                icon: Icons.local_bar,
-                onTap: () => _navigateToResult('Nước ép'),
-              ),
-            ],
+        ),
+      ],
+    );
+  }
+
+  /// Danh sach lich su tim kiem.
+  Widget _buildHistoryList(List<SearchHistoryModel> histories) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: histories.map((item) {
+        return _HistorySearchChip(
+          keyword: item.keyword,
+          onTap: () => _onHistoryItemTap(item.keyword),
+          onDelete: () => _onDeleteHistoryItem(item.id),
+        );
+      }).toList(),
+    );
+  }
+
+  /// Xu ly khi bam vao item lich su.
+  void _onHistoryItemTap(String keyword) {
+    // Dien tu khoa vao thanh tim kiem.
+    _searchController.text = keyword;
+    _searchController.selection = TextSelection.fromPosition(
+      TextPosition(offset: keyword.length),
+    );
+
+    // Tu dong kich hoat tim kiem.
+    _onSearch();
+  }
+
+  /// Xu ly xoa 1 item lich su.
+  void _onDeleteHistoryItem(String id) {
+    _searchService.deleteSearchHistory(id).catchError((e) {
+      debugPrint('SearchView: Loi xoa item lich su - $e');
+    });
+  }
+
+  /// Xu ly xoa tat ca lich su.
+  Future<void> _onClearAllHistory() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xac nhan xoa'),
+        content: const Text('Ban co chac chan muon xoa tat ca lich su tim kiem?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Huy'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Xoa'),
           ),
         ],
       ),
     );
+
+    if (confirmed == true) {
+      try {
+        await _searchService.clearAllHistory();
+      } catch (e) {
+        debugPrint('SearchView: Loi xoa tat ca lich su - $e');
+      }
+    }
+  }
+
+  /// Tieu de tim kiem pho bien.
+  Widget _buildPopularSearchTitle() {
+    return Text(
+      context.t('search_popular'),
+      style: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+      ),
+    );
+  }
+
+  /// Cac chip tim kiem pho bien.
+  Widget _buildPopularSearchChips() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        _PopularSearchChip(
+          keyword: 'Phở',
+          icon: Icons.local_fire_department,
+          onTap: () => _navigateToResult('Phở'),
+        ),
+        _PopularSearchChip(
+          keyword: 'Bánh mì',
+          icon: Icons.bakery_dining,
+          onTap: () => _navigateToResult('Bánh mì'),
+        ),
+        _PopularSearchChip(
+          keyword: 'Cà phê',
+          icon: Icons.coffee,
+          onTap: () => _navigateToResult('Cà phê'),
+        ),
+        _PopularSearchChip(
+          keyword: 'Gỏi',
+          icon: Icons.eco,
+          onTap: () => _navigateToResult('Gỏi'),
+        ),
+        _PopularSearchChip(
+          keyword: 'Lẩu',
+          icon: Icons.soup_kitchen,
+          onTap: () => _navigateToResult('Lẩu'),
+        ),
+        _PopularSearchChip(
+          keyword: 'Nước ép',
+          icon: Icons.local_bar,
+          onTap: () => _navigateToResult('Nước ép'),
+        ),
+      ],
+    );
   }
 }
 
-/// Chip lich su tim kiem gan day.
-class _RecentSearchChip extends StatelessWidget {
+/// Chip lich su tim kiem voi icon history va nut xoa.
+class _HistorySearchChip extends StatelessWidget {
   final String keyword;
   final VoidCallback? onTap;
+  final VoidCallback? onDelete;
 
-  const _RecentSearchChip({
+  const _HistorySearchChip({
     required this.keyword,
     this.onTap,
+    this.onDelete,
   });
 
   @override
@@ -296,7 +438,7 @@ class _RecentSearchChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.only(left: 14, right: 6, top: 8, bottom: 8),
         decoration: BoxDecoration(
           color: AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(20),
@@ -317,6 +459,19 @@ class _RecentSearchChip extends StatelessWidget {
                 fontSize: 13,
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(width: 2),
+            // Nut xoa item.
+            GestureDetector(
+              onTap: onDelete,
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Icon(
+                  Icons.close,
+                  size: 16,
+                  color: AppColors.textHint,
+                ),
               ),
             ),
           ],

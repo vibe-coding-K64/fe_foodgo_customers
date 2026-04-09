@@ -1,53 +1,66 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+/// Model lich su tim kiem cua khach hang, dong bo tu Firebase Firestore.
+///
+/// Cac truong cua Firestore:
+/// - id        : ID document tu Firestore
+/// - keyword    : Tu khoa tim kiem
+/// - createdAt : Thoi gian tao/tao lai lich su
 class SearchHistoryModel {
   final String id;
-  final String userId;
   final String keyword;
   final DateTime createdAt;
-  final DateTime? deletedAt;
 
   SearchHistoryModel({
     required this.id,
-    required this.userId,
     required this.keyword,
     required this.createdAt,
-    this.deletedAt,
   });
 
-  factory SearchHistoryModel.fromJson(Map<String, dynamic> json) {
+  /// Tao SearchHistoryModel tu DocumentSnapshot cua Firestore.
+  ///
+  /// Xu ly ep kieu an toan cho createdAt:
+  /// - Neu la Timestamp thi chuyen sang DateTime.
+  /// - Neu la String thi parse tu ISO8601.
+  /// - Neu khong co hoac null thi lay thoi gian hien tai.
+  factory SearchHistoryModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+
+    DateTime parsedCreatedAt;
+    final createdAtField = data['createdAt'];
+
+    if (createdAtField is Timestamp) {
+      parsedCreatedAt = createdAtField.toDate();
+    } else if (createdAtField is String) {
+      parsedCreatedAt = DateTime.tryParse(createdAtField) ?? DateTime.now();
+    } else {
+      parsedCreatedAt = DateTime.now();
+    }
+
     return SearchHistoryModel(
-      id: json['id'] as String,
-      userId: json['userId'] as String,
-      keyword: json['keyword'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      deletedAt: json['deletedAt'] != null
-          ? DateTime.parse(json['deletedAt'] as String)
-          : null,
+      id: doc.id,
+      keyword: (data['keyword'] as String?) ?? '',
+      createdAt: parsedCreatedAt,
     );
   }
 
-  Map<String, dynamic> toJson() {
+  /// Chuyen SearchHistoryModel thanh Map de ghi xuong Firestore.
+  Map<String, dynamic> toMap() {
     return {
-      'id': id,
-      'userId': userId,
       'keyword': keyword,
-      'createdAt': createdAt.toIso8601String(),
-      'deletedAt': deletedAt?.toIso8601String(),
+      'createdAt': createdAt,
     };
   }
 
   SearchHistoryModel copyWith({
     String? id,
-    String? userId,
     String? keyword,
     DateTime? createdAt,
-    DateTime? deletedAt,
   }) {
     return SearchHistoryModel(
       id: id ?? this.id,
-      userId: userId ?? this.userId,
       keyword: keyword ?? this.keyword,
       createdAt: createdAt ?? this.createdAt,
-      deletedAt: deletedAt ?? this.deletedAt,
     );
   }
 }
