@@ -100,4 +100,28 @@ class AddressService {
       rethrow;
     }
   }
+
+  /// Lay luong dia chi mac dinh tu Firebase.
+
+  /// Tra ve document dau tien co isDefault = true, neu khong co tra ve null.
+  Stream<AddressModel?> getDefaultAddressStream() {
+    try {
+      return _addressCollection()
+          .where('isDefault', isEqualTo: true)
+          .limit(1)
+          .snapshots()
+          .map((snapshot) {
+        if (snapshot.docs.isEmpty) {
+          debugPrint('AddressService: Khong co dia chi mac dinh');
+          return null;
+        }
+        final address = AddressModel.fromFirestore(snapshot.docs.first);
+        debugPrint('AddressService: Tai dia chi mac dinh [${address.id}] - ${address.addressText}');
+        return address;
+      });
+    } catch (e) {
+      debugPrint('AddressService: Loi lay dia chi mac dinh - $e');
+      return Stream.value(null);
+    }
+  }
 }

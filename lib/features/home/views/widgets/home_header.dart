@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/localization/language_service.dart';
+import '../../../../features/address/services/address_service.dart';
+import '../../../../features/address/models/address_model.dart';
 
 /// Widget hien thi banner dia chi o dau trang.
 class HomeHeader extends StatelessWidget {
@@ -36,26 +38,42 @@ class HomeHeader extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.t('home_deliver_to'),
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
+            child: StreamBuilder<AddressModel?>(
+              stream: const AddressService().getDefaultAddressStream(),
+              builder: (context, snapshot) {
+                String diaChiHienThi;
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  diaChiHienThi = 'Dang tai dia chi...';
+                } else if (snapshot.hasData && snapshot.data != null) {
+                  diaChiHienThi = snapshot.data!.addressText;
+                } else {
+                  diaChiHienThi = 'Chua thiet lap dia chi';
+                }
+                return GestureDetector(
+                  onTap: onEditAddress,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        context.t('home_deliver_to'),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        diaChiHienThi,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  context.t('home_default_address'),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+                );
+              },
             ),
           ),
           IconButton(

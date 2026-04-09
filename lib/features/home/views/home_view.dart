@@ -6,6 +6,7 @@ import '../../search/views/search_result_view.dart';
 import '../../product/views/product_detail_bottom_sheet.dart';
 import '../../cart/views/cart_view.dart';
 import '../../restaurant/views/restaurant_detail_view.dart';
+import '../../address/views/address_management_view.dart';
 import '../services/home_service.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_search_bar.dart';
@@ -27,7 +28,17 @@ class HomeView extends StatelessWidget {
             slivers: [
               // 1. Header banner dia chi.
               SliverToBoxAdapter(
-                child: HomeHeader(onEditAddress: () {}),
+                child: HomeHeader(
+                  onEditAddress: () {
+                    debugPrint('HomeView: Nguoi dung bam nut chinh sua dia chi');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AddressManagementView(),
+                      ),
+                    );
+                  },
+                ),
               ),
               // 2. Thanh tim kiem.
               SliverToBoxAdapter(
