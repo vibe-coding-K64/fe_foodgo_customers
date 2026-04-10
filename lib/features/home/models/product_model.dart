@@ -14,6 +14,14 @@ class ProductModel {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  // Them thong tin cua hang de hien thi tren card san pham.
+  final double? lat;
+  final double? lng;
+  final double? distance;
+  final double? rating;
+  final int? reviewCount;
+  final String? deliveryTime;
+
   ProductModel({
     required this.id,
     required this.storeId,
@@ -27,31 +35,46 @@ class ProductModel {
     required this.isFeatured,
     required this.createdAt,
     required this.updatedAt,
+    this.lat,
+    this.lng,
+    this.distance,
+    this.rating,
+    this.reviewCount,
+    this.deliveryTime,
   });
 
+  /// Parse tu JSON cua my-json-server (db.json).
+  /// Cac truong thieu se duoc gan gia tri mac dinh.
   factory ProductModel.fromJson(Map<String, dynamic> json) {
-    DateTime parseDate(String? value) {
-      if (value == null || value.isEmpty) return DateTime.now();
-      return DateTime.tryParse(value) ?? DateTime.now();
-    }
-
     return ProductModel(
-      id: json['id'] as String? ?? '',
-      storeId: json['storeId'] as String? ?? '',
-      categoryId: json['categoryId'] as String? ?? '',
-      categoryName: json['categoryName'] as String? ?? '',
+      id: json['id']?.toString() ?? '',
+      storeId: json['storeId']?.toString() ?? '',
+      categoryId: '',
+      categoryName: '',
       name: json['name'] as String? ?? '',
-      description: json['description'] as String? ?? '',
-      basePrice: (json['basePrice'] as num?)?.toDouble() ?? (json['price'] as num?)?.toDouble() ?? 0.0,
+      description: '',
+      basePrice: (json['basePrice'] as num?)?.toDouble() ??
+          (json['price'] as num?)?.toDouble() ??
+          0.0,
       imageUrl: json['imageUrl'] as String? ?? json['image_url'] as String? ?? '',
-      isOutOfStock: json['isOutOfStock'] as bool? ?? json['is_out_of_stock'] as bool? ?? false,
-      isFeatured: json['isFeatured'] as bool? ?? json['is_featured'] as bool? ?? false,
-      createdAt: parseDate(json['createdAt'] as String?),
-      updatedAt: parseDate(json['updatedAt'] as String?),
+      isOutOfStock: json['isOutOfStock'] as bool? ??
+          json['is_out_of_stock'] as bool? ??
+          false,
+      isFeatured: json['isFeatured'] as bool? ??
+          json['is_featured'] as bool? ??
+          false,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      // Thong tin cua hang (tu API featured_products).
+      lat: (json['lat'] as num?)?.toDouble(),
+      lng: (json['lng'] as num?)?.toDouble(),
+      distance: (json['distance'] as num?)?.toDouble(),
+      rating: (json['rating'] as num?)?.toDouble(),
+      reviewCount: json['reviewCount'] as int?,
+      deliveryTime: json['deliveryTime'] as String?,
     );
   }
 
-  // Tao doi tuong tu Firestore DocumentSnapshot.
   factory ProductModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>?;
     if (data == null) {
@@ -103,6 +126,12 @@ class ProductModel {
     bool? isFeatured,
     DateTime? createdAt,
     DateTime? updatedAt,
+    double? lat,
+    double? lng,
+    double? distance,
+    double? rating,
+    int? reviewCount,
+    String? deliveryTime,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -117,6 +146,12 @@ class ProductModel {
       isFeatured: isFeatured ?? this.isFeatured,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      lat: lat ?? this.lat,
+      lng: lng ?? this.lng,
+      distance: distance ?? this.distance,
+      rating: rating ?? this.rating,
+      reviewCount: reviewCount ?? this.reviewCount,
+      deliveryTime: deliveryTime ?? this.deliveryTime,
     );
   }
 }

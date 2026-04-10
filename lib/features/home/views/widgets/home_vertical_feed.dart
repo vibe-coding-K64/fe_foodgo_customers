@@ -362,15 +362,42 @@ class _VerticalProductItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    product.categoryName,
+                    product.categoryName.isNotEmpty
+                        ? product.categoryName
+                        : 'Mon noi bat',
                     style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    product.description,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  // Hien thi khoang cach + danh gia + thoi gian giao.
+                  Row(
+                    children: [
+                      if (product.rating != null) ...[
+                        Icon(Icons.star, size: 12, color: Colors.amber),
+                        const SizedBox(width: 2),
+                        Text(
+                          product.rating!.toStringAsFixed(1),
+                          style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                        ),
+                        const SizedBox(width: 4),
+                      ],
+                      if (product.distance != null) ...[
+                        Icon(Icons.location_on, size: 12, color: AppColors.primary),
+                        const SizedBox(width: 2),
+                        Text(
+                          '${product.distance!.toStringAsFixed(1)} ${context.t('unit_km')}',
+                          style: TextStyle(fontSize: 12, color: AppColors.primary),
+                        ),
+                        const SizedBox(width: 4),
+                      ],
+                      if (product.deliveryTime != null) ...[
+                        Icon(Icons.access_time, size: 12, color: Colors.grey[600]),
+                        const SizedBox(width: 2),
+                        Text(
+                          product.deliveryTime!,
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 8),
                   Text(

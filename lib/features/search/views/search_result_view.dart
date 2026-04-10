@@ -394,6 +394,20 @@ class _StoreResultCard extends StatelessWidget {
                             color: AppColors.textSecondary,
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.location_on,
+                          size: 14,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          '${store.distance.toStringAsFixed(1)} ${context.t('unit_km')}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.primary,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4),

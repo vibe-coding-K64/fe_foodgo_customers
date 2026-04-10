@@ -381,7 +381,7 @@ class _FeaturedProductsSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         SizedBox(
-          height: 220,
+          height: 240,
           child: FutureBuilder<List<ProductModel>>(
             future: future,
             builder: (context, snapshot) {
@@ -641,6 +641,24 @@ class _StoreCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.location_on, size: 12, color: AppColors.primary),
+                      const SizedBox(width: 2),
+                      Text(
+                        '${store.distance.toStringAsFixed(1)} ${context.t('unit_km')}',
+                        style: TextStyle(fontSize: 11, color: AppColors.primary),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(Icons.access_time, size: 12, color: Colors.grey[600]),
+                      const SizedBox(width: 2),
+                      Text(
+                        store.deliveryTime,
+                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
                   Text(
                     store.address,
                     style: TextStyle(fontSize: 11, color: Colors.grey[600]),
@@ -745,6 +763,42 @@ class _ProductCard extends StatelessWidget {
                       fontSize: 13,
                     ),
                   ),
+                  const SizedBox(height: 4),
+                  // Hien thi khoang cach + danh gia + thoi gian giao.
+                  Row(
+                    children: [
+                      if (product.rating != null) ...[
+                        Icon(Icons.star, size: 12, color: Colors.amber),
+                        const SizedBox(width: 2),
+                        Text(
+                          product.rating!.toStringAsFixed(1),
+                          style: TextStyle(fontSize: 11, color: Colors.grey[700]),
+                        ),
+                        const SizedBox(width: 4),
+                      ],
+                      if (product.distance != null) ...[
+                        Icon(Icons.location_on, size: 12, color: AppColors.primary),
+                        const SizedBox(width: 2),
+                        Text(
+                          '${product.distance!.toStringAsFixed(1)} ${context.t('unit_km')}',
+                          style: TextStyle(fontSize: 11, color: AppColors.primary),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (product.deliveryTime != null) ...[
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Icon(Icons.access_time, size: 12, color: Colors.grey[600]),
+                        const SizedBox(width: 2),
+                        Text(
+                          product.deliveryTime!,
+                          style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -853,6 +907,13 @@ class _VerticalStoreItem extends StatelessWidget {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(Icons.location_on, size: 14, color: AppColors.primary),
+                      const SizedBox(width: 2),
+                      Text(
+                        '${store.distance.toStringAsFixed(1)} ${context.t('unit_km')}',
+                        style: TextStyle(fontSize: 12, color: AppColors.primary),
                       ),
                       const SizedBox(width: 8),
                       Text(

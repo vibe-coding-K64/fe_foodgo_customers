@@ -62,6 +62,7 @@ class RestaurantService {
       isOpen: true,
       deliveryTime: '20 - 30 phut',
       deliveryFee: 15000,
+      distance: 2.5,
       createdAt: DateTime.now().subtract(const Duration(days: 365)),
       updatedAt: DateTime.now(),
     );
