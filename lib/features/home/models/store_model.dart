@@ -30,19 +30,24 @@ class StoreModel {
   });
 
   factory StoreModel.fromJson(Map<String, dynamic> json) {
+    DateTime parseDate(String? value) {
+      if (value == null || value.isEmpty) return DateTime.now();
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+
     return StoreModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      address: json['address'] as String,
-      rating: (json['rating'] as num).toDouble(),
-      reviewCount: json['reviewCount'] as int,
-      avtUrl: json['avtUrl'] as String,
-      backUrl: json['backUrl'] as String,
-      isOpen: json['isOpen'] as bool,
-      deliveryTime: json['deliveryTime'] as String,
-      deliveryFee: (json['deliveryFee'] as num).toDouble(),
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      address: json['address'] as String? ?? '',
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      reviewCount: json['reviewCount'] as int? ?? 0,
+      avtUrl: json['avtUrl'] as String? ?? json['avatarUrl'] as String? ?? '',
+      backUrl: json['backUrl'] as String? ?? json['backgroundUrl'] as String? ?? '',
+      isOpen: json['isOpen'] as bool? ?? json['is_open'] as bool? ?? true,
+      deliveryTime: json['deliveryTime'] as String? ?? json['delivery_time'] as String? ?? '15-25 phut',
+      deliveryFee: (json['deliveryFee'] as num?)?.toDouble() ?? (json['delivery_fee'] as num?)?.toDouble() ?? 0.0,
+      createdAt: parseDate(json['createdAt'] as String?),
+      updatedAt: parseDate(json['updatedAt'] as String?),
     );
   }
 

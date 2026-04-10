@@ -30,19 +30,24 @@ class ProductModel {
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
+    DateTime parseDate(String? value) {
+      if (value == null || value.isEmpty) return DateTime.now();
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+
     return ProductModel(
-      id: json['id'] as String,
-      storeId: json['storeId'] as String,
-      categoryId: json['categoryId'] as String,
-      categoryName: json['categoryName'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String,
-      basePrice: (json['basePrice'] as num).toDouble(),
-      imageUrl: json['imageUrl'] as String,
-      isOutOfStock: json['isOutOfStock'] as bool,
-      isFeatured: json['isFeatured'] as bool? ?? false,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      id: json['id'] as String? ?? '',
+      storeId: json['storeId'] as String? ?? '',
+      categoryId: json['categoryId'] as String? ?? '',
+      categoryName: json['categoryName'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      basePrice: (json['basePrice'] as num?)?.toDouble() ?? (json['price'] as num?)?.toDouble() ?? 0.0,
+      imageUrl: json['imageUrl'] as String? ?? json['image_url'] as String? ?? '',
+      isOutOfStock: json['isOutOfStock'] as bool? ?? json['is_out_of_stock'] as bool? ?? false,
+      isFeatured: json['isFeatured'] as bool? ?? json['is_featured'] as bool? ?? false,
+      createdAt: parseDate(json['createdAt'] as String?),
+      updatedAt: parseDate(json['updatedAt'] as String?),
     );
   }
 
