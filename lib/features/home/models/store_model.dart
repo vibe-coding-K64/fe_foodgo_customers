@@ -11,6 +11,7 @@ class StoreModel {
   final bool isOpen;
   final String deliveryTime;
   final double deliveryFee;
+  final double distance;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -25,29 +26,28 @@ class StoreModel {
     required this.isOpen,
     required this.deliveryTime,
     required this.deliveryFee,
+    required this.distance,
     required this.createdAt,
     required this.updatedAt,
   });
 
+  /// Parse tu JSON cua my-json-server (db.json).
+  /// Cac truong thieu se duoc gan gia tri mac dinh.
   factory StoreModel.fromJson(Map<String, dynamic> json) {
-    DateTime parseDate(String? value) {
-      if (value == null || value.isEmpty) return DateTime.now();
-      return DateTime.tryParse(value) ?? DateTime.now();
-    }
-
     return StoreModel(
-      id: json['id'] as String? ?? '',
+      id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? '',
       address: json['address'] as String? ?? '',
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       reviewCount: json['reviewCount'] as int? ?? 0,
-      avtUrl: json['avtUrl'] as String? ?? json['avatarUrl'] as String? ?? '',
-      backUrl: json['backUrl'] as String? ?? json['backgroundUrl'] as String? ?? '',
-      isOpen: json['isOpen'] as bool? ?? json['is_open'] as bool? ?? true,
-      deliveryTime: json['deliveryTime'] as String? ?? json['delivery_time'] as String? ?? '15-25 phut',
-      deliveryFee: (json['deliveryFee'] as num?)?.toDouble() ?? (json['delivery_fee'] as num?)?.toDouble() ?? 0.0,
-      createdAt: parseDate(json['createdAt'] as String?),
-      updatedAt: parseDate(json['updatedAt'] as String?),
+      avtUrl: json['avtUrl'] as String? ?? '',
+      backUrl: json['backUrl'] as String? ?? '',
+      isOpen: json['isOpen'] as bool? ?? true,
+      deliveryTime: json['deliveryTime'] as String? ?? '15-25 phut',
+      deliveryFee: (json['deliveryFee'] as num?)?.toDouble() ?? 0.0,
+      distance: (json['distance'] as num?)?.toDouble() ?? 0.0,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
   }
 
@@ -67,6 +67,7 @@ class StoreModel {
       isOpen: data['isOpen'] as bool? ?? false,
       deliveryTime: data['deliveryTime'] as String? ?? '',
       deliveryFee: (data['deliveryFee'] as num?)?.toDouble() ?? 0.0,
+      distance: (data['distance'] as num?)?.toDouble() ?? 0.0,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -84,6 +85,7 @@ class StoreModel {
       'isOpen': isOpen,
       'deliveryTime': deliveryTime,
       'deliveryFee': deliveryFee,
+      'distance': distance,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -100,6 +102,7 @@ class StoreModel {
     bool? isOpen,
     String? deliveryTime,
     double? deliveryFee,
+    double? distance,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -114,6 +117,7 @@ class StoreModel {
       isOpen: isOpen ?? this.isOpen,
       deliveryTime: deliveryTime ?? this.deliveryTime,
       deliveryFee: deliveryFee ?? this.deliveryFee,
+      distance: distance ?? this.distance,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
