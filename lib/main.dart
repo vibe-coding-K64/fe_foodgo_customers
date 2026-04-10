@@ -14,9 +14,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Khoi tao Firebase.
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Khoi tao AuthStorage de doc trang thai dang nhap.
   await AuthStorage.init();
@@ -45,10 +43,7 @@ void main() async {
 class FoodGoApp extends StatelessWidget {
   final LocaleProvider provider;
 
-  const FoodGoApp({
-    super.key,
-    required this.provider,
-  });
+  const FoodGoApp({super.key, required this.provider});
 
   @override
   Widget build(BuildContext context) {
@@ -58,10 +53,7 @@ class FoodGoApp extends StatelessWidget {
         return MaterialApp(
           title: 'FoodGo',
           locale: provider.locale,
-          supportedLocales: const [
-            Locale('vi', 'VN'),
-            Locale('en', 'US'),
-          ],
+          supportedLocales: const [Locale('vi', 'VN'), Locale('en', 'US')],
           localizationsDelegates: const [
             LanguageService.localizationsDelegate,
             GlobalMaterialLocalizations.delegate,
@@ -70,9 +62,7 @@ class FoodGoApp extends StatelessWidget {
           ],
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,
-          home: AuthStorage.isLoggedIn()
-              ? const MainView()
-              : const LoginView(),
+          home: AuthStorage.isLoggedIn() ? const MainView() : const LoginView(),
         );
       },
     );

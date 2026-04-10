@@ -116,7 +116,7 @@ class _LoginViewState extends State<LoginView> {
 
   /// Xu ly bam nut Dang nhap Google.
   void _onGoogleLoginPressed() {
-      debugPrint('LoginView: Nguoi dung bam Dang nhap Google');
+    debugPrint('LoginView: Nguoi dung bam Dang nhap Google');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(context.t('auth_login_google')),
@@ -129,7 +129,7 @@ class _LoginViewState extends State<LoginView> {
 
   /// Xu ly bam nut Dang nhap Facebook.
   void _onFacebookLoginPressed() {
-      debugPrint('LoginView: Nguoi dung bam Dang nhap Facebook');
+    debugPrint('LoginView: Nguoi dung bam Dang nhap Facebook');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(context.t('auth_login_facebook')),
@@ -145,9 +145,7 @@ class _LoginViewState extends State<LoginView> {
     debugPrint('LoginView: Chuyen sang man hinh Dang ky');
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const RegisterView(),
-      ),
+      MaterialPageRoute(builder: (context) => const RegisterView()),
     );
   }
 
@@ -214,9 +212,7 @@ class _LoginViewState extends State<LoginView> {
               Container(
                 color: Colors.black.withOpacity(0.3),
                 child: const Center(
-                  child: CircularProgressIndicator(
-                    color: AppColors.primary,
-                  ),
+                  child: CircularProgressIndicator(color: AppColors.primary),
                 ),
               ),
           ],
@@ -257,10 +253,7 @@ class _LoginViewState extends State<LoginView> {
         const SizedBox(height: 8),
         Text(
           context.t('auth_login_subtitle'),
-          style: const TextStyle(
-            fontSize: 15,
-            color: AppColors.textSecondary,
-          ),
+          style: const TextStyle(fontSize: 15, color: AppColors.textSecondary),
           textAlign: TextAlign.center,
         ),
       ],
@@ -286,7 +279,10 @@ class _LoginViewState extends State<LoginView> {
         ),
         filled: true,
         fillColor: AppColors.surface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.border),
@@ -340,17 +336,24 @@ class _LoginViewState extends State<LoginView> {
             setState(() {
               _obscurePassword = !_obscurePassword;
             });
-            debugPrint('LoginView: ${_obscurePassword ? "An" : "Hien"} mat khau');
+            debugPrint(
+              'LoginView: ${_obscurePassword ? "An" : "Hien"} mat khau',
+            );
           },
           icon: Icon(
-            _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+            _obscurePassword
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
             color: AppColors.textSecondary,
             size: 22,
           ),
         ),
         filled: true,
         fillColor: AppColors.surface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.border),
@@ -400,10 +403,7 @@ class _LoginViewState extends State<LoginView> {
         ),
         child: Text(
           context.t('auth_login_btn'),
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -447,10 +447,7 @@ class _LoginViewState extends State<LoginView> {
             icon: const Icon(Icons.g_mobiledata, size: 24),
             label: Text(
               context.t('auth_google_label'),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
             ),
           ),
         ),
@@ -469,10 +466,7 @@ class _LoginViewState extends State<LoginView> {
             icon: const Icon(Icons.facebook, size: 22, color: Colors.blue),
             label: Text(
               context.t('auth_facebook_label'),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
             ),
           ),
         ),
@@ -487,10 +481,7 @@ class _LoginViewState extends State<LoginView> {
       children: [
         Text(
           context.t('auth_dont_have_account'),
-          style: const TextStyle(
-            fontSize: 14,
-            color: AppColors.textSecondary,
-          ),
+          style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
         ),
         const SizedBox(width: 4),
         GestureDetector(
