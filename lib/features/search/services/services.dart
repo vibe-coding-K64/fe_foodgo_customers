@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../../../core/utils/auth_storage.dart';
+import '../../../core/network/api_client.dart';
 import '../models/search_history_model.dart';
 
 /// Service quan ly lich su tim kiem, tuong tac voi Firebase Firestore.
@@ -29,7 +30,6 @@ class SearchService {
   }
 
   /// Stream lang nghe danh sach lich su tim kiem cua nguoi dung hien tai.
-  ///
   /// Sap xep: theo thoi gian tao moi nhat, gioi han 10 ket qua.
   Stream<List<SearchHistoryModel>> getSearchHistoryStream() {
     try {
@@ -38,16 +38,18 @@ class SearchService {
           .limit(10)
           .snapshots()
           .map((snapshot) {
-        if (snapshot.docs.isEmpty) {
-          debugPrint('SearchService: Khong co lich su tim kiem nao');
-          return <SearchHistoryModel>[];
-        }
-        final histories = snapshot.docs
-            .map((doc) => SearchHistoryModel.fromFirestore(doc))
-            .toList();
-        debugPrint('SearchService: Tai ${histories.length} lich su tim kiem');
-        return histories;
-      });
+            if (snapshot.docs.isEmpty) {
+              debugPrint('SearchService: Khong co lich su tim kiem nao');
+              return <SearchHistoryModel>[];
+            }
+            final histories = snapshot.docs
+                .map((doc) => SearchHistoryModel.fromFirestore(doc))
+                .toList();
+            debugPrint(
+              'SearchService: Tai ${histories.length} lich su tim kiem',
+            );
+            return histories;
+          });
     } catch (e) {
       debugPrint('SearchService: Loi lay danh sach lich su - $e');
       return Stream.value([]);
@@ -83,7 +85,8 @@ class SearchService {
           'createdAt': FieldValue.serverTimestamp(),
         });
         debugPrint(
-            'SearchService: Cap nhat thoi gian cho tu khoa [$trimmedKeyword]');
+          'SearchService: Cap nhat thoi gian cho tu khoa [$trimmedKeyword]',
+        );
       } else {
         // Chua ton tai -> them moi.
         await collection.add({
@@ -131,9 +134,37 @@ class SearchService {
 
       await batch.commit();
       debugPrint(
-          'SearchService: Xoa ${snapshot.docs.length} lich su thanh cong');
+        'SearchService: Xoa ${snapshot.docs.length} lich su thanh cong',
+      );
     } catch (e) {
       debugPrint('SearchService: Loi xoa tat ca lich su - $e');
+      rethrow;
+    }
+  }
+}
+
+/// Service goi API lay du lieu tim kiem (tu my-json-server).
+class ApiSearchService {
+  const ApiSearchService();
+
+  /// Lay danh sach tu khoa tim kiem pho bien.
+  ///
+  /// Endpoint: GET /popular_keywords
+  /// API tra ve truc tiep List. Khong co truong data bao ngoai.
+  Future<List<String>> getPopularKeywords() async {
+    try {
+      final response =
+          await ApiClient.get<List<dynamic>>('/popular_keywords');
+
+      // API tra ve truc tiep Array<String>.
+      final List<dynamic> rawData = response.data ?? [];
+
+      debugPrint(
+          'ApiSearchService: Da nhan ${rawData.length} tu khoa pho bien');
+
+      return rawData.cast<String>();
+    } catch (e) {
+      debugPrint('ApiSearchService: Loi getPopularKeywords - $e');
       rethrow;
     }
   }

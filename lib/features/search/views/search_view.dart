@@ -23,19 +23,17 @@ class SearchView extends StatefulWidget {
 }
 
 class _SearchViewState extends State<SearchView> {
-  /// Controller cho o tim kiem.
   final TextEditingController _searchController = TextEditingController();
-
-  /// FocusNode de tu dong focus vao o tim kiem khi vao man hinh.
   final FocusNode _focusNode = FocusNode();
-
-  /// Service quan ly lich su tim kiem.
   final SearchService _searchService = const SearchService();
+  final ApiSearchService _apiSearchService = const ApiSearchService();
+
+  late final Future<List<String>> _popularKeywordsFuture;
 
   @override
   void initState() {
     super.initState();
-    // Tu dong focus sau khi widget duoc build.
+    _popularKeywordsFuture = _apiSearchService.getPopularKeywords();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
@@ -48,14 +46,12 @@ class _SearchViewState extends State<SearchView> {
     super.dispose();
   }
 
-  /// Xu ly khi nguoi dung nhan nut tim kiem.
   Future<void> _onSearch() async {
     final query = _searchController.text.trim();
     if (query.isEmpty) {
       return;
     }
 
-    // Luu tu khoa vao lich su truoc khi chuyen sang man hinh ket qua.
     try {
       await _searchService.addSearchKeyword(query);
     } catch (e) {
@@ -65,15 +61,11 @@ class _SearchViewState extends State<SearchView> {
     _navigateToResult(query);
   }
 
-  /// Chuyen sang man hinh ket qua tim kiem.
   void _navigateToResult(String query) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => SearchResultView(query: query),
-      ),
+      MaterialPageRoute(builder: (context) => SearchResultView(query: query)),
     ).then((_) {
-      // Khi quay lai, clear thanh tim kiem.
       _searchController.clear();
       _focusNode.requestFocus();
     });
@@ -100,9 +92,7 @@ class _SearchViewState extends State<SearchView> {
               debugPrint('SearchView: Nguoi dung bam icon gio hang');
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const CartView(),
-                ),
+                MaterialPageRoute(builder: (context) => const CartView()),
               );
             },
           ),
@@ -112,7 +102,6 @@ class _SearchViewState extends State<SearchView> {
     );
   }
 
-  /// Thanh tim kiem trong AppBar.
   Widget _buildSearchField() {
     return Container(
       height: 40,
@@ -131,23 +120,16 @@ class _SearchViewState extends State<SearchView> {
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
                 hintText: context.t('search_hint'),
-                hintStyle: TextStyle(
-                  color: AppColors.textHint,
-                  fontSize: 15,
-                ),
+                hintStyle: TextStyle(color: AppColors.textHint, fontSize: 15),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 isDense: true,
               ),
-              style: TextStyle(
-                fontSize: 15,
-                color: AppColors.textPrimary,
-              ),
+              style: TextStyle(fontSize: 15, color: AppColors.textPrimary),
             ),
           ),
-          // Nut xoa text (hien thi khi co noi dung).
           ValueListenableBuilder<TextEditingValue>(
             valueListenable: _searchController,
             builder: (context, value, child) {
@@ -155,11 +137,7 @@ class _SearchViewState extends State<SearchView> {
                 return const SizedBox.shrink();
               }
               return IconButton(
-                icon: Icon(
-                  Icons.close,
-                  color: AppColors.textHint,
-                  size: 18,
-                ),
+                icon: Icon(Icons.close, color: AppColors.textHint, size: 18),
                 onPressed: () {
                   _searchController.clear();
                   _focusNode.requestFocus();
@@ -169,16 +147,11 @@ class _SearchViewState extends State<SearchView> {
               );
             },
           ),
-          // Nut tim kiem.
           GestureDetector(
             onTap: _onSearch,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Icon(
-                Icons.search,
-                color: AppColors.primary,
-                size: 22,
-              ),
+              child: Icon(Icons.search, color: AppColors.primary, size: 22),
             ),
           ),
         ],
@@ -186,12 +159,6 @@ class _SearchViewState extends State<SearchView> {
     );
   }
 
-  /// Widget hien thi phan lich su tim kiem (lang nghe tu Stream).
-  ///
-  /// Hien thi:
-  /// - Loading indicator khi dang tai.
-  /// - Empty state neu khong co lich su.
-  /// - Danh sach lich su voi tieu de va nut xoa tat ca.
   Widget _buildSearchHistorySection() {
     return StreamBuilder<List<SearchHistoryModel>>(
       stream: _searchService.getSearchHistoryStream(),
@@ -214,20 +181,18 @@ class _SearchViewState extends State<SearchView> {
 
         final histories = snapshot.data ?? [];
 
-        // Rong -> khong hien gi.
+        // Rong -> hien thi popular keywords tu API.
         if (histories.isEmpty) {
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Hien thi tracuu rong.
                 _buildEmptyHistoryHint(),
                 const SizedBox(height: 24),
-                // Tieu de tim kiem pho bien.
                 _buildPopularSearchTitle(),
                 const SizedBox(height: 12),
-                _buildPopularSearchChips(),
+                _buildPopularSearchChipsFromApi(),
               ],
             ),
           );
@@ -239,16 +204,13 @@ class _SearchViewState extends State<SearchView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Tieu de + nut xoa tat ca.
               _buildHistoryHeader(histories.length),
               const SizedBox(height: 12),
-              // Danh sach lich su.
               _buildHistoryList(histories),
               const SizedBox(height: 24),
-              // Tieu de tim kiem pho bien.
               _buildPopularSearchTitle(),
               const SizedBox(height: 12),
-              _buildPopularSearchChips(),
+              _buildPopularSearchChipsFromApi(),
             ],
           ),
         );
@@ -256,7 +218,6 @@ class _SearchViewState extends State<SearchView> {
     );
   }
 
-  /// Hien thi goi y khi chua co lich su.
   Widget _buildEmptyHistoryHint() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -271,7 +232,6 @@ class _SearchViewState extends State<SearchView> {
     );
   }
 
-  /// Tieu de lich su tim kiem voi nut xoa tat ca.
   Widget _buildHistoryHeader(int itemCount) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -304,7 +264,6 @@ class _SearchViewState extends State<SearchView> {
     );
   }
 
-  /// Danh sach lich su tim kiem.
   Widget _buildHistoryList(List<SearchHistoryModel> histories) {
     return Wrap(
       spacing: 8,
@@ -319,32 +278,28 @@ class _SearchViewState extends State<SearchView> {
     );
   }
 
-  /// Xu ly khi bam vao item lich su.
   void _onHistoryItemTap(String keyword) {
-    // Dien tu khoa vao thanh tim kiem.
     _searchController.text = keyword;
     _searchController.selection = TextSelection.fromPosition(
       TextPosition(offset: keyword.length),
     );
-
-    // Tu dong kich hoat tim kiem.
     _onSearch();
   }
 
-  /// Xu ly xoa 1 item lich su.
   void _onDeleteHistoryItem(String id) {
     _searchService.deleteSearchHistory(id).catchError((e) {
       debugPrint('SearchView: Loi xoa item lich su - $e');
     });
   }
 
-  /// Xu ly xoa tat ca lich su.
   Future<void> _onClearAllHistory() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Xac nhan xoa'),
-        content: const Text('Ban co chac chan muon xoa tat ca lich su tim kiem?'),
+        content: const Text(
+          'Ban co chac chan muon xoa tat ca lich su tim kiem?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -368,7 +323,6 @@ class _SearchViewState extends State<SearchView> {
     }
   }
 
-  /// Tieu de tim kiem pho bien.
   Widget _buildPopularSearchTitle() {
     return Text(
       context.t('search_popular'),
@@ -380,41 +334,71 @@ class _SearchViewState extends State<SearchView> {
     );
   }
 
-  /// Cac chip tim kiem pho bien.
-  Widget _buildPopularSearchChips() {
+  /// Hien thi cac chip tu khoa pho bien tu API (FutureBuilder).
+  Widget _buildPopularSearchChipsFromApi() {
+    return FutureBuilder<List<String>>(
+      future: _popularKeywordsFuture,
+      builder: (context, snapshot) {
+        // Dang tai.
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: List.generate(
+              6,
+              (index) => _PopularChipSkeleton(),
+            ),
+          );
+        }
+
+        // Co loi -> hien thi mac dinh.
+        if (snapshot.hasError) {
+          debugPrint(
+              'SearchView: Loi tai tu khoa pho bien - ${snapshot.error}');
+          return _buildPopularSearchChipsFallback();
+        }
+
+        final keywords = snapshot.data ?? [];
+
+        if (keywords.isEmpty) {
+          return _buildPopularSearchChipsFallback();
+        }
+
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: keywords.map((keyword) {
+            return _PopularSearchChip(
+              keyword: keyword,
+              onTap: () => _navigateToResult(keyword),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  /// Fallback chip pho bien khi API loi hoac khong co du lieu.
+  Widget _buildPopularSearchChipsFallback() {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
         _PopularSearchChip(
-          keyword: 'Phở',
-          icon: Icons.local_fire_department,
-          onTap: () => _navigateToResult('Phở'),
+          keyword: 'Pho',
+          onTap: () => _navigateToResult('Pho'),
         ),
         _PopularSearchChip(
-          keyword: 'Bánh mì',
-          icon: Icons.bakery_dining,
-          onTap: () => _navigateToResult('Bánh mì'),
+          keyword: 'Banh mi',
+          onTap: () => _navigateToResult('Banh mi'),
         ),
         _PopularSearchChip(
-          keyword: 'Cà phê',
-          icon: Icons.coffee,
-          onTap: () => _navigateToResult('Cà phê'),
+          keyword: 'Ca phe',
+          onTap: () => _navigateToResult('Ca phe'),
         ),
         _PopularSearchChip(
-          keyword: 'Gỏi',
-          icon: Icons.eco,
-          onTap: () => _navigateToResult('Gỏi'),
-        ),
-        _PopularSearchChip(
-          keyword: 'Lẩu',
-          icon: Icons.soup_kitchen,
-          onTap: () => _navigateToResult('Lẩu'),
-        ),
-        _PopularSearchChip(
-          keyword: 'Nước ép',
-          icon: Icons.local_bar,
-          onTap: () => _navigateToResult('Nước ép'),
+          keyword: 'Tra sua',
+          onTap: () => _navigateToResult('Tra sua'),
         ),
       ],
     );
@@ -427,11 +411,7 @@ class _HistorySearchChip extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onDelete;
 
-  const _HistorySearchChip({
-    required this.keyword,
-    this.onTap,
-    this.onDelete,
-  });
+  const _HistorySearchChip({required this.keyword, this.onTap, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -447,11 +427,7 @@ class _HistorySearchChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.history,
-              size: 16,
-              color: AppColors.textSecondary,
-            ),
+            Icon(Icons.history, size: 16, color: AppColors.textSecondary),
             const SizedBox(width: 6),
             Text(
               keyword,
@@ -462,16 +438,11 @@ class _HistorySearchChip extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 2),
-            // Nut xoa item.
             GestureDetector(
               onTap: onDelete,
               child: Padding(
                 padding: const EdgeInsets.all(4),
-                child: Icon(
-                  Icons.close,
-                  size: 16,
-                  color: AppColors.textHint,
-                ),
+                child: Icon(Icons.close, size: 16, color: AppColors.textHint),
               ),
             ),
           ],
@@ -481,17 +452,33 @@ class _HistorySearchChip extends StatelessWidget {
   }
 }
 
-/// Chip tim kiem pho bien voi icon.
+/// Chip tu khoa pho bien (khong co icon, lay tu API).
 class _PopularSearchChip extends StatelessWidget {
   final String keyword;
-  final IconData icon;
   final VoidCallback? onTap;
 
-  const _PopularSearchChip({
-    required this.keyword,
-    required this.icon,
-    this.onTap,
-  });
+  const _PopularSearchChip({required this.keyword, this.onTap});
+
+  IconData _getIconForKeyword(String keyword) {
+    final lower = keyword.toLowerCase();
+    if (lower.contains('pho')) return Icons.ramen_dining;
+    if (lower.contains('banh')) return Icons.bakery_dining;
+    if (lower.contains('ca phe') || lower.contains('cafe') || lower.contains('cappuccino')) {
+      return Icons.coffee;
+    }
+    if (lower.contains('tra sua') || lower.contains('tra') || lower.contains('tra sua')) {
+      return Icons.local_cafe;
+    }
+    if (lower.contains('com') || lower.contains('bun')) return Icons.rice_bowl;
+    if (lower.contains('lau')) return Icons.soup_kitchen;
+    if (lower.contains('trai cay') || lower.contains('nuoc ep')) {
+      return Icons.local_bar;
+    }
+    if (lower.contains('my') || lower.contains('mi')) return Icons.dinner_dining;
+    if (lower.contains('chao') || lower.contains('sup')) return Icons.soup_kitchen;
+    if (lower.contains('kem') || lower.contains('dessert')) return Icons.icecream;
+    return Icons.search;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -502,16 +489,15 @@ class _PopularSearchChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.primary.withOpacity(0.08),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 1),
+          border: Border.all(
+            color: AppColors.primary.withOpacity(0.2),
+            width: 1,
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 16,
-              color: AppColors.primary,
-            ),
+            Icon(_getIconForKeyword(keyword), size: 16, color: AppColors.primary),
             const SizedBox(width: 6),
             Text(
               keyword,
@@ -523,6 +509,42 @@ class _PopularSearchChip extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Skeleton chip placeholder khi dang tai popular keywords.
+class _PopularChipSkeleton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 16,
+            height: 16,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Container(
+            width: 60,
+            height: 13,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        ],
       ),
     );
   }

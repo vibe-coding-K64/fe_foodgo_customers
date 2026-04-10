@@ -2,144 +2,54 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../../cart/views/cart_view.dart';
-import '../models/search_result_item.dart';
+import '../../store/services/store_service.dart';
+import '../../home/models/store_model.dart';
 import 'widgets/search_filter_bar.dart';
-import 'widgets/search_result_card.dart';
 
 /// Man hinh Ket qua tim kiem / Danh muc.
 ///
 /// Hien thi ket qua tim kiem voi header co thanh tim kiem,
 /// thanh loc FilterChip ngang, va danh sach san pham doc xuong.
+///
+/// Su dung FutureBuilder goi StoreService.searchStores(keyword).
 class SearchResultView extends StatefulWidget {
   /// Tu khoa tim kiem hien thi trong thanh tim kiem (VD: "Tra sua").
   final String query;
 
-  const SearchResultView({
-    super.key,
-    required this.query,
-  });
+  const SearchResultView({super.key, required this.query});
 
   @override
   State<SearchResultView> createState() => _SearchResultViewState();
 }
 
 class _SearchResultViewState extends State<SearchResultView> {
-  /// Kieu sap xep / loc hien tai.
+  final StoreService _storeService = const StoreService();
   SearchSortType _selectedSort = SearchSortType.none;
 
-  /// Danh sach ket qua tim kiem (mock data).
-  late final List<SearchResultItem> _allResults;
+  late final Future<List<StoreModel>> _searchFuture;
 
   @override
   void initState() {
     super.initState();
-    _allResults = _buildMockResults();
-  }
-
-  /// Tao danh sach ket qua mock (5-6 san pham mau).
-  ///
-  /// Cac truong hop:
-  ///   - Tra sua: co san pham con hang va het hang.
-  ///   - Gia va danh gia khac nhau de test loc/sap xep.
-  List<SearchResultItem> _buildMockResults() {
-    return [
-      SearchResultItem(
-        id: 'sr1',
-        productId: 'p1',
-        storeId: 's1',
-        productName: 'Tra Sua Tran Chau Duong Den',
-        productImageUrl: 'https://images.unsplash.com/photo-1558857563-b371033873b8?w=200&q=80',
-        price: 35000,
-        storeName: 'Tralines - Tra Sua',
-        rating: 4.8,
-        reviewCount: 1240,
-        isOutOfStock: false,
-      ),
-      SearchResultItem(
-        id: 'sr2',
-        productId: 'p2',
-        storeId: 's1',
-        productName: 'Tra Sua Khoai Mon',
-        productImageUrl: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=200&q=80',
-        price: 40000,
-        storeName: 'Tralines - Tra Sua',
-        rating: 4.6,
-        reviewCount: 856,
-        isOutOfStock: false,
-      ),
-      SearchResultItem(
-        id: 'sr3',
-        productId: 'p3',
-        storeId: 's2',
-        productName: 'Tra Sua Thai Do',
-        productImageUrl: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=200&q=80',
-        price: 45000,
-        storeName: 'Che Ngon - Tra & Cafe',
-        rating: 4.9,
-        reviewCount: 2100,
-        isOutOfStock: false,
-      ),
-      SearchResultItem(
-        id: 'sr4',
-        productId: 'p4',
-        storeId: 's2',
-        productName: 'Tra Sen Vang Mac Dat',
-        productImageUrl: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=200&q=80',
-        price: 28000,
-        storeName: 'Che Ngon - Tra & Cafe',
-        rating: 4.3,
-        reviewCount: 430,
-        isOutOfStock: true,
-      ),
-      SearchResultItem(
-        id: 'sr5',
-        productId: 'p5',
-        storeId: 's3',
-        productName: 'Tra Sua Bo Tan',
-        productImageUrl: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=200&q=80',
-        price: 55000,
-        storeName: 'Gong Cha Vietnam',
-        rating: 4.7,
-        reviewCount: 3200,
-        isOutOfStock: false,
-      ),
-      SearchResultItem(
-        id: 'sr6',
-        productId: 'p6',
-        storeId: 's3',
-        productName: 'Tra Hai Rang',
-        productImageUrl: 'https://images.unsplash.com/photo-1571934811356-5cc061b6821f?w=200&q=80',
-        price: 38000,
-        storeName: 'Gong Cha Vietnam',
-        rating: 4.5,
-        reviewCount: 980,
-        isOutOfStock: false,
-      ),
-    ];
+    _searchFuture = _storeService.searchStores(widget.query);
   }
 
   /// Tra ve danh sach da duoc loc/sap xep.
-  List<SearchResultItem> get _sortedResults {
-    final results = List<SearchResultItem>.from(_allResults);
-
+  List<StoreModel> _sortResults(List<StoreModel> stores) {
     switch (_selectedSort) {
       case SearchSortType.priceAsc:
-        results.sort((a, b) => a.price.compareTo(b.price));
-        break;
+        return List.from(stores)
+          ..sort((a, b) => a.deliveryFee.compareTo(b.deliveryFee));
       case SearchSortType.priceDesc:
-        results.sort((a, b) => b.price.compareTo(a.price));
-        break;
+        return List.from(stores)
+          ..sort((a, b) => b.deliveryFee.compareTo(a.deliveryFee));
       case SearchSortType.ratingDesc:
-        results.sort((a, b) => b.rating.compareTo(a.rating));
-        break;
+        return List.from(stores)..sort((a, b) => b.rating.compareTo(a.rating));
       case SearchSortType.none:
-        break;
+        return stores;
     }
-
-    return results;
   }
 
-  /// Xu ly khi nguoi dung thay doi kieu sap xep.
   void _onSortChanged(SearchSortType sort) {
     setState(() {
       _selectedSort = _selectedSort == sort ? SearchSortType.none : sort;
@@ -164,40 +74,146 @@ class _SearchResultViewState extends State<SearchResultView> {
           ),
           // Divider ngan cach filter va danh sach.
           Container(height: 1, color: AppColors.divider),
-          // Danh sach ket qua.
+          // Danh sach ket qua - FutureBuilder.
           Expanded(
-            child: _sortedResults.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    itemCount: _sortedResults.length,
-                    itemBuilder: (context, index) {
-                      final item = _sortedResults[index];
-                      return SearchResultCard(
-                        item: item,
-                        onTap: () {
-                          debugPrint('Xem chi tiet san pham: ${item.productId}');
-                        },
-                        onAddToCart: () {
-                          debugPrint('Them vao gio: ${item.productId}');
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('${item.productName} da duoc them'),
-                              backgroundColor: AppColors.primary,
-                              duration: const Duration(seconds: 1),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
+            child: _buildResultsBody(),
           ),
         ],
       ),
     );
   }
 
-  /// Header: nut Back + thanh tim kiem voi tu khoa.
+  Widget _buildResultsBody() {
+    return FutureBuilder<List<StoreModel>>(
+      future: _searchFuture,
+      builder: (context, snapshot) {
+        // Dang tai.
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildLoadingState();
+        }
+
+        // Co loi.
+        if (snapshot.hasError) {
+          debugPrint('SearchResultView: loi API - ${snapshot.error}');
+          return _buildErrorState(snapshot.error.toString());
+        }
+
+        final allResults = snapshot.data ?? [];
+        final results = _sortResults(allResults);
+
+        // Rong.
+        if (results.isEmpty) {
+          return _buildEmptyState();
+        }
+
+        // Co du lieu -> hien thi danh sach.
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          itemCount: results.length,
+          itemBuilder: (context, index) {
+            final store = results[index];
+            return _StoreResultCard(
+              store: store,
+              onTap: () {
+                debugPrint(
+                    'SearchResultView: Nguoi dung bam quan [${store.name}]');
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: 5,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (_, __) => const _StoreResultCardSkeleton(),
+    );
+  }
+
+  Widget _buildErrorState(String error) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.red.shade300,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              context.t('error_server'),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade600,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _searchFuture = _storeService.searchStores(widget.query);
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(context.t('common_retry')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
+          const SizedBox(height: 12),
+          Text(
+            context.t('search_no_results'),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            context.t('search_try_different'),
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHeader() {
     return Container(
       padding: EdgeInsets.only(
@@ -229,11 +245,7 @@ class _SearchResultViewState extends State<SearchResultView> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.search,
-                      color: AppColors.textHint,
-                      size: 20,
-                    ),
+                    Icon(Icons.search, color: AppColors.textHint, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -256,9 +268,7 @@ class _SearchResultViewState extends State<SearchResultView> {
               debugPrint('SearchResultView: Nguoi dung bam icon gio hang');
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const CartView(),
-                ),
+                MaterialPageRoute(builder: (context) => const CartView()),
               );
             },
             icon: Icon(
@@ -271,32 +281,256 @@ class _SearchResultViewState extends State<SearchResultView> {
       ),
     );
   }
+}
 
-  /// Widget hien thi khi khong co ket qua.
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.search_off,
-            size: 64,
-            color: Colors.grey.shade400,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            context.t('search_no_results'),
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.grey.shade600,
+/// Card hien thi ket qua quan trong danh sach tim kiem.
+class _StoreResultCard extends StatelessWidget {
+  final StoreModel store;
+  final VoidCallback? onTap;
+
+  const _StoreResultCard({required this.store, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surface,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: AppColors.divider.withOpacity(0.5),
+                width: 1,
+              ),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            context.t('search_try_different'),
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey.shade500,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Hinh anh cua hang.
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  store.avtUrl,
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.store,
+                      color: AppColors.textHint,
+                      size: 28,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Thong tin cua hang.
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      store.name,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      store.address,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    // Danh gia + thoi gian giao.
+                    Row(
+                      children: [
+                        Icon(Icons.star, size: 14, color: Colors.amber),
+                        const SizedBox(width: 2),
+                        Text(
+                          store.rating.toStringAsFixed(1),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '(${store.reviewCount})',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(
+                          Icons.access_time,
+                          size: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          store.deliveryTime,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    // Trang thai mo cua + phi giao hang.
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: store.isOpen
+                                ? Colors.green.shade50
+                                : Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            store.isOpen
+                                ? context.t('home_open')
+                                : context.t('home_closed'),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color:
+                                  store.isOpen ? Colors.green : Colors.red,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${store.deliveryFee.toStringAsFixed(0)} ${context.t('unit_currency')}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Nut them vao gio hang.
+              GestureDetector(
+                onTap: () {
+                  debugPrint(
+                      'SearchResultView: Them vao gio [${store.name}]');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${store.name} da duoc them'),
+                      backgroundColor: AppColors.primary,
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.add,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Skeleton card khi loading ket qua.
+class _StoreResultCardSkeleton extends StatelessWidget {
+  const _StoreResultCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      color: AppColors.surface,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 120,
+                  height: 15,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: 160,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: 100,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: 80,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

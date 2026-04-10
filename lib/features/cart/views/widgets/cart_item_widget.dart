@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
-import 'cart_item_model.dart';
+import '../../models/cart_model.dart';
 
 /// Widget hien thi mot item trong danh sach gio hang.
 /// Co checkbox, hinh anh, ten, topping, don gia, bo dem +/-, va Dismissible xoa.
 class CartItemWidget extends StatelessWidget {
-  final CartItemViewModel item;
+  final CartItem item;
   final ValueChanged<bool> onSelectionChanged;
   final VoidCallback onIncrease;
   final VoidCallback onDecrease;
