@@ -1,19 +1,18 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class CartItemModel {
   final String id;
-  final String userId;
   final String storeId;
   final String foodId;
   final String name;
   final double price;
-  final int quantity;
+  int quantity;
   final String? imageUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final DateTime? deletedAt;
 
   CartItemModel({
     required this.id,
-    required this.userId,
     required this.storeId,
     required this.foodId,
     required this.name,
@@ -22,46 +21,56 @@ class CartItemModel {
     this.imageUrl,
     required this.createdAt,
     required this.updatedAt,
-    this.deletedAt,
   });
 
-  factory CartItemModel.fromJson(Map<String, dynamic> json) {
+  /// Parse tu DocumentSnapshot cua Firestore.
+  ///
+  /// Xu ly Timestamp cua Firebase -> DateTime cua Dart.
+  /// Duong dan collection: customer_profiles/{userId}/cart
+  factory CartItemModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
     return CartItemModel(
-      id: json['id'] as String,
-      userId: json['userId'] as String,
-      storeId: json['storeId'] as String,
-      foodId: json['foodId'] as String,
-      name: json['name'] as String,
-      price: (json['price'] as num).toDouble(),
-      quantity: json['quantity'] as int,
-      imageUrl: json['imageUrl'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
-      deletedAt: json['deletedAt'] != null
-          ? DateTime.parse(json['deletedAt'] as String)
-          : null,
+      id: data['id'] as String? ?? doc.id,
+      storeId: data['storeId'] as String? ?? '',
+      foodId: data['foodId'] as String? ?? '',
+      name: data['name'] as String? ?? '',
+      price: (data['price'] as num?)?.toDouble() ?? 0.0,
+      quantity: (data['quantity'] as num?)?.toInt() ?? 1,
+      imageUrl: data['imageUrl'] as String?,
+      createdAt: _parseTimestamp(data['createdAt']),
+      updatedAt: _parseTimestamp(data['updatedAt']),
     );
   }
 
-  Map<String, dynamic> toJson() {
+  /// Chuyen doi Timestamp Firestore sang DateTime.
+  static DateTime _parseTimestamp(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate();
+    } else if (value is DateTime) {
+      return value;
+    } else if (value is String) {
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+    return DateTime.now();
+  }
+
+  /// Chuyen doi thanh Map de ghi xuong Firestore.
+  Map<String, dynamic> toFirestore() {
     return {
       'id': id,
-      'userId': userId,
       'storeId': storeId,
       'foodId': foodId,
       'name': name,
       'price': price,
       'quantity': quantity,
       'imageUrl': imageUrl,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
-      'deletedAt': deletedAt?.toIso8601String(),
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
     };
   }
 
   CartItemModel copyWith({
     String? id,
-    String? userId,
     String? storeId,
     String? foodId,
     String? name,
@@ -70,11 +79,9 @@ class CartItemModel {
     String? imageUrl,
     DateTime? createdAt,
     DateTime? updatedAt,
-    DateTime? deletedAt,
   }) {
     return CartItemModel(
       id: id ?? this.id,
-      userId: userId ?? this.userId,
       storeId: storeId ?? this.storeId,
       foodId: foodId ?? this.foodId,
       name: name ?? this.name,
@@ -83,7 +90,9 @@ class CartItemModel {
       imageUrl: imageUrl ?? this.imageUrl,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      deletedAt: deletedAt ?? this.deletedAt,
     );
   }
+
+  /// Tong gia cua item (don gia * so luong).
+  double get totalPrice => price * quantity;
 }

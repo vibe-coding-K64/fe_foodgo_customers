@@ -1,24 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/state/cart_state.dart';
+import '../../../core/utils/auth_storage.dart';
 import '../../checkout/views/checkout_view.dart';
-import '../models/cart_model.dart';
-import '../services/cart_service.dart';
+import '../models/cart_item_model.dart';
 import 'widgets/cart_item_widget.dart';
 import 'widgets/cart_bottom_bar.dart';
 
-/// Man hinh Gio hang (CartView).
-///
-/// Su dung FutureBuilder goi CartService.getCart() de lay du lieu tu API.
-///
-/// Hien thi danh sach mon da chon voi cac chuc nang:
-///   - Checkbox chon/tick mon de tinh tam tinh
-///   - Dismissible (vuot trai xoa mon)
-///   - Bo dem so luong +/-
-///   - Sticky Bottom Bar: chon tat ca, tam tinh chi tien cac mon duoc tick,
-///     nut "Mua hang (X)"
-///
-/// Luong: HomeView [FAB Gio hang] -> CartView -> CheckoutView
 class CartView extends StatefulWidget {
   const CartView({super.key});
 
@@ -27,14 +16,25 @@ class CartView extends StatefulWidget {
 }
 
 class _CartViewState extends State<CartView> {
-  final CartService _cartService = const CartService();
-
-  late final Future<CartModel> _cartFuture;
-
   @override
   void initState() {
     super.initState();
-    _cartFuture = _cartService.getCart();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startListening();
+    });
+  }
+
+  void _startListening() {
+    final userId = AuthStorage.getUserId();
+    if (userId != null && userId.isNotEmpty) {
+      CartState.of(context).startListening(userId);
+    }
+  }
+
+  @override
+  void dispose() {
+    CartState.of(context).stopListening();
+    super.dispose();
   }
 
   @override
@@ -61,35 +61,24 @@ class _CartViewState extends State<CartView> {
         ),
         centerTitle: true,
       ),
-      body: FutureBuilder<CartModel>(
-        future: _cartFuture,
-        builder: (context, snapshot) {
-          // Dang tai.
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      body: ListenableBuilder(
+        listenable: CartState.of(context),
+        builder: (context, _) {
+          final cartState = CartState.of(context);
+
+          if (cartState.isLoading) {
             return _buildLoadingState();
           }
 
-          // Co loi.
-          if (snapshot.hasError) {
-            debugPrint('CartView: loi tai gio hang - ${snapshot.error}');
-            return _buildErrorState(snapshot.error.toString());
+          if (cartState.errorMessage != null) {
+            return _buildErrorState(cartState.errorMessage!);
           }
 
-          final cart = snapshot.data;
-
-          if (cart == null || cart.isEmpty) {
+          if (cartState.isEmpty) {
             return _buildEmptyState();
           }
 
-          // Co du lieu -> hien thi danh sach + bottom bar.
-          return _CartContent(
-            cart: cart,
-            onRetry: () {
-              setState(() {
-                _cartFuture = _cartService.getCart();
-              });
-            },
-          );
+          return _CartContent(cartState: cartState);
         },
       ),
     );
@@ -139,11 +128,7 @@ class _CartViewState extends State<CartView> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _cartFuture = _cartService.getCart();
-                });
-              },
+              onPressed: _startListening,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -220,81 +205,74 @@ class _CartViewState extends State<CartView> {
   }
 }
 
-/// Noi dung chinh cua gio hang, quan ly trang thai local (tick, so luong).
-///
-/// tach rieng de StateFulWidget co the cap nhat local state.
 class _CartContent extends StatefulWidget {
-  final CartModel cart;
-  final VoidCallback onRetry;
+  final CartState cartState;
 
-  const _CartContent({required this.cart, required this.onRetry});
+  const _CartContent({required this.cartState});
 
   @override
   State<_CartContent> createState() => _CartContentState();
 }
 
 class _CartContentState extends State<_CartContent> {
-  late List<CartItem> _items;
-
-  @override
-  void initState() {
-    super.initState();
-    // Tao ban sao items de quan ly trang thai local.
-    _items = widget.cart.items.map((item) => item.copyWith()).toList();
-  }
+  final Set<String> _selectedIds = {};
 
   double get _subtotal {
-    return _items
-        .where((item) => item.isSelected)
+    return widget.cartState.items
+        .where((item) => _selectedIds.contains(item.id))
         .fold<double>(0, (sum, item) => sum + item.totalPrice);
   }
 
-  int get _selectedCount {
-    return _items.where((item) => item.isSelected).length;
-  }
+  int get _selectedCount => _selectedIds.length;
 
-  bool get _isAllSelected {
-    return _items.isNotEmpty && _items.every((item) => item.isSelected);
-  }
+  bool get _isAllSelected =>
+      widget.cartState.items.isNotEmpty &&
+      widget.cartState.items.every((item) => _selectedIds.contains(item.id));
 
   void _onToggleSelectAll() {
-    final newValue = !_isAllSelected;
     setState(() {
-      for (final item in _items) {
-        item.isSelected = newValue;
+      if (_isAllSelected) {
+        _selectedIds.clear();
+      } else {
+        _selectedIds.addAll(widget.cartState.items.map((e) => e.id));
       }
     });
-    debugPrint('CartView: Chon tat ca = $newValue');
+    debugPrint('CartView: Chon tat ca = ${!_isAllSelected}');
   }
 
-  void _onToggleItem(int index, bool selected) {
+  void _onToggleItem(String itemId, bool selected) {
     setState(() {
-      _items[index].isSelected = selected;
+      if (selected) {
+        _selectedIds.add(itemId);
+      } else {
+        _selectedIds.remove(itemId);
+      }
     });
   }
 
-  void _onIncrease(int index) {
-    setState(() {
-      _items[index].quantity++;
-    });
+  void _onIncrease(CartItemModel item) {
+    final userId = AuthStorage.getUserId();
+    if (userId == null) return;
+    widget.cartState.updateQuantity(userId, item.id, item.quantity + 1);
   }
 
-  void _onDecrease(int index) {
-    if (_items[index].quantity > 1) {
-      setState(() {
-        _items[index].quantity--;
-      });
+  void _onDecrease(CartItemModel item) {
+    final userId = AuthStorage.getUserId();
+    if (userId == null) return;
+    if (item.quantity > 1) {
+      widget.cartState.updateQuantity(userId, item.id, item.quantity - 1);
     }
   }
 
-  void _onDismissItem(int index) {
-    final removedItem = _items[index];
-    setState(() {
-      _items.removeAt(index);
-    });
+  void _onDismissItem(CartItemModel item) {
+    final userId = AuthStorage.getUserId();
+    if (userId == null) return;
+    _selectedIds.remove(item.id);
+    widget.cartState.removeItem(userId, item.id);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${removedItem.name} ${context.t('cart_item_removed')}'),
+        content:
+            Text('${item.name} ${context.t('cart_item_removed')}'),
         backgroundColor: AppColors.textSecondary,
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
@@ -312,39 +290,35 @@ class _CartContentState extends State<_CartContent> {
 
   @override
   Widget build(BuildContext context) {
-    final isEmpty = _items.isEmpty;
+    final items = widget.cartState.items;
+    final isEmpty = items.isEmpty;
 
     return Column(
       children: [
-        // Thong tin cua hang (neu co).
-        if (!isEmpty) _buildStoreHeader(),
-        // Danh sach mon.
         Expanded(
-          child: isEmpty
-              ? _buildEmptyState()
-              : ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _items.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final item = _items[index];
-                    return CartItemWidget(
-                      item: item,
-                      onSelectionChanged: (selected) =>
-                          _onToggleItem(index, selected),
-                      onIncrease: () => _onIncrease(index),
-                      onDecrease: () => _onDecrease(index),
-                      onDismiss: () => _onDismissItem(index),
-                    );
-                  },
-                ),
+          child: ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final item = items[index];
+              return CartItemWidget(
+                item: item,
+                isSelected: _selectedIds.contains(item.id),
+                onSelectionChanged: (selected) =>
+                    _onToggleItem(item.id, selected),
+                onIncrease: () => _onIncrease(item),
+                onDecrease: () => _onDecrease(item),
+                onDismiss: () => _onDismissItem(item),
+              );
+            },
+          ),
         ),
-        // Sticky Bottom Bar (chi hien khi co mon).
         if (!isEmpty)
           CartBottomBar(
             isAllSelected: _isAllSelected,
             selectedCount: _selectedCount,
-            totalCount: _items.length,
+            totalCount: items.length,
             subtotal: _subtotal,
             onSelectAllChanged: _onToggleSelectAll,
             onCheckout: _onCheckout,
@@ -352,119 +326,8 @@ class _CartContentState extends State<_CartContent> {
       ],
     );
   }
-
-  Widget _buildStoreHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      color: AppColors.surface,
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: Image.network(
-              widget.cart.storeImageUrl,
-              width: 40,
-              height: 40,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: 40,
-                height: 40,
-                color: AppColors.surfaceVariant,
-                child: Icon(Icons.store, color: AppColors.textHint, size: 20),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.cart.storeName,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  '${widget.cart.itemCount} ${context.t('unit_items')}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.shopping_cart_outlined,
-                size: 40,
-                color: AppColors.textHint,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              context.t('cart_empty_title'),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              context.t('cart_empty_desc'),
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            OutlinedButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary, width: 1.5),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: Text(context.t('cart_add_items')),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
-/// Skeleton item khi loading gio hang.
 class _CartItemSkeleton extends StatelessWidget {
   const _CartItemSkeleton();
 

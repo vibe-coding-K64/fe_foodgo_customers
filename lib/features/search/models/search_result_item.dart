@@ -27,4 +27,36 @@ class SearchResultItem {
     required this.productId,
     required this.storeId,
   });
+
+  /// Parse tu JSON tra ve tu my-json-server.
+  ///
+  /// JSON mau:
+  /// ```json
+  /// {
+  ///   "id": "search_001",
+  ///   "productName": "iPhone 15 Pro Max 256GB",
+  ///   "productImageUrl": "https://example.com/images/iphone15.jpg",
+  ///   "price": 29990000.0,
+  ///   "storeName": "Apple Store Official",
+  ///   "rating": 4.9,
+  ///   "reviewCount": 1250,
+  ///   "isOutOfStock": false,
+  ///   "productId": "p_apple_15pm",
+  ///   "storeId": "s_apple_vn"
+  /// }
+  /// ```
+  factory SearchResultItem.fromJson(Map<String, dynamic> json) {
+    return SearchResultItem(
+      id: json['id'] as String? ?? '',
+      productName: json['productName'] as String? ?? '',
+      productImageUrl: json['productImageUrl'] as String? ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      storeName: json['storeName'] as String? ?? '',
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
+      isOutOfStock: json['isOutOfStock'] as bool? ?? false,
+      productId: json['productId'] as String? ?? '',
+      storeId: json['storeId'] as String? ?? '',
+    );
+  }
 }

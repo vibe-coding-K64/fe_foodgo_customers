@@ -6,6 +6,7 @@ import 'features/main/views/main_view.dart';
 import 'features/auth/views/login_view.dart';
 import 'core/localization/language_service.dart';
 import 'core/state/locale_provider.dart';
+import 'core/state/cart_state.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/data_seeder.dart';
 import 'core/utils/auth_storage.dart';
@@ -25,13 +26,19 @@ void main() async {
   // Tao LocaleProvider de quan ly trang thai ngon ngu toan app.
   final localeProvider = LocaleProvider();
 
+  // Tao CartState de quan ly gio hang real-time voi Firestore.
+  final cartState = CartState();
+
   // Seed du lieu mau vao Firestore (neu chua co).
   await DataSeeder.seedAll();
 
   runApp(
-    LocaleProviderScope(
-      notifier: localeProvider,
-      child: FoodGoApp(provider: localeProvider),
+    CartStateScope(
+      notifier: cartState,
+      child: LocaleProviderScope(
+        notifier: localeProvider,
+        child: FoodGoApp(provider: localeProvider),
+      ),
     ),
   );
 }

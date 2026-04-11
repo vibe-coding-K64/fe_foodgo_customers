@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../../core/utils/auth_storage.dart';
 import '../../../core/network/api_client.dart';
 import '../models/search_history_model.dart';
+import '../models/search_result_item.dart';
 
 /// Service quan ly lich su tim kiem, tuong tac voi Firebase Firestore.
 ///
@@ -165,6 +166,30 @@ class ApiSearchService {
       return rawData.cast<String>();
     } catch (e) {
       debugPrint('ApiSearchService: Loi getPopularKeywords - $e');
+      rethrow;
+    }
+  }
+
+  /// Lay danh sach ket qua tim kiem tu Mock API.
+  ///
+  /// Endpoint: GET /search_results
+  /// Server da xu ly filter/search phia backend, tra ve day du danh sach.
+  /// Tra ve List<SearchResultItem>.
+  Future<List<SearchResultItem>> fetchSearchResults(String keyword) async {
+    try {
+      final response = await ApiClient.get<List<dynamic>>('/SearchResultItem');
+
+      final List<dynamic> rawData = response.data ?? [];
+
+      debugPrint(
+          'ApiSearchService: Da nhan ${rawData.length} ket qua');
+
+      return rawData
+          .map((json) =>
+              SearchResultItem.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      debugPrint('ApiSearchService: Loi fetchSearchResults - $e');
       rethrow;
     }
   }

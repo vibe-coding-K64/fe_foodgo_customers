@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
-import '../../models/cart_model.dart';
+import '../../models/cart_item_model.dart';
 
 /// Widget hien thi mot item trong danh sach gio hang.
-/// Co checkbox, hinh anh, ten, topping, don gia, bo dem +/-, va Dismissible xoa.
+///
+/// Co checkbox, hinh anh, ten, don gia, bo dem +/-, va Dismissible xoa.
 class CartItemWidget extends StatelessWidget {
-  final CartItem item;
+  final CartItemModel item;
+  final bool isSelected;
   final ValueChanged<bool> onSelectionChanged;
   final VoidCallback onIncrease;
   final VoidCallback onDecrease;
@@ -15,6 +17,7 @@ class CartItemWidget extends StatelessWidget {
   const CartItemWidget({
     super.key,
     required this.item,
+    required this.isSelected,
     required this.onSelectionChanged,
     required this.onIncrease,
     required this.onDecrease,
@@ -71,7 +74,7 @@ class CartItemWidget extends StatelessWidget {
             Transform.scale(
               scale: 1.1,
               child: Checkbox(
-                value: item.isSelected,
+                value: isSelected,
                 onChanged: (value) {
                   debugPrint(
                       'CartView: Checkbox mon [${item.name}] = ${value ?? false}');
@@ -82,7 +85,7 @@ class CartItemWidget extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 side: BorderSide(
-                  color: item.isSelected
+                  color: isSelected
                       ? AppColors.primary
                       : AppColors.border,
                   width: 1.5,
@@ -94,7 +97,7 @@ class CartItemWidget extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
-                item.imageUrl,
+                item.imageUrl ?? '',
                 width: 72,
                 height: 72,
                 fit: BoxFit.cover,
@@ -123,24 +126,12 @@ class CartItemWidget extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (item.toppings.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      item.toppingsLabel,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textHint,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
                   const SizedBox(height: 6),
                   Text(
-                    '${_formatPrice(item.unitPrice)} ${context.t('unit_currency')}',
+                    '${_formatPrice(item.price)} ${context.t('unit_currency')}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
