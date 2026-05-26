@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
 import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../models/review_model.dart';
-import '../services/restaurant_service.dart';
+import '../services/review_service.dart';
 
 /// Trang danh gia cua mot quan an.
 ///
@@ -27,8 +28,9 @@ class RestaurantReviewsView extends StatefulWidget {
 }
 
 class _RestaurantReviewsViewState extends State<RestaurantReviewsView> {
-  late List<ReviewModel> _allReviews;
-  late ReviewStarDistribution _distribution;
+  List<ReviewModel> _allReviews = [];
+  bool _isLoading = false;
+  String? _errorMessage;
 
   int? _selectedStarFilter;
   bool _filterWithComment = false;
@@ -37,9 +39,40 @@ class _RestaurantReviewsViewState extends State<RestaurantReviewsView> {
   @override
   void initState() {
     super.initState();
-    _allReviews = RestaurantService.getMockReviews(widget.storeId);
-    _distribution = RestaurantService.getMockStarDistribution();
-    debugPrint('RestaurantReviewsView: Khoi tao trang danh gia cua quan [${widget.storeId}]');
+    _fetchReviews();
+    debugPrint(
+        'RestaurantReviewsView: Khoi tao trang danh gia cua quan [${widget.storeId}]');
+  }
+
+  Future<void> _fetchReviews() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final reviews = await ReviewService.getReviewsByStore(widget.storeId);
+      if (mounted) {
+        setState(() {
+          _allReviews = reviews;
+          _isLoading = false;
+        });
+      }
+    } on ReviewException catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.message;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Da xay ra loi khong xac dinh.';
+        });
+      }
+    }
   }
 
   List<ReviewModel> get _filteredReviews {
@@ -74,6 +107,37 @@ class _RestaurantReviewsViewState extends State<RestaurantReviewsView> {
     );
   }
 
+  double get _averageRating {
+    if (_allReviews.isEmpty) return 0;
+    final total = _allReviews.fold<int>(0, (sum, r) => sum + r.starRating);
+    return total / _allReviews.length;
+  }
+
+  ReviewStarDistribution get _distribution {
+    int star5 = 0, star4 = 0, star3 = 0, star2 = 0, star1 = 0;
+    for (final r in _allReviews) {
+      switch (r.starRating) {
+        case 5:
+          star5++;
+        case 4:
+          star4++;
+        case 3:
+          star3++;
+        case 2:
+          star2++;
+        case 1:
+          star1++;
+      }
+    }
+    return ReviewStarDistribution(
+      star5: star5,
+      star4: star4,
+      star3: star3,
+      star2: star2,
+      star1: star1,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -97,47 +161,75 @@ class _RestaurantReviewsViewState extends State<RestaurantReviewsView> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        physics: const ClampingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Khoang cach tu header.
-            const SizedBox(height: 8),
+      body: _buildBody(theme),
+    );
+  }
 
-            // Khong thay doi phan thong ke.
-            _ReviewOverviewSection(
-              averageRating: 4.8,
-              distribution: _distribution,
-            ),
+  Widget _buildBody(ThemeData theme) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-            Divider(height: 1, color: AppColors.divider),
-
-            // Khong thay doi bo loc.
-            _ReviewFilterBar(
-              selectedStar: _selectedStarFilter,
-              filterWithComment: _filterWithComment,
-              filterWithImage: _filterWithImage,
-              onStarFilterTap: _showStarFilterSheet,
-              onCommentFilterChanged: (value) {
-                setState(() => _filterWithComment = value ?? false);
-                debugPrint('RestaurantReviewsView: Loc binh luan = ${value ?? false}');
-              },
-              onImageFilterChanged: (value) {
-                setState(() => _filterWithImage = value ?? false);
-                debugPrint('RestaurantReviewsView: Loc hinh anh = ${value ?? false}');
-              },
-            ),
-
-            Divider(height: 1, color: AppColors.divider),
-
-            // Danh sach danh gia.
-            _ReviewListSection(
-              reviews: _filteredReviews,
-              totalReviews: _allReviews.length,
-            ),
-          ],
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 48,
+                color: AppColors.textHint,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _errorMessage!,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _fetchReviews,
+                child: const Text('Thu lai'),
+              ),
+            ],
+          ),
         ),
+      );
+    }
+
+    return SingleChildScrollView(
+      physics: const ClampingScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 8),
+          _ReviewOverviewSection(
+            averageRating: _averageRating,
+            distribution: _distribution,
+          ),
+          Divider(height: 1, color: AppColors.divider),
+          _ReviewFilterBar(
+            selectedStar: _selectedStarFilter,
+            filterWithComment: _filterWithComment,
+            filterWithImage: _filterWithImage,
+            onStarFilterTap: _showStarFilterSheet,
+            onCommentFilterChanged: (value) {
+              setState(() => _filterWithComment = value ?? false);
+            },
+            onImageFilterChanged: (value) {
+              setState(() => _filterWithImage = value ?? false);
+            },
+          ),
+          Divider(height: 1, color: AppColors.divider),
+          _ReviewListSection(
+            reviews: _filteredReviews,
+            totalReviews: _allReviews.length,
+          ),
+        ],
       ),
     );
   }

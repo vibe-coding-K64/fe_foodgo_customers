@@ -129,14 +129,78 @@ class CartItemWidget extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '${_formatPrice(item.price)} ${context.t('unit_currency')}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+                  if (item.size != null && item.size!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      context
+                          .t('cart_item_size')
+                          .replaceFirst('\$1', item.size!),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
+                  ],
+                  if (item.toppings.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      context
+                          .t('cart_item_topping')
+                          .replaceFirst('\$1', item.toppingsLabel),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  if (item.note != null && item.note!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      context
+                          .t('cart_item_note')
+                          .replaceFirst('\$1', item.note!),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade500,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Text(
+                        '${_formatPrice(item.price)} ${context.t('unit_currency')}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      if (item.quantity > 1) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          'x${item.quantity}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '${_formatPrice(item.totalPrice)} ${context.t('unit_currency')}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 8),
                   // Bo dem so luong.

@@ -30,14 +30,50 @@ class AddressManagementView extends StatefulWidget {
 }
 
 class _AddressManagementViewState extends State<AddressManagementView> {
-  /// Service quan ly dia chi, tuong tac voi Firebase.
   final AddressService _addressService = AddressService();
 
-  /// Dat mot dia chi lam mac dinh thong qua Firebase.
+  List<AddressModel> _addresses = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAddresses();
+  }
+
+  /// Tai danh sach dia chi tu API.
+  Future<void> _loadAddresses() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final addresses = await _addressService.getAddresses();
+      if (mounted) {
+        setState(() {
+          _addresses = addresses;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('AddressManagement: Loi tai danh sach dia chi - $e');
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  /// Dat mot dia chi lam mac dinh thong qua API.
   void _onSetDefault(String addressId) async {
     try {
       await _addressService.setDefaultAddress(addressId);
       debugPrint('AddressManagement: Dat dia chi [$addressId] lam mac dinh');
+      await _loadAddresses();
     } catch (e) {
       debugPrint('AddressManagement: Loi dat dia chi mac dinh - $e');
       if (mounted) {
@@ -53,7 +89,7 @@ class _AddressManagementViewState extends State<AddressManagementView> {
     }
   }
 
-  /// Xoa mot dia chi khoi Firebase.
+  /// Xoa mot dia chi thong qua API.
   void _onDelete(AddressModel address) {
     showDialog(
       context: context,
@@ -81,6 +117,7 @@ class _AddressManagementViewState extends State<AddressManagementView> {
                 await _addressService.deleteAddress(address.id);
                 debugPrint(
                     'AddressManagement: Da xoa dia chi [${address.id}]');
+                await _loadAddresses();
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -124,10 +161,9 @@ class _AddressManagementViewState extends State<AddressManagementView> {
         builder: (context) => AddressFormView(address: address),
       ),
     );
-    // StreamBuilder se tu dong cap nhat khi Firestore thay doi,
-    // nen khong can setState o day.
     if (updated != null) {
       debugPrint('AddressManagement: Da cap nhat dia chi [${updated.id}]');
+      await _loadAddresses();
     }
   }
 
@@ -140,18 +176,14 @@ class _AddressManagementViewState extends State<AddressManagementView> {
         builder: (context) => const AddressFormView(),
       ),
     );
-    // StreamBuilder se tu dong cap nhat khi Firestore thay doi.
     if (created != null) {
       debugPrint('AddressManagement: Da them dia chi [${created.id}]');
+      await _loadAddresses();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.isFromCheckout
-        ? LanguageService.translate('address_my_addresses')
-        : LanguageService.translate('address_my_addresses');
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -165,7 +197,7 @@ class _AddressManagementViewState extends State<AddressManagementView> {
           },
         ),
         title: Text(
-          title,
+          LanguageService.translate('address_my_addresses'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -176,46 +208,111 @@ class _AddressManagementViewState extends State<AddressManagementView> {
       ),
       body: Column(
         children: [
-          // Danh sach dia chi.
           Expanded(
-            child: StreamBuilder<List<AddressModel>>(
-              stream: _addressService.getAddressesStream(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.primary,
-                    ),
-                  );
-                }
-                if (snapshot.hasError) {
-                  debugPrint('AddressManagement: Loi StreamBuilder - ${snapshot.error}');
-                  return _buildEmptyState();
-                }
-                final addresses = snapshot.data ?? [];
-                if (addresses.isEmpty) {
-                  return _buildEmptyState();
-                }
-                return ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: addresses.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final address = addresses[index];
-                    return AddressCardWidget(
-                      address: address,
-                      onSetDefault: () => _onSetDefault(address.id),
-                      onEdit: () => _onEdit(address),
-                      onDelete: () => _onDelete(address),
-                    );
-                  },
-                );
-              },
-            ),
+            child: _buildBody(),
           ),
-          // Sticky Bottom Bar.
           _buildStickyBottomBar(context),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: AppColors.primary,
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return _buildErrorState();
+    }
+
+    if (_addresses.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadAddresses,
+      color: AppColors.primary,
+      child: ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: _addresses.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          final address = _addresses[index];
+          return AddressCardWidget(
+            address: address,
+            onSetDefault: () => _onSetDefault(address.id),
+            onEdit: () => _onEdit(address),
+            onDelete: () => _onDelete(address),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFEBEB),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.error_outline,
+                size: 40,
+                color: AppColors.error,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              LanguageService.translate('address_error_load'),
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage ?? '',
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: _loadAddresses,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  LanguageService.translate('common_retry'),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -287,46 +384,10 @@ class _AddressManagementViewState extends State<AddressManagementView> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Nut xac nhan (chi hien khi tu Checkout goi).
           if (isCheckout) ...[
-            StreamBuilder<List<AddressModel>>(
-              stream: _addressService.getAddressesStream(),
-              builder: (context, snapshot) {
-                final addresses = snapshot.data ?? [];
-                final selected = addresses.where((a) => a.isDefault).firstOrNull;
-                return GestureDetector(
-                  onTap: selected != null
-                      ? () {
-                          debugPrint(
-                              'AddressManagement: Xac nhan dia chi [${selected.id}] - ${selected.addressText}');
-                          Navigator.pop(context, selected);
-                        }
-                      : null,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      color: selected != null
-                          ? AppColors.primary
-                          : AppColors.primary.withAlpha(100),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      LanguageService.translate('common_confirm'),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
+            _buildConfirmButton(context),
             const SizedBox(height: 10),
           ],
-          // Nut them dia chi moi.
           GestureDetector(
             onTap: _onAddNew,
             child: Container(
@@ -362,6 +423,39 @@ class _AddressManagementViewState extends State<AddressManagementView> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildConfirmButton(BuildContext context) {
+    final selected = _addresses.where((a) => a.isDefault).firstOrNull;
+
+    return GestureDetector(
+      onTap: selected != null
+          ? () {
+              debugPrint(
+                  'AddressManagement: Xac nhan dia chi [${selected.id}] - ${selected.address}');
+              Navigator.pop(context, selected);
+            }
+          : null,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: selected != null
+              ? AppColors.primary
+              : AppColors.primary.withAlpha(100),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          LanguageService.translate('common_confirm'),
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
       ),
     );
   }

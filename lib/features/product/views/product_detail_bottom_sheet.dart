@@ -141,19 +141,21 @@ class _ProductDetailBottomSheetState
       }
     }
 
-    try {
-      final cartState = CartState.of(context);
-      await cartState.addItem(
-        userId,
-        widget.product,
-        selectedSize: selectedSize,
-        sizePrice: sizeExtra,
-        selectedToppings: selectedToppings,
-        note: _noteController.text.trim(),
-        quantity: _quantity,
-      );
+    final cartState = CartState.of(context);
+    final result = await cartState.addItem(
+      userId,
+      widget.product,
+      selectedSize: selectedSize,
+      sizePrice: sizeExtra,
+      selectedToppings: selectedToppings,
+      note: _noteController.text.trim(),
+      quantity: _quantity,
+    );
 
-      if (mounted) {
+    if (!mounted) return;
+
+    switch (result) {
+      case CartAddResult.success:
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -162,17 +164,114 @@ class _ProductDetailBottomSheetState
             behavior: SnackBarBehavior.floating,
           ),
         );
-      }
-    } catch (e) {
-      if (mounted) {
+        break;
+      case CartAddResult.differentStore:
+        _showDifferentStoreDialog(cartState);
+        break;
+      case CartAddResult.outOfStock:
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Loi them vao gio hang: $e'),
+            content: Text(cartState.errorMessage ?? 'Mon an dang het hang.'),
             backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
           ),
         );
-      }
+        break;
+      case CartAddResult.notFound:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(cartState.errorMessage ?? 'San pham khong ton tai.'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        break;
+      case CartAddResult.otherError:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(cartState.errorMessage ?? 'Loi them vao gio hang.'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        break;
     }
+  }
+
+  void _showDifferentStoreDialog(CartState cartState) {
+    final message = cartState.differentStoreErrorMessage ??
+        'Gio hang hien co mon tu cua hang khac. Ban co muon xoa gio hang hien tai de them mon nay?';
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Cua hang khac'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Huy',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final userId = AuthStorage.getUserId();
+              if (userId == null) return;
+
+              final result = await cartState.replaceCartAndAddItem(
+                userId,
+                widget.product,
+                selectedSize: _selectedOptions.entries
+                    .where((e) => widget.product.optionGroups.any(
+                        (g) => g.name == e.key && g.isSingleSelect))
+                    .expand((e) => e.value)
+                    .firstOrNull,
+                selectedToppings: widget.product.optionGroups
+                    .where((g) => !g.isSingleSelect)
+                    .expand((g) => g.options.where(
+                        (o) => _selectedOptions[g.name]?.contains(o.name) == true))
+                    .map((o) => {'name': o.name, 'price': o.price})
+                    .toList(),
+                note: _noteController.text.trim(),
+                quantity: _quantity,
+              );
+
+              if (!mounted) return;
+
+              if (result == CartAddResult.success) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(context.t('success_add_to_cart')),
+                    backgroundColor: AppColors.primary,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(cartState.errorMessage ?? 'Loi them vao gio hang.'),
+                    backgroundColor: AppColors.error,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Xoa va them moi'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

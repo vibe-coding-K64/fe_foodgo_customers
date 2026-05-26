@@ -38,14 +38,14 @@ class HomeHeader extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: StreamBuilder<AddressModel?>(
-              stream: const AddressService().getDefaultAddressStream(),
+            child: FutureBuilder<AddressModel?>(
+              future: const AddressService().getDefaultAddress(),
               builder: (context, snapshot) {
                 String diaChiHienThi;
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   diaChiHienThi = 'Dang tai dia chi...';
                 } else if (snapshot.hasData && snapshot.data != null) {
-                  diaChiHienThi = snapshot.data!.addressText;
+                  diaChiHienThi = snapshot.data!.address;
                 } else {
                   diaChiHienThi = 'Chua thiet lap dia chi';
                 }

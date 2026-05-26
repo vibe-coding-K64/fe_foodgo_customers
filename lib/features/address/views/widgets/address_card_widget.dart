@@ -20,22 +20,22 @@ class AddressCardWidget extends StatelessWidget {
     required this.onDelete,
   });
 
-  /// Tra ve nhan dia chi. Uu tien label tu Firestore, neu rong thi su dung logic heuristic.
+  /// Tra ve nhan dia chi. Uu tien name tu API, neu rong thi su dung logic heuristic.
   String _getLabel(BuildContext context) {
-    if (address.label.isEmpty) {
+    if (address.name.isEmpty) {
       return context.t('address_name_other');
     }
-    if (address.label.contains('Công ty') ||
-        address.label.contains('Office') ||
-        address.label.contains('Cong ty')) {
+    if (address.name.contains('Công ty') ||
+        address.name.contains('Office') ||
+        address.name.contains('Cong ty')) {
       return context.t('address_name_office');
     }
-    if (address.label.contains('Nhà') ||
-        address.label.contains('Home') ||
-        address.label.contains('Nha')) {
+    if (address.name.contains('Nhà') ||
+        address.name.contains('Home') ||
+        address.name.contains('Nha')) {
       return context.t('address_name_home');
     }
-    return address.label;
+    return address.name;
   }
 
   /// Dinh dang so dien thoai: 0901234567 -> 0901 234 567.
@@ -212,7 +212,7 @@ class AddressCardWidget extends StatelessWidget {
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
-                    address.addressText,
+                    address.address,
                     style: const TextStyle(
                       fontSize: 13,
                       color: AppColors.textSecondary,

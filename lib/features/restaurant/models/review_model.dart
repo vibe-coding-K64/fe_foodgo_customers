@@ -1,8 +1,7 @@
 /// Model danh gia cua mot quan an.
-///
-/// Mo phong du lieu tu Firestore de test UI.
 class ReviewModel {
   final String id;
+  final String? orderId;
   final String storeId;
   final String userId;
   final String userName;
@@ -11,9 +10,11 @@ class ReviewModel {
   final String? comment;
   final List<String> imageUrls;
   final DateTime createdAt;
+  final DateTime updatedAt;
 
   ReviewModel({
     required this.id,
+    this.orderId,
     required this.storeId,
     required this.userId,
     required this.userName,
@@ -22,7 +23,43 @@ class ReviewModel {
     this.comment,
     this.imageUrls = const [],
     required this.createdAt,
+    required this.updatedAt,
   });
+
+  factory ReviewModel.fromJson(Map<String, dynamic> json) {
+    return ReviewModel(
+      id: json['id'] as String,
+      orderId: json['orderId'] as String?,
+      storeId: json['storeId'] as String,
+      userId: json['userId'] as String,
+      userName: json['userName'] as String,
+      userAvatarUrl: (json['userAvatarUrl'] as String?) ?? '',
+      starRating: json['starRating'] as int,
+      comment: json['comment'] as String?,
+      imageUrls: (json['imageUrls'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'orderId': orderId,
+      'storeId': storeId,
+      'userId': userId,
+      'userName': userName,
+      'userAvatarUrl': userAvatarUrl,
+      'starRating': starRating,
+      'comment': comment,
+      'imageUrls': imageUrls,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+    };
+  }
 }
 
 /// Mock data thong ke so sao.

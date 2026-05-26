@@ -2,6 +2,8 @@
 /// Co them truong toppings de hien thi lua chon them.
 class CheckoutCartItem {
   final String id;
+  final String foodId;
+  final String storeId;
   final String name;
   final String imageUrl;
   final double unitPrice;
@@ -11,6 +13,8 @@ class CheckoutCartItem {
 
   CheckoutCartItem({
     required this.id,
+    this.foodId = '',
+    this.storeId = '',
     required this.name,
     required this.imageUrl,
     required this.unitPrice,
@@ -21,6 +25,8 @@ class CheckoutCartItem {
 
   CheckoutCartItem copyWith({
     String? id,
+    String? foodId,
+    String? storeId,
     String? name,
     String? imageUrl,
     double? unitPrice,
@@ -30,6 +36,8 @@ class CheckoutCartItem {
   }) {
     return CheckoutCartItem(
       id: id ?? this.id,
+      foodId: foodId ?? this.foodId,
+      storeId: storeId ?? this.storeId,
       name: name ?? this.name,
       imageUrl: imageUrl ?? this.imageUrl,
       unitPrice: unitPrice ?? this.unitPrice,

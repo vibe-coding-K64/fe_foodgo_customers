@@ -96,6 +96,33 @@ class CartItemModel {
     );
   }
 
+  /// Parse tu API response (POST /api/cart/add response.data).
+  ///
+  /// API tra ve: { "success": true, "code": 200, "data": { ... } }
+  /// trong do data chua day du cac truong cua item.
+  factory CartItemModel.fromApiJson(Map<String, dynamic> json) {
+    final toppingsList = (json['toppings'] as List<dynamic>?)
+            ?.map((t) => CartTopping.fromJson(t as Map<String, dynamic>))
+            .toList() ??
+        [];
+
+    return CartItemModel(
+      id: json['id'] as String? ?? '',
+      storeId: json['storeId'] as String? ?? '',
+      foodId: json['foodId'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      quantity: (json['quantity'] as num?)?.toInt() ?? 1,
+      size: json['size'] as String?,
+      sizePrice: (json['sizePrice'] as num?)?.toDouble(),
+      toppings: toppingsList,
+      note: json['note'] as String?,
+      imageUrl: json['imageUrl'] as String?,
+      createdAt: _parseTimestamp(json['createdAt']),
+      updatedAt: _parseTimestamp(json['updatedAt']),
+    );
+  }
+
   static DateTime _parseTimestamp(dynamic value) {
     if (value is Timestamp) {
       return value.toDate();
@@ -199,5 +226,48 @@ class CartItemModel {
   String get toppingsLabel {
     if (toppings.isEmpty) return '';
     return toppings.map((t) => t.name).join(', ');
+  }
+
+  /// Chuyen thanh map JSON de luu local.
+  Map<String, dynamic> toLocalJson() {
+    return {
+      'id': id,
+      'storeId': storeId,
+      'foodId': foodId,
+      'name': name,
+      'price': price,
+      'quantity': quantity,
+      if (size != null) 'size': size,
+      if (sizePrice != null) 'sizePrice': sizePrice,
+      'toppings': toppings.map((t) => t.toJson()).toList(),
+      if (note != null && note!.isNotEmpty) 'note': note,
+      if (imageUrl != null) 'imageUrl': imageUrl,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+    };
+  }
+
+  /// Tao CartItemModel tu JSON local (da luu bang SharedPreferences).
+  factory CartItemModel.fromLocalJson(Map<String, dynamic> json) {
+    final toppingsList = (json['toppings'] as List<dynamic>?)
+            ?.map((t) => CartTopping.fromJson(t as Map<String, dynamic>))
+            .toList() ??
+        [];
+
+    return CartItemModel(
+      id: json['id'] as String? ?? '',
+      storeId: json['storeId'] as String? ?? '',
+      foodId: json['foodId'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      quantity: (json['quantity'] as num?)?.toInt() ?? 1,
+      size: json['size'] as String?,
+      sizePrice: (json['sizePrice'] as num?)?.toDouble(),
+      toppings: toppingsList,
+      note: json['note'] as String?,
+      imageUrl: json['imageUrl'] as String?,
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ?? DateTime.now(),
+    );
   }
 }

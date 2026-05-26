@@ -12,6 +12,7 @@ class StoreModel {
   final String deliveryTime;
   final double deliveryFee;
   final double distance;
+  final List<String> categoryIds;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -27,6 +28,7 @@ class StoreModel {
     required this.deliveryTime,
     required this.deliveryFee,
     required this.distance,
+    required this.categoryIds,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -46,6 +48,10 @@ class StoreModel {
       deliveryTime: json['deliveryTime'] as String? ?? '15-25 phut',
       deliveryFee: (json['deliveryFee'] as num?)?.toDouble() ?? 0.0,
       distance: (json['distance'] as num?)?.toDouble() ?? 0.0,
+      categoryIds: (json['categoryIds'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -62,12 +68,16 @@ class StoreModel {
       address: data['address'] as String? ?? '',
       rating: (data['rating'] as num?)?.toDouble() ?? 0.0,
       reviewCount: data['reviewCount'] as int? ?? 0,
-      avtUrl: data['avtUrl'] as String? ?? '',
-      backUrl: data['backUrl'] as String? ?? '',
+      avtUrl: data['avtUrl'] as String? ?? data['avt_url'] as String? ?? '',
+      backUrl: data['backUrl'] as String? ?? data['back_url'] as String? ?? '',
       isOpen: data['isOpen'] as bool? ?? false,
       deliveryTime: data['deliveryTime'] as String? ?? '',
       deliveryFee: (data['deliveryFee'] as num?)?.toDouble() ?? 0.0,
       distance: (data['distance'] as num?)?.toDouble() ?? 0.0,
+      categoryIds: (data['categoryIds'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -86,6 +96,7 @@ class StoreModel {
       'deliveryTime': deliveryTime,
       'deliveryFee': deliveryFee,
       'distance': distance,
+      'categoryIds': categoryIds,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -103,6 +114,7 @@ class StoreModel {
     String? deliveryTime,
     double? deliveryFee,
     double? distance,
+    List<String>? categoryIds,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -118,6 +130,7 @@ class StoreModel {
       deliveryTime: deliveryTime ?? this.deliveryTime,
       deliveryFee: deliveryFee ?? this.deliveryFee,
       distance: distance ?? this.distance,
+      categoryIds: categoryIds ?? this.categoryIds,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

@@ -314,7 +314,7 @@ class OrderDetailView extends StatelessWidget {
                   const SizedBox(height: 2),
                   ...item.options!.map(
                     (option) => Text(
-                      '+ ${option['name'] ?? ''}',
+                      '+ ${option.name}',
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,

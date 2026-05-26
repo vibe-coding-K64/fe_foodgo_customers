@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
-import '../models/address_model.dart' as new_addr;
+import '../models/address_model.dart';
+import '../services/address_service.dart';
 
 /// Man hinh form Them moi / Cap nhat dia chi.
 ///
@@ -11,7 +12,7 @@ import '../models/address_model.dart' as new_addr;
 ///   2. [onSave] - callback khi nguoi dung bam "Luu dia chi"
 ///
 /// Thu tu tra du lieu (sau khi luu):
-///   - Tra ve new_addr.AddressModel da duoc tao / cap nhat thong qua callback [onSave].
+///   - Tra ve AddressModel da duoc tao / cap nhat thong qua API.
 ///   - Hoac tra ve [null] neu nguoi dung bam Back.
 ///
 /// Duoc goi tu:
@@ -19,10 +20,10 @@ import '../models/address_model.dart' as new_addr;
 ///   - AddressManagementView: bam nut "Sua" tren card (truyen address)
 class AddressFormView extends StatefulWidget {
   /// Dia chi can sua (null neu la tao moi).
-  final new_addr.AddressModel? address;
+  final AddressModel? address;
 
   /// Callback khi nguoi dung luu thanh cong.
-  final void Function(new_addr.AddressModel address)? onSave;
+  final void Function(AddressModel address)? onSave;
 
   const AddressFormView({
     super.key,
@@ -38,6 +39,8 @@ class AddressFormView extends StatefulWidget {
 }
 
 class _AddressFormViewState extends State<AddressFormView> {
+  final AddressService _addressService = AddressService();
+
   /// Controller cac o nhap lieu.
   late final TextEditingController _receiverNameController;
   late final TextEditingController _phoneController;
@@ -59,7 +62,7 @@ class _AddressFormViewState extends State<AddressFormView> {
   /// Trang thai loading khi dang submit form.
   bool _isSaving = false;
 
-  /// Các loi validate hien tai (key = index cua field).
+  /// Cac loi validate hien tai (key = index cua field).
   final Map<int, String> _fieldErrors = {};
 
   @override
@@ -67,21 +70,18 @@ class _AddressFormViewState extends State<AddressFormView> {
     super.initState();
     final addr = widget.address;
 
-    // Khoi tao controller voi du lieu cu (neu la sua).
     _receiverNameController = TextEditingController(text: addr?.receiverName ?? '');
     _phoneController = TextEditingController(text: addr?.receiverPhone ?? '');
-    _labelController = TextEditingController(text: addr?.label ?? '');
-    _streetController = TextEditingController(text: addr?.addressText ?? '');
+    _labelController = TextEditingController(text: addr?.name ?? '');
+    _streetController = TextEditingController();
     _wardController = TextEditingController();
     _districtController = TextEditingController();
     _cityController = TextEditingController();
 
     if (addr != null) {
       _isDefault = addr.isDefault;
-      // Phan tich dia chi day du de tach cac thanh phan.
-      _parseAddress(addr.addressText);
-      // Xac dinh chip label tuong ung voi label hien tai.
-      _selectedLabel = _inferLabelIndex(addr.label);
+      _parseAddress(addr.address);
+      _selectedLabel = _inferLabelIndex(addr.name);
     }
 
     debugPrint(
@@ -120,11 +120,13 @@ class _AddressFormViewState extends State<AddressFormView> {
 
   /// Phan tich dia chi day du thanh tung thanh phan.
   void _parseAddress(String fullAddress) {
-    // Mac dinh: "123 Nguyen Hue, Quan 1, TP.HCM"
     final parts = fullAddress.split(',').map((p) => p.trim()).toList();
-    if (parts.length >= 1) _streetController.text = parts[0];
+    if (parts.isNotEmpty) _streetController.text = parts[0];
     if (parts.length >= 2) _districtController.text = parts[1];
     if (parts.length >= 3) _cityController.text = parts[2];
+    if (parts.length >= 4) {
+      _wardController.text = parts.sublist(3).join(', ');
+    }
   }
 
   /// Goop tat ca thanh phan dia chi thanh mot chuoi day du.
@@ -132,6 +134,7 @@ class _AddressFormViewState extends State<AddressFormView> {
     final street = _streetController.text.trim();
     final district = _districtController.text.trim();
     final city = _cityController.text.trim();
+    final ward = _wardController.text.trim();
 
     final buffer = StringBuffer();
     if (street.isNotEmpty) buffer.write(street);
@@ -142,6 +145,10 @@ class _AddressFormViewState extends State<AddressFormView> {
     if (city.isNotEmpty) {
       if (buffer.isNotEmpty) buffer.write(', ');
       buffer.write(city);
+    }
+    if (ward.isNotEmpty) {
+      if (buffer.isNotEmpty) buffer.write(', ');
+      buffer.write(ward);
     }
     return buffer.isEmpty ? street : buffer.toString();
   }
@@ -162,7 +169,6 @@ class _AddressFormViewState extends State<AddressFormView> {
   }
 
   /// Validate tat ca cac truong bat buoc.
-  /// Tra ve true neu tat ca deu hop le.
   bool _validate(BuildContext context) {
     final t = context.t;
     final errors = <int, String>{};
@@ -194,41 +200,84 @@ class _AddressFormViewState extends State<AddressFormView> {
   }
 
   /// Xu ly khi nguoi dung bam nut "Luu dia chi".
-  void _onSave() {
+  void _onSave() async {
     if (!_validate(context)) return;
 
     setState(() => _isSaving = true);
 
-    final now = DateTime.now();
-    final addr = new_addr.AddressModel(
-      id: widget.address?.id ?? 'addr_${now.millisecondsSinceEpoch}',
-      label: _getLabelValue(_selectedLabel, context),
-      addressText: _buildFullAddress(),
-      receiverName: _receiverNameController.text.trim(),
-      receiverPhone: _phoneController.text.trim(),
-      lat: widget.address?.lat,
-      lng: widget.address?.lng,
-      isDefault: _isDefault,
-    );
+    try {
+      final fullAddress = _buildFullAddress();
+      final label = _getLabelValue(_selectedLabel, context);
 
-    debugPrint(
-        'AddressFormView: Luu dia chi [${addr.id}] - ${addr.label}, ${addr.addressText}, mac dinh=${addr.isDefault}');
+      debugPrint(
+          'AddressFormView: Dang luu dia chi - name=$label, address=$fullAddress, '
+          'receiverName=${_receiverNameController.text.trim()}, '
+          'receiverPhone=${_phoneController.text.trim()}, '
+          'lat=${widget.address?.lat}, lng=${widget.address?.lng}, '
+          'isDefault=$_isDefault');
 
-    // Thong bao thanh cong.
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.t('address_form_saved')),
-        backgroundColor: AppColors.primary,
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+      final AddressModel savedAddress;
 
-    // Goi callback.
-    widget.onSave?.call(addr);
+      if (widget.isEditMode) {
+        savedAddress = await _addressService.updateAddress(
+          addressId: widget.address!.id,
+          name: label,
+          address: fullAddress,
+          receiverName: _receiverNameController.text.trim(),
+          receiverPhone: _phoneController.text.trim(),
+          lat: widget.address?.lat,
+          lng: widget.address?.lng,
+          isDefault: _isDefault,
+        );
+      } else {
+        savedAddress = await _addressService.createAddress(
+          name: label,
+          address: fullAddress,
+          receiverName: _receiverNameController.text.trim(),
+          receiverPhone: _phoneController.text.trim(),
+          lat: widget.address?.lat,
+          lng: widget.address?.lng,
+          isDefault: _isDefault,
+        );
+      }
 
-    // Quay lai.
-    Navigator.pop(context, addr);
+      debugPrint(
+          'AddressFormView: Da luu dia chi [${savedAddress.id}] thanh cong');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.t('address_form_saved')),
+            backgroundColor: AppColors.primary,
+            duration: const Duration(seconds: 1),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+
+        widget.onSave?.call(savedAddress);
+        Navigator.pop(context, savedAddress);
+      }
+    } catch (e) {
+      debugPrint('AddressFormView: Loi khi luu dia chi - $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.isEditMode
+                  ? context.t('address_error_update')
+                  : context.t('address_error_create'),
+            ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 
   /// Khoi tao style cho TextField.
@@ -355,7 +404,6 @@ class _AddressFormViewState extends State<AddressFormView> {
     return GestureDetector(
       onTap: () {
         debugPrint('AddressFormView: Nguoi dung bam chon ban do (chua ho tro)');
-        // TODO: Mo trang ban do / tra ve toa do.
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -422,7 +470,7 @@ class _AddressFormViewState extends State<AddressFormView> {
       keyboardType: TextInputType.phone,
       inputFormatters: [
         FilteringTextInputFormatter.digitsOnly,
-        LengthLimitingTextInputFormatter(10),
+        LengthLimitingTextInputFormatter(11),
       ],
       onSubmitted: (_) => _focusNodes[2].requestFocus(),
       decoration: _buildInputDecoration(

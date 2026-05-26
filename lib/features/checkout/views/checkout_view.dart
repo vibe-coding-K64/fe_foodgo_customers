@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:fe_foodgo_customers/core/constants/app_colors.dart';
 import 'package:fe_foodgo_customers/core/localization/language_service.dart';
 import 'package:fe_foodgo_customers/features/order/models/order_model.dart';
-import 'package:fe_foodgo_customers/features/profile/models/address_model.dart';
+import 'package:fe_foodgo_customers/features/address/models/address_model.dart';
 import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_delivery_info.dart';
 import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_cart_item.dart';
 import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_cart_items.dart';
 import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_promotions.dart';
 import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_summary.dart';
 import 'package:fe_foodgo_customers/features/address/views/address_management_view.dart';
+import 'package:fe_foodgo_customers/features/checkout/services/checkout_service.dart';
+import 'package:fe_foodgo_customers/features/checkout/models/checkout_models.dart';
 
 /// Trang checkout (Thanh toan) - buoc cuoi cung cua luong mua hang.
 /// Giao dien gom: thong tin giao hang, danh sach mon, uu dai,
@@ -34,35 +36,32 @@ class _CheckoutViewState extends State<CheckoutView> {
   // Danh sach mon trong gio hang (du lieu gia).
   late List<CheckoutCartItem> _cartItems;
 
-  // Cac truong thai tuy chon.
-  bool _isPointsEnabled = false;
+  // Phuong thuc thanh toan.
   String _selectedVoucher = '';
   String _selectedPaymentMethod = 'cash';
+  String _orderNote = '';
 
   // Model mock voucher.
   static final List<_VoucherModel> _freeshipVouchers = [
     _VoucherModel(
-      id: 'fs_001',
+      id: 'sys_voucher_001',
       name: 'Mien phi giao hang - Thai Hoa',
-      code: 'THFREESHIP',
       discount: 0,
       type: _VoucherType.freeship,
       minOrder: 50000,
       expireDate: DateTime.now().add(const Duration(days: 7)),
     ),
     _VoucherModel(
-      id: 'fs_002',
+      id: 'sys_voucher_002',
       name: 'Freeship cho don tu 30K',
-      code: 'FS30K',
       discount: 0,
       type: _VoucherType.freeship,
       minOrder: 30000,
       expireDate: DateTime.now().add(const Duration(days: 14)),
     ),
     _VoucherModel(
-      id: 'fs_003',
+      id: 'sys_voucher_003',
       name: 'Mien phi giao hang cho quy khach than thiet',
-      code: 'VIPFREE',
       discount: 0,
       type: _VoucherType.freeship,
       minOrder: 100000,
@@ -72,27 +71,24 @@ class _CheckoutViewState extends State<CheckoutView> {
 
   static final List<_VoucherModel> _discountVouchers = [
     _VoucherModel(
-      id: 'ds_001',
+      id: 'sys_voucher_010',
       name: 'Giam 10K cho don tu 80K',
-      code: 'GIAM10K',
       discount: 10000,
       type: _VoucherType.discount,
       minOrder: 80000,
       expireDate: DateTime.now().add(const Duration(days: 5)),
     ),
     _VoucherModel(
-      id: 'ds_002',
+      id: 'sys_voucher_011',
       name: 'Giam 20% (toi da 30K)',
-      code: 'SUMMER20',
       discount: 30,
       type: _VoucherType.percent,
       minOrder: 100000,
       expireDate: DateTime.now().add(const Duration(days: 10)),
     ),
     _VoucherModel(
-      id: 'ds_003',
+      id: 'sys_voucher_012',
       name: 'Giam 15K - Khach hang moi',
-      code: 'NEWUSER15',
       discount: 15000,
       type: _VoucherType.discount,
       minOrder: 50000,
@@ -124,24 +120,22 @@ class _CheckoutViewState extends State<CheckoutView> {
     ),
   ];
 
-  /// Tra ve danh sach topping tuy chon cho mot mon (dung khi sua).
-  /// Cac topping nay la cac tuy chon co san cua mon do.
-  List<_ToppingOption> _getToppingOptions(String itemId) {
-    switch (itemId) {
-      case 'item_001':
+  List<_ToppingOption> _getToppingOptions(String foodId) {
+    switch (foodId) {
+      case 'prod_001':
         return [
           _ToppingOption(name: 'Tran chau', price: 5000),
           _ToppingOption(name: 'Thach ca phe', price: 8000),
           _ToppingOption(name: 'Them bo', price: 12000),
           _ToppingOption(name: 'Them sua', price: 5000),
         ];
-      case 'item_002':
+      case 'prod_002':
         return [
           _ToppingOption(name: 'Da', price: 0),
           _ToppingOption(name: 'Them duong', price: 3000),
           _ToppingOption(name: 'Them ca phe', price: 5000),
         ];
-      case 'item_003':
+      case 'prod_003':
         return [
           _ToppingOption(name: 'Trai cay', price: 12000),
           _ToppingOption(name: 'Pudding', price: 6000),
@@ -170,11 +164,7 @@ class _CheckoutViewState extends State<CheckoutView> {
     if (_selectedVoucher.isNotEmpty) {
       voucherDiscount = 5000;
     }
-    double pointsDiscount = 0;
-    if (_isPointsEnabled) {
-      pointsDiscount = 10000;
-    }
-    return voucherDiscount + pointsDiscount;
+    return voucherDiscount;
   }
 
   double get _totalPayment {
@@ -187,9 +177,11 @@ class _CheckoutViewState extends State<CheckoutView> {
     super.initState();
     _deliveryAddress = AddressModel(
       id: 'addr_001',
-      userId: '0901234567',
-      name: 'Nguyen Van A',
+      userId: 'user_001',
+      name: 'Nhà riêng',
       address: '123 Nguyen Hue, Quan 1, TP.HCM',
+      receiverName: 'Nguyen Van A',
+      receiverPhone: '0901234567',
       lat: 10.7769,
       lng: 106.7009,
       isDefault: true,
@@ -208,6 +200,8 @@ class _CheckoutViewState extends State<CheckoutView> {
       _cartItems = [
         CheckoutCartItem(
           id: 'item_001',
+          foodId: 'prod_001',
+          storeId: 'store_001',
           name: 'Tra Sua Tran Chau Duong',
           imageUrl: 'https://picsum.photos/seed/milktea1/200',
           unitPrice: 35000,
@@ -219,6 +213,8 @@ class _CheckoutViewState extends State<CheckoutView> {
         ),
         CheckoutCartItem(
           id: 'item_002',
+          foodId: 'prod_002',
+          storeId: 'store_001',
           name: 'Ca phe sua da',
           imageUrl: 'https://picsum.photos/seed/coffee2/200',
           unitPrice: 29000,
@@ -227,6 +223,8 @@ class _CheckoutViewState extends State<CheckoutView> {
         ),
         CheckoutCartItem(
           id: 'item_003',
+          foodId: 'prod_003',
+          storeId: 'store_001',
           name: 'Tra vai Thach Vuive',
           imageUrl: 'https://picsum.photos/seed/greentea3/200',
           unitPrice: 42000,
@@ -245,14 +243,16 @@ class _CheckoutViewState extends State<CheckoutView> {
     return order.items.map((item) {
       return CheckoutCartItem(
         id: 'reorder_${order.id}_${item.name.hashCode}',
+        foodId: item.foodId,
+        storeId: order.storeId,
         name: item.name,
         imageUrl: item.imageUrl ?? '',
         unitPrice: item.price,
         quantity: item.quantity,
         toppings: (item.options ?? [])
             .map((o) => CheckoutTopping(
-                  name: o['name']?.toString() ?? '',
-                  price: (o['price'] as num?)?.toDouble() ?? 0,
+                  name: o.name,
+                  price: o.price,
                 ))
             .toList(),
       );
@@ -312,15 +312,12 @@ class _CheckoutViewState extends State<CheckoutView> {
     _showPaymentMethodBottomSheet();
   }
 
-  /// Xu ly toggle Switch Diem tich luy.
-  void _onPointsToggle(bool value) {
-    setState(() {
-      _isPointsEnabled = value;
-    });
-    debugPrint('Checkout: Nguoi dung ${value ? "bat" : "tat"} diem tich luy');
-  }
+  void _onPlaceOrder() async {
+    if (_cartItems.isEmpty) {
+      _showSnackBar(context, 'Gio hang cua ban dang rong');
+      return;
+    }
 
-  void _onPlaceOrder() {
     debugPrint('========== CHECKOUT: DAT HANG ==========');
     debugPrint('Dia chi giao hang: ${_deliveryAddress.address}');
     debugPrint('So mon: ${_cartItems.length}');
@@ -334,11 +331,110 @@ class _CheckoutViewState extends State<CheckoutView> {
     debugPrint('Giam gia: -${_formatPrice(_discount)} VND');
     debugPrint('Tong thanh toan: ${_formatPrice(_totalPayment)} VND');
     debugPrint('Phuong thuc thanh toan: $_selectedPaymentMethod');
-    debugPrint('Diem tich luy: ${_isPointsEnabled ? "co" : "khong"}');
     debugPrint(
       'Voucher: ${_selectedVoucher.isEmpty ? "khong" : _selectedVoucher}',
     );
+    debugPrint('Ghi chu: $_orderNote');
     debugPrint('==========================================');
+
+    // Hien thi loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final request = CheckoutRequest(
+        userId: 'user_001',
+        addressId: _deliveryAddress.id,
+        paymentMethod: _selectedPaymentMethod,
+        voucherId: _selectedVoucher.isEmpty ? null : _selectedVoucher,
+        note: _orderNote.isEmpty ? null : _orderNote,
+      );
+
+      final response = await CheckoutService.checkout(request);
+
+      if (!mounted) return;
+      Navigator.pop(context);
+
+      debugPrint(
+        '[Checkout] Dat hang thanh cong: orderId=${response.orderId}, '
+        'orderCode=${response.orderCode}, finalAmount=${response.finalAmount}',
+      );
+
+      _showOrderSuccessDialog(context, response);
+    } on CheckoutException catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      _showSnackBar(context, e.error.message);
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      _showSnackBar(context, 'Da xay ra loi. Vui long thu lai.');
+    }
+  }
+
+  void _showOrderSuccessDialog(BuildContext context, CheckoutResponse response) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle, color: AppColors.primary, size: 28),
+            SizedBox(width: 10),
+            Text('Dat hang thanh cong!'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Ma don hang: ${response.orderCode}',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Text('Ten cua hang: ${response.storeName}'),
+            Text('Dia chi giao: ${response.deliveryAddress}'),
+            const SizedBox(height: 8),
+            Text(
+              'Tong thanh toan: ${_formatPrice(response.finalAmount)} VND',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Vui long cho cua hang xac nhan don hang.',
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pop(context, response);
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -402,12 +498,16 @@ class _CheckoutViewState extends State<CheckoutView> {
                   CheckoutPromotions(
                     onVoucherTap: _onVoucherTap,
                     onPaymentMethodTap: _onPaymentMethodTap,
-                    onPointsToggle: _onPointsToggle,
-                    isPointsEnabled: _isPointsEnabled,
                     selectedVoucher: _selectedVoucher.isEmpty
                         ? null
                         : _selectedVoucher,
                     selectedPaymentMethod: _selectedPaymentMethod,
+                    onNoteChanged: (note) {
+                      setState(() {
+                        _orderNote = note;
+                      });
+                    },
+                    orderNote: _orderNote,
                   ),
                   const SizedBox(height: 20),
                   // PHAN 4: Chi tiet hoa don.
@@ -735,13 +835,13 @@ class _CheckoutViewState extends State<CheckoutView> {
         final voucher = vouchers[index];
         return _VoucherCard(
           voucher: voucher,
-          isSelected: _selectedVoucher == voucher.code,
+          isSelected: _selectedVoucher == voucher.id,
           onApply: () {
             debugPrint(
-              'Checkout: Ap dung voucher [${voucher.code}] - ${voucher.name}',
+              'Checkout: Ap dung voucher [${voucher.id}] - ${voucher.name}',
             );
             setState(() {
-              _selectedVoucher = voucher.code;
+              _selectedVoucher = voucher.id;
             });
             Navigator.pop(context);
           },
@@ -1124,7 +1224,6 @@ enum _VoucherType { freeship, discount, percent }
 class _VoucherModel {
   final String id;
   final String name;
-  final String code;
   final double discount;
   final _VoucherType type;
   final double minOrder;
@@ -1133,7 +1232,6 @@ class _VoucherModel {
   const _VoucherModel({
     required this.id,
     required this.name,
-    required this.code,
     required this.discount,
     required this.type,
     required this.minOrder,

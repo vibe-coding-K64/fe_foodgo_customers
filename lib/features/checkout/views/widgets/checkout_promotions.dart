@@ -3,23 +3,25 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
 
 /// Widget hien thi phan uu dai va phuong thuc thanh toan o buoc checkout.
-/// Bao gom: Voucher, Diem tich luy (Switch), Phuong thuc thanh toan.
+/// Bao gom: Voucher, Ghi chu don hang, Phuong thuc thanh toan.
 class CheckoutPromotions extends StatelessWidget {
   final VoidCallback? onVoucherTap;
   final VoidCallback? onPaymentMethodTap;
-  final ValueChanged<bool>? onPointsToggle;
-  final bool isPointsEnabled;
   final String? selectedVoucher;
+  final String? selectedVoucherName;
   final String selectedPaymentMethod;
+  final String orderNote;
+  final ValueChanged<String>? onNoteChanged;
 
   const CheckoutPromotions({
     super.key,
     this.onVoucherTap,
     this.onPaymentMethodTap,
-    this.onPointsToggle,
-    this.isPointsEnabled = false,
     this.selectedVoucher,
+    this.selectedVoucherName,
     this.selectedPaymentMethod = 'cash',
+    this.orderNote = '',
+    this.onNoteChanged,
   });
 
   @override
@@ -27,18 +29,13 @@ class CheckoutPromotions extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // DONG 1: Voucher.
         _PromoRow(
           icon: Icons.local_offer_outlined,
-          label: selectedVoucher ??
-              context.t('checkout_voucher'),
+          label: selectedVoucherName ?? context.t('checkout_voucher'),
           iconColor: AppColors.secondary,
           valueColor:
               selectedVoucher != null ? AppColors.primary : AppColors.textHint,
-          onTap: () {
-            debugPrint('Checkout: Nguoi dung bam chon voucher');
-            onVoucherTap?.call();
-          },
+          onTap: onVoucherTap,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -51,7 +48,7 @@ class CheckoutPromotions extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    selectedVoucher!,
+                    selectedVoucherName ?? selectedVoucher!,
                     style: const TextStyle(
                       fontSize: 11,
                       color: AppColors.primary,
@@ -69,23 +66,18 @@ class CheckoutPromotions extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        // DONG 2: Diem tich luy (Switch).
-        _PointsRow(
-          isEnabled: isPointsEnabled,
-          onToggle: onPointsToggle,
+        _NoteRow(
+          note: orderNote,
+          onNoteChanged: onNoteChanged,
         ),
         const SizedBox(height: 10),
-        // DONG 3: Phuong thuc thanh toan.
         _PromoRow(
           icon: Icons.payment_outlined,
           label: context.t('checkout_payment_method'),
           iconColor: AppColors.primary,
           value: _getPaymentLabel(context, selectedPaymentMethod),
           valueColor: AppColors.textPrimary,
-          onTap: () {
-            debugPrint('Checkout: Nguoi dung bam doi phuong thuc thanh toan');
-            onPaymentMethodTap?.call();
-          },
+          onTap: onPaymentMethodTap,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -131,8 +123,10 @@ class CheckoutPromotions extends StatelessWidget {
     switch (method) {
       case 'cash':
         return context.t('checkout_payment_cash');
-      case 'wallet':
-        return context.t('checkout_payment_wallet');
+      case 'momo':
+        return context.t('checkout_payment_momo');
+      case 'zalo':
+        return context.t('checkout_payment_zalo');
       case 'card':
         return context.t('checkout_payment_card');
       default:
@@ -144,7 +138,9 @@ class CheckoutPromotions extends StatelessWidget {
     switch (method) {
       case 'cash':
         return Icons.money_outlined;
-      case 'wallet':
+      case 'momo':
+        return Icons.wallet_outlined;
+      case 'zalo':
         return Icons.account_balance_wallet_outlined;
       case 'card':
         return Icons.credit_card_outlined;
@@ -195,28 +191,15 @@ class _PromoRow extends StatelessWidget {
             Icon(icon, color: iconColor, size: 22),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  if (value != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      value!,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: valueColor,
-                      ),
-                    ),
-                  ],
-                ],
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             if (trailing != null) trailing!,
@@ -227,14 +210,42 @@ class _PromoRow extends StatelessWidget {
   }
 }
 
-class _PointsRow extends StatelessWidget {
-  final bool isEnabled;
-  final ValueChanged<bool>? onToggle;
+class _NoteRow extends StatefulWidget {
+  final String note;
+  final ValueChanged<String>? onNoteChanged;
 
-  const _PointsRow({
-    required this.isEnabled,
-    this.onToggle,
+  const _NoteRow({
+    required this.note,
+    this.onNoteChanged,
   });
+
+  @override
+  State<_NoteRow> createState() => _NoteRowState();
+}
+
+class _NoteRowState extends State<_NoteRow> {
+  bool _isExpanded = false;
+  late TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.note);
+  }
+
+  @override
+  void didUpdateWidget(_NoteRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.note != widget.note && _controller.text != widget.note) {
+      _controller.text = widget.note;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -251,38 +262,84 @@ class _PointsRow extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.star_outline, color: Colors.amber[700], size: 22),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+            child: Row(
               children: [
-                Text(
-                  context.t('checkout_use_points'),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                const Icon(
+                  Icons.note_outlined,
+                  color: AppColors.secondary,
+                  size: 22,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _isExpanded
+                        ? context.t('checkout_order_note')
+                        : (widget.note.isEmpty
+                            ? context.t('checkout_add_note')
+                            : widget.note),
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: widget.note.isEmpty && !_isExpanded
+                          ? AppColors.textHint
+                          : AppColors.textPrimary,
+                    ),
+                    maxLines: _isExpanded ? null : 1,
+                    overflow:
+                        _isExpanded ? null : TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  context.t('checkout_points_note'),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textHint,
-                  ),
+                Icon(
+                  _isExpanded ? Icons.expand_less : Icons.expand_more,
+                  color: AppColors.textHint,
+                  size: 22,
                 ),
               ],
             ),
           ),
-          Switch(
-            value: isEnabled,
-            onChanged: onToggle,
-            activeColor: AppColors.primary,
-          ),
+          if (_isExpanded) ...[
+            const SizedBox(height: 8),
+            TextField(
+              controller: _controller,
+              maxLines: 2,
+              maxLength: 100,
+              decoration: InputDecoration(
+                hintText: context.t('checkout_note_hint'),
+                hintStyle: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textHint,
+                ),
+                filled: true,
+                fillColor: AppColors.background,
+                contentPadding: const EdgeInsets.all(10),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 2,
+                  ),
+                ),
+              ),
+              onChanged: widget.onNoteChanged,
+            ),
+          ],
         ],
       ),
     );

@@ -30,6 +30,7 @@
     "id": "order_001",
     "userId": "user_001",
     "storeId": "store_001",
+    "storeName": "Quan Com Tam Sai Gon",
     "code": "ORDER01",
     "customerName": "Khach hang",
     "customerPhone": "0123456789",
@@ -77,6 +78,7 @@
   "id": "order_001",
   "userId": "user_001",
   "storeId": "store_001",
+  "storeName": "Quan Com Tam Sai Gon",
   "code": "ORDER01",
   "customerName": "Khach hang",
   "customerPhone": "0123456789",
@@ -146,10 +148,40 @@
 ### Response (Thanh cong - 200)
 
 ```json
-"AbCdEfGhIjKlMnOpQrStUvWxYz123456"
+{
+  "success": true,
+  "code": 200,
+  "message": "Tao don hang thanh cong.",
+  "data": {
+    "id": "AbCdEfGhIjKlMnOpQrStUvWxYz123456",
+    "userId": "user_001",
+    "storeId": "store_001",
+    "storeName": "Quan Com Tam Sai Gon",
+    "code": "ORD001",
+    "customerName": "Nguyen Van A",
+    "customerPhone": "0123456789",
+    "deliveryAddress": "123 Nguyen Huu, Quan 9, TP.HCM",
+    "items": [
+      {
+        "name": "Com tam suon bi cha",
+        "options": "M",
+        "quantity": 2,
+        "price": 45000.0
+      }
+    ],
+    "totalAmount": 90000.0,
+    "shippingFee": 15000.0,
+    "discountAmount": 0.0,
+    "finalAmount": 105000.0,
+    "paymentMethod": "cash",
+    "status": "Cho xac nhan",
+    "createdAt": "2026-05-25T10:00:00Z",
+    "updatedAt": "2026-05-25T10:00:00Z"
+  }
+}
 ```
 
-Tra ve string: ID cua document don hang moi duoc tao.
+Tra ve ApiResponse chua full OrderDTO (bao gom storeName), khong chi la string ID.
 
 ---
 
@@ -220,6 +252,7 @@ Tra ve string: ID cua document don hang moi duoc tao.
     "id": "order_001",
     "userId": "user_001",
     "storeId": "store_001",
+    "storeName": "Quan Com Tam Sai Gon",
     "code": "ORDER01",
     "customerName": "Khach hang",
     "customerPhone": "0123456789",

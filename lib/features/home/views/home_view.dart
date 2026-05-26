@@ -24,9 +24,9 @@ import '../services/home_service.dart';
 ///   2. Thanh tim kiem.
 ///   3. Danh muc mon an (tu Firestore Stream).
 ///   4. Banner quang cao (tu Firestore Stream).
-///   5. Quan ngon gan day (tu API my-json-server /nearby_stores).
-///   6. Mon an noi bat (tu API my-json-server /featured_products).
-///   7. Quan pho bien (tu API, lay nearby_stores dao nguoc).
+///   5. Quan ngon gan day (tu API /api/stores/nearby).
+///   6. Mon an noi bat (tu API /api/products/featured).
+///   7. Quan pho bien (tu API /api/stores/popular).
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
 
@@ -38,15 +38,20 @@ class _HomeViewState extends State<HomeView> {
   final StoreService _storeService = const StoreService();
   final ProductService _productService = const ProductService();
 
-  late final Future<List<StoreModel>> _nearbyStoresFuture;
-  late final Future<List<ProductModel>> _featuredProductsFuture;
-
   @override
   void initState() {
     super.initState();
-    _nearbyStoresFuture = _storeService.getNearbyStores();
+    _nearbyStoresFuture = _storeService.getNearbyStores(
+      lat: 10.8500,
+      lng: 106.7900,
+    );
     _featuredProductsFuture = _productService.getFeaturedProducts();
   }
+
+  late final Future<List<StoreModel>> _nearbyStoresFuture;
+  late final Future<List<ProductModel>> _featuredProductsFuture;
+  final Future<List<StoreModel>> _popularStoresFuture =
+      const StoreService().getPopularStores();
 
   @override
   Widget build(BuildContext context) {
@@ -154,12 +159,12 @@ class _HomeViewState extends State<HomeView> {
                   ),
                 ),
               ),
-              // 7. Quan pho bien (FutureBuilder -> API, dao nguoc nearby_stores).
+              // 7. Quan pho bien (FutureBuilder -> API /stores/popular).
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.only(top: 24),
                   child: _PopularStoresSection(
-                    future: _nearbyStoresFuture,
+                    future: _popularStoresFuture,
                     onSeeAllTap: () {
                       debugPrint('HomeView: Nguoi dung bam xem tat ca quan pho bien');
                     },
@@ -544,8 +549,7 @@ class _PopularStoresSection extends StatelessWidget {
               );
             }
 
-            // Dao nguoc danh sach de hien thi "quan pho bien" (hoac lay 5 item dau).
-            final popularStores = allStores.reversed.take(5).toList();
+            final popularStores = allStores.take(5).toList();
 
             return ListView.separated(
               shrinkWrap: true,

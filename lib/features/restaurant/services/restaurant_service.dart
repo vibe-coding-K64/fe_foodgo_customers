@@ -63,6 +63,7 @@ class RestaurantService {
       deliveryTime: '20 - 30 phut',
       deliveryFee: 15000,
       distance: 2.5,
+      categoryIds: const [],
       createdAt: DateTime.now().subtract(const Duration(days: 365)),
       updatedAt: DateTime.now(),
     );
@@ -86,6 +87,7 @@ class RestaurantService {
       comment: r.comment,
       imageUrls: r.imageUrls,
       createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
     )).toList();
   }
 
@@ -579,7 +581,6 @@ class RestaurantService {
   // ================================================================
 
   static final List<ReviewModel> _mockReviews = [
-    // ---------- CO BINH LUAN + CO ANH ----------
     ReviewModel(
       id: 'r001',
       storeId: 's001',
@@ -587,16 +588,16 @@ class RestaurantService {
       userName: 'Nguyen Van A',
       userAvatarUrl: 'https://i.pravatar.cc/150?img=1',
       starRating: 5,
-      comment: 'Quan an rat ngon, dac biet la com suon nuong that suot. Thuc don da dong du, mon moi deu thu vi. Nhan vien phuc vu nhanh chong va than thien.',
+      comment:
+          'Quan an rat ngon, dac biet la com suon nuong that suot. Thuc don da dong du, mon moi deu thu vi. Nhan vien phuc vu nhanh chong va than thien.',
       imageUrls: [
         'https://picsum.photos/seed/review1a/300/300',
         'https://picsum.photos/seed/review1b/300/300',
         'https://picsum.photos/seed/review1c/300/300',
       ],
       createdAt: DateTime(2026, 4, 5, 10, 30),
+      updatedAt: DateTime(2026, 4, 5, 10, 30),
     ),
-
-    // ---------- CO BINH LUAN, KHONG ANH ----------
     ReviewModel(
       id: 'r002',
       storeId: 's001',
@@ -604,12 +605,12 @@ class RestaurantService {
       userName: 'Tran Thi B',
       userAvatarUrl: 'https://i.pravatar.cc/150?img=5',
       starRating: 4,
-      comment: 'Khoang cach gan, giao hang nhanh hon mong doi. Mon an duoc goi lan 2 van con ngon, dam bao chat luong on dinh.',
+      comment:
+          'Khoang cach gan, giao hang nhanh hon mong doi. Mon an duoc goi lan 2 van con ngon, dam bao chat luong on dinh.',
       imageUrls: [],
       createdAt: DateTime(2026, 4, 4, 14, 15),
+      updatedAt: DateTime(2026, 4, 4, 14, 15),
     ),
-
-    // ---------- KHONG BINH LUAN, KHONG ANH ----------
     ReviewModel(
       id: 'r003',
       storeId: 's001',
@@ -620,9 +621,8 @@ class RestaurantService {
       comment: null,
       imageUrls: [],
       createdAt: DateTime(2026, 4, 3, 9, 0),
+      updatedAt: DateTime(2026, 4, 3, 9, 0),
     ),
-
-    // ---------- 3 SAO, CO BINH LUAN ----------
     ReviewModel(
       id: 'r004',
       storeId: 's001',
@@ -630,12 +630,12 @@ class RestaurantService {
       userName: 'Pham Thi D',
       userAvatarUrl: 'https://i.pravatar.cc/150?img=12',
       starRating: 3,
-      comment: 'Mon an huu ich, nhung thoi gian giao hang tre hon du kien 15 phut. Ban dau goi tra sua that doan, tra rat thom nhung it ngot hon mong doi.',
+      comment:
+          'Mon an huu ich, nhung thoi gian giao hang tre hon du kien 15 phut. Ban dau goi tra sua that doan, tra rat thom nhung it ngot hon mong doi.',
       imageUrls: [],
       createdAt: DateTime(2026, 4, 2, 18, 45),
+      updatedAt: DateTime(2026, 4, 2, 18, 45),
     ),
-
-    // ---------- 4 SAO, CO ANH ----------
     ReviewModel(
       id: 'r005',
       storeId: 's001',
@@ -643,14 +643,14 @@ class RestaurantService {
       userName: 'Hoang Van E',
       userAvatarUrl: 'https://i.pravatar.cc/150?img=20',
       starRating: 4,
-      comment: 'Ga ran that suot, vo gieng, khong bi dai. Pho mai que cung rat ngon, pho mai tan chay vua phai.',
+      comment:
+          'Ga ran that suot, vo gieng, khong bi dai. Pho mai que cung rat ngon, pho mai tan chay vua phai.',
       imageUrls: [
         'https://picsum.photos/seed/review5a/300/300',
       ],
       createdAt: DateTime(2026, 4, 1, 12, 0),
+      updatedAt: DateTime(2026, 4, 1, 12, 0),
     ),
-
-    // ---------- 2 SAO, BINH LUAN NGAN ----------
     ReviewModel(
       id: 'r006',
       storeId: 's001',
@@ -658,12 +658,12 @@ class RestaurantService {
       userName: 'Vo Thi F',
       userAvatarUrl: 'https://i.pravatar.cc/150?img=25',
       starRating: 2,
-      comment: 'Banh mi cha ca khong tuan thuat nhu luc dau. Bot pho mai, cha ca it, rau thom con la cac o.',
+      comment:
+          'Banh mi cha ca khong tuan thuat nhu luc dau. Bot pho mai, cha ca it, rau thom con la cac o.',
       imageUrls: [],
       createdAt: DateTime(2026, 3, 30, 20, 30),
+      updatedAt: DateTime(2026, 3, 30, 20, 30),
     ),
-
-    // ---------- 1 SAO ----------
     ReviewModel(
       id: 'r007',
       storeId: 's001',
@@ -671,12 +671,12 @@ class RestaurantService {
       userName: 'Duong Van G',
       userAvatarUrl: 'https://i.pravatar.cc/150?img=33',
       starRating: 1,
-      comment: 'Don hang bi thieu mon, goi 3 mon nhung chi nhan duoc 1 mon. Lien he ho tro khong duoc giai quyet. Rat that vong.',
+      comment:
+          'Don hang bi thieu mon, goi 3 mon nhung chi nhan duoc 1 mon. Lien he ho tro khong duoc giai quyet. Rat that vong.',
       imageUrls: [],
       createdAt: DateTime(2026, 3, 28, 22, 0),
+      updatedAt: DateTime(2026, 3, 28, 22, 0),
     ),
-
-    // ---------- 5 SAO, NHIEU ANH ----------
     ReviewModel(
       id: 'r008',
       storeId: 's001',
@@ -684,12 +684,14 @@ class RestaurantService {
       userName: 'Bui Thi H',
       userAvatarUrl: 'https://i.pravatar.cc/150?img=40',
       starRating: 5,
-      comment: 'Che Thai o day la tot nhat tuoi lam. Rau cau, dua, thach, banh lot, sua dac deu tot. Gian dien qua, that suot.',
+      comment:
+          'Che Thai o day la tot nhat tuoi lam. Rau cau, dua, thach, banh lot, sua dac deu tot. Gian dien qua, that suot.',
       imageUrls: [
         'https://picsum.photos/seed/review8a/300/300',
         'https://picsum.photos/seed/review8b/300/300',
       ],
       createdAt: DateTime(2026, 3, 25, 15, 10),
+      updatedAt: DateTime(2026, 3, 25, 15, 10),
     ),
   ];
 }

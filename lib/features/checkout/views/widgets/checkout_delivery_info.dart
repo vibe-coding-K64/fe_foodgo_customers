@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
-import '../../../profile/models/address_model.dart';
+import '../../../address/models/address_model.dart';
 
 /// Widget hien thi thong tin giao hang o phan checkout.
 /// Hien thi card chua: ten nguoi nhan, SDT, dia chi, thoi gian du kien.
@@ -95,7 +95,9 @@ class CheckoutDeliveryInfo extends StatelessWidget {
           Row(
             children: [
               Text(
-                address.name,
+                address.receiverName.isNotEmpty
+                    ? address.receiverName
+                    : 'Khách hàng',
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -110,10 +112,12 @@ class CheckoutDeliveryInfo extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                '0${address.userId.substring(0, 9)}'.replaceAllMapped(
-                  RegExp(r'(\d{4})(\d{3})(\d{3})'),
-                  (match) => '${match[1]} ${match[2]} ${match[3]}',
-                ),
+                address.receiverPhone.isNotEmpty
+                    ? address.receiverPhone.replaceAllMapped(
+                        RegExp(r'(\d{4})(\d{3})(\d{3})'),
+                        (match) => '${match[1]} ${match[2]} ${match[3]}',
+                      )
+                    : '',
                 style: const TextStyle(
                   fontSize: 14,
                   color: AppColors.textSecondary,

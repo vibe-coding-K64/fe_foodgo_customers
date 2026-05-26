@@ -53,6 +53,45 @@ class OptionGroupModel {
       };
 }
 
+/// Thong tin cua hang ngan gon, nested trong FeaturedProductResponse.
+class StoreSummary {
+  final String id;
+  final String name;
+  final double rating;
+  final String avtUrl;
+  final double deliveryFee;
+  final String deliveryTime;
+
+  StoreSummary({
+    required this.id,
+    required this.name,
+    required this.rating,
+    required this.avtUrl,
+    required this.deliveryFee,
+    required this.deliveryTime,
+  });
+
+  factory StoreSummary.fromJson(Map<String, dynamic> json) {
+    return StoreSummary(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      avtUrl: json['avtUrl'] as String? ?? '',
+      deliveryFee: (json['deliveryFee'] as num?)?.toDouble() ?? 0.0,
+      deliveryTime: json['deliveryTime'] as String? ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'rating': rating,
+        'avtUrl': avtUrl,
+        'deliveryFee': deliveryFee,
+        'deliveryTime': deliveryTime,
+      };
+}
+
 class ProductModel {
   final String id;
   final String storeId;
@@ -76,6 +115,9 @@ class ProductModel {
   final int? reviewCount;
   final String? deliveryTime;
 
+  /// Nested store info tu API /products/featured.
+  final StoreSummary? store;
+
   ProductModel({
     required this.id,
     required this.storeId,
@@ -96,17 +138,24 @@ class ProductModel {
     this.rating,
     this.reviewCount,
     this.deliveryTime,
+    this.store,
   });
 
   /// Parse tu JSON cua my-json-server (db.json).
   factory ProductModel.fromJson(Map<String, dynamic> json) {
+    StoreSummary? storeSummary;
+    if (json['store'] != null) {
+      storeSummary =
+          StoreSummary.fromJson(json['store'] as Map<String, dynamic>);
+    }
+
     return ProductModel(
       id: json['id']?.toString() ?? '',
       storeId: json['storeId']?.toString() ?? '',
-      categoryId: '',
-      categoryName: '',
+      categoryId: json['categoryId'] as String? ?? '',
+      categoryName: json['categoryName'] as String? ?? '',
       name: json['name'] as String? ?? '',
-      description: '',
+      description: json['description'] as String? ?? '',
       basePrice: (json['basePrice'] as num?)?.toDouble() ??
           (json['price'] as num?)?.toDouble() ??
           0.0,
@@ -120,13 +169,13 @@ class ProductModel {
           false,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
-      // Thong tin cua hang (tu API featured_products).
       lat: (json['lat'] as num?)?.toDouble(),
       lng: (json['lng'] as num?)?.toDouble(),
       distance: (json['distance'] as num?)?.toDouble(),
       rating: (json['rating'] as num?)?.toDouble(),
       reviewCount: json['reviewCount'] as int?,
       deliveryTime: json['deliveryTime'] as String?,
+      store: storeSummary,
     );
   }
 
@@ -179,6 +228,7 @@ class ProductModel {
       'isFeatured': isFeatured,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'store': store?.toJson(),
     };
   }
 
@@ -202,6 +252,7 @@ class ProductModel {
     double? rating,
     int? reviewCount,
     String? deliveryTime,
+    StoreSummary? store,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -223,6 +274,7 @@ class ProductModel {
       rating: rating ?? this.rating,
       reviewCount: reviewCount ?? this.reviewCount,
       deliveryTime: deliveryTime ?? this.deliveryTime,
+      store: store ?? this.store,
     );
   }
 }
