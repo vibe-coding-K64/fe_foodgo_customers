@@ -36,7 +36,8 @@ class CartItem {
   });
 
   factory CartItem.fromJson(Map<String, dynamic> json) {
-    final toppingsList = (json['toppings'] as List<dynamic>?)
+    final toppingsList =
+        (json['toppings'] as List<dynamic>?)
             ?.map((t) => CartTopping.fromJson(t as Map<String, dynamic>))
             .toList() ??
         [];
@@ -54,8 +55,10 @@ class CartItem {
 
   /// Tinh tong gia mot mon (da nhan so luong, bao gom topping).
   double get totalPrice {
-    final toppingTotal =
-        toppings.fold<double>(0, (sum, t) => sum + (t.price * quantity));
+    final toppingTotal = toppings.fold<double>(
+      0,
+      (sum, t) => sum + (t.price * quantity),
+    );
     return unitPrice * quantity + toppingTotal;
   }
 
@@ -66,14 +69,14 @@ class CartItem {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'imageUrl': imageUrl,
-        'unitPrice': unitPrice,
-        'quantity': quantity,
-        'isSelected': isSelected,
-        'toppings': toppings.map((t) => t.toJson()).toList(),
-      };
+    'id': id,
+    'name': name,
+    'imageUrl': imageUrl,
+    'unitPrice': unitPrice,
+    'quantity': quantity,
+    'isSelected': isSelected,
+    'toppings': toppings.map((t) => t.toJson()).toList(),
+  };
 
   CartItem copyWith({
     String? id,
@@ -111,7 +114,8 @@ class CartModel {
   });
 
   factory CartModel.fromJson(Map<String, dynamic> json) {
-    final itemsList = (json['items'] as List<dynamic>?)
+    final itemsList =
+        (json['items'] as List<dynamic>?)
             ?.map((item) => CartItem.fromJson(item as Map<String, dynamic>))
             .toList() ??
         [];
@@ -145,9 +149,9 @@ class CartModel {
       items.isNotEmpty && items.every((item) => item.isSelected);
 
   Map<String, dynamic> toJson() => {
-        'storeId': storeId,
-        'storeName': storeName,
-        'storeImageUrl': storeImageUrl,
-        'items': items.map((item) => item.toJson()).toList(),
-      };
+    'storeId': storeId,
+    'storeName': storeName,
+    'storeImageUrl': storeImageUrl,
+    'items': items.map((item) => item.toJson()).toList(),
+  };
 }

@@ -1,5 +1,58 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Model mot option trong optionGroup (VD: size M, topping trân châu).
+class OptionModel {
+  final String name;
+  final double price;
+
+  OptionModel({required this.name, required this.price});
+
+  factory OptionModel.fromJson(Map<String, dynamic> json) {
+    return OptionModel(
+      name: json['name'] as String? ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {'name': name, 'price': price};
+}
+
+/// Model mot nhom tuy chon (VD: Kích thước, Topping).
+class OptionGroupModel {
+  final String name;
+  final bool isRequired;
+  final bool isSingleSelect;
+  final List<OptionModel> options;
+
+  OptionGroupModel({
+    required this.name,
+    required this.isRequired,
+    required this.isSingleSelect,
+    required this.options,
+  });
+
+  factory OptionGroupModel.fromJson(Map<String, dynamic> json) {
+    final optionsList = (json['options'] as List<dynamic>?)
+            ?.map((o) => OptionModel.fromJson(o as Map<String, dynamic>))
+            .toList() ??
+        [];
+
+    return OptionGroupModel(
+      name: json['name'] as String? ?? '',
+      isRequired: json['isRequired'] as bool? ?? json['required'] as bool? ?? false,
+      isSingleSelect: json['isSingleSelect'] as bool? ?? json['singleSelect'] as bool? ?? true,
+      options: optionsList,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'isRequired': isRequired,
+        'isSingleSelect': isSingleSelect,
+        'options': options.map((o) => o.toJson()).toList(),
+      };
+}
+
 class ProductModel {
   final String id;
   final String storeId;
@@ -13,8 +66,9 @@ class ProductModel {
   final bool isFeatured;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final List<OptionGroupModel> optionGroups;
 
-  // Them thong tin cua hang de hien thi tren card san pham.
+  // Thong tin cua hang de hien thi tren card san pham.
   final double? lat;
   final double? lng;
   final double? distance;
@@ -35,6 +89,7 @@ class ProductModel {
     required this.isFeatured,
     required this.createdAt,
     required this.updatedAt,
+    this.optionGroups = const [],
     this.lat,
     this.lng,
     this.distance,
@@ -44,7 +99,6 @@ class ProductModel {
   });
 
   /// Parse tu JSON cua my-json-server (db.json).
-  /// Cac truong thieu se duoc gan gia tri mac dinh.
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     return ProductModel(
       id: json['id']?.toString() ?? '',
@@ -56,7 +110,8 @@ class ProductModel {
       basePrice: (json['basePrice'] as num?)?.toDouble() ??
           (json['price'] as num?)?.toDouble() ??
           0.0,
-      imageUrl: json['imageUrl'] as String? ?? json['image_url'] as String? ?? '',
+      imageUrl:
+          json['imageUrl'] as String? ?? json['image_url'] as String? ?? '',
       isOutOfStock: json['isOutOfStock'] as bool? ??
           json['is_out_of_stock'] as bool? ??
           false,
@@ -80,6 +135,13 @@ class ProductModel {
     if (data == null) {
       throw Exception('Du lieu Firestore cua ProductModel bi null');
     }
+
+    final groups = (data['optionGroups'] as List<dynamic>?)
+            ?.map((g) =>
+                OptionGroupModel.fromJson(g as Map<String, dynamic>))
+            .toList() ??
+        [];
+
     return ProductModel(
       id: doc.id,
       storeId: data['storeId'] as String? ?? '',
@@ -93,6 +155,13 @@ class ProductModel {
       isFeatured: data['isFeatured'] as bool? ?? false,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      optionGroups: groups,
+      lat: (data['lat'] as num?)?.toDouble(),
+      lng: (data['lng'] as num?)?.toDouble(),
+      distance: (data['distance'] as num?)?.toDouble(),
+      rating: (data['rating'] as num?)?.toDouble(),
+      reviewCount: data['reviewCount'] as int?,
+      deliveryTime: data['deliveryTime'] as String?,
     );
   }
 
@@ -126,6 +195,7 @@ class ProductModel {
     bool? isFeatured,
     DateTime? createdAt,
     DateTime? updatedAt,
+    List<OptionGroupModel>? optionGroups,
     double? lat,
     double? lng,
     double? distance,
@@ -146,6 +216,7 @@ class ProductModel {
       isFeatured: isFeatured ?? this.isFeatured,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      optionGroups: optionGroups ?? this.optionGroups,
       lat: lat ?? this.lat,
       lng: lng ?? this.lng,
       distance: distance ?? this.distance,

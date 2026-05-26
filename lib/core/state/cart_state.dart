@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import '../../features/cart/models/cart_item_model.dart';
 import '../../features/cart/services/cart_service.dart';
+import '../../features/home/models/product_model.dart';
 
 /// State quan ly gio hang, dong bo real-time voi Firestore.
 ///
@@ -64,8 +65,55 @@ class CartState extends ChangeNotifier {
     _subscription = null;
   }
 
-  Future<void> addItem(String userId, CartItemModel item) async {
+  /// Reset toan bo state ve ban dau.
+  /// Can goi khi nguoi dung dang nhap / chuyen doi tai khoan / dang xuat.
+  void reset() {
+    _subscription?.cancel();
+    _subscription = null;
+    _items = [];
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  /// Them mot san pham vao gio hang.
+  ///
+  /// Tu dong tao CartItemModel tu ProductModel + cac tuy chon nguoi dung da chon.
+  Future<void> addItem(
+    String userId,
+    ProductModel product, {
+    String? selectedSize,
+    double? sizePrice,
+    List<Map<String, dynamic>> selectedToppings = const [],
+    String? note,
+    int quantity = 1,
+  }) async {
     try {
+      // Tinh don gia: basePrice + sizePrice + tong gia toppings.
+      final toppings = selectedToppings
+          .map((t) => CartTopping(
+                name: t['name'] as String,
+                price: (t['price'] as num).toDouble(),
+              ))
+          .toList();
+
+      final toppingsTotal =
+          toppings.fold<double>(0, (sum, t) => sum + t.price);
+      final unitPrice = product.basePrice + (sizePrice ?? 0) + toppingsTotal;
+
+      final item = CartItemModel.fromProduct(
+        storeId: product.storeId,
+        productId: product.id,
+        productName: product.name,
+        unitPrice: unitPrice,
+        quantity: quantity,
+        size: selectedSize,
+        sizePrice: sizePrice,
+        toppings: toppings,
+        note: note,
+        imageUrl: product.imageUrl,
+      );
+
       await _cartService.addToCart(userId, item);
     } catch (e) {
       debugPrint('CartState: Loi addItem - $e');

@@ -561,16 +561,18 @@ class _ReviewItemWidget extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Avatar.
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: AppColors.surfaceVariant,
-                backgroundImage: review.userAvatarUrl.isNotEmpty
-                    ? NetworkImage(review.userAvatarUrl)
-                    : null,
-                child: review.userAvatarUrl.isEmpty
-                    ? Icon(Icons.person, size: 20, color: AppColors.textHint)
-                    : null,
-              ),
+              review.userAvatarUrl.isNotEmpty
+                  ? CircleAvatar(
+                      radius: 20,
+                      backgroundColor: AppColors.surfaceVariant,
+                      backgroundImage: NetworkImage(review.userAvatarUrl),
+                      onBackgroundImageError: (_, __) {},
+                    )
+                  : CircleAvatar(
+                      radius: 20,
+                      backgroundColor: AppColors.surfaceVariant,
+                      child: Icon(Icons.person, size: 20, color: AppColors.textHint),
+                    ),
               const SizedBox(width: 10),
 
               // Ten + Thoi gian.

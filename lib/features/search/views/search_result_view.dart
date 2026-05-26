@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/utils/auth_storage.dart';
 import '../../cart/views/cart_view.dart';
 import '../models/search_result_item.dart';
 import '../services/services.dart';
@@ -32,26 +33,31 @@ class _SearchResultViewState extends State<SearchResultView> {
   @override
   void initState() {
     super.initState();
-    _searchFuture = _apiSearchService.fetchSearchResults(widget.query);
+    _searchFuture = _fetchSearchResults();
   }
 
-  /// Tra ve danh sach da duoc loc/sap xep.
-  List<SearchResultItem> _sortResults(List<SearchResultItem> items) {
-    switch (_selectedSort) {
-      case SearchSortType.priceAsc:
-        return List.from(items)..sort((a, b) => a.price.compareTo(b.price));
-      case SearchSortType.priceDesc:
-        return List.from(items)..sort((a, b) => b.price.compareTo(a.price));
-      case SearchSortType.ratingDesc:
-        return List.from(items)..sort((a, b) => b.rating.compareTo(a.rating));
-      case SearchSortType.none:
-        return items;
-    }
+  /// Goi API /api/search voi vi tri va sort hien tai.
+  Future<List<SearchResultItem>> _fetchSearchResults() async {
+    final userLat = AuthStorage.getUserLatitude() ?? 10.8500;
+    final userLng = AuthStorage.getUserLongitude() ?? 106.7900;
+    final sortBy = _selectedSort == SearchSortType.none
+        ? null
+        : _selectedSort.name;
+    final userId = AuthStorage.getUserId();
+
+    return _apiSearchService.fetchSearchResults(
+      keyword: widget.query,
+      userLat: userLat,
+      userLng: userLng,
+      sortBy: sortBy,
+      userId: userId,
+    );
   }
 
   void _onSortChanged(SearchSortType sort) {
     setState(() {
       _selectedSort = _selectedSort == sort ? SearchSortType.none : sort;
+      _searchFuture = _fetchSearchResults();
     });
     debugPrint('Sap xep thay doi: $_selectedSort');
   }
@@ -98,19 +104,18 @@ class _SearchResultViewState extends State<SearchResultView> {
         }
 
         final allResults = snapshot.data ?? [];
-        final results = _sortResults(allResults);
 
         // Rong.
-        if (results.isEmpty) {
+        if (allResults.isEmpty) {
           return _buildEmptyState();
         }
 
         // Co du lieu -> hien thi danh sach.
         return ListView.builder(
           padding: const EdgeInsets.symmetric(vertical: 4),
-          itemCount: results.length,
+          itemCount: allResults.length,
           itemBuilder: (context, index) {
-            final item = results[index];
+            final item = allResults[index];
             return SearchResultCard(
               item: item,
               onTap: () {
@@ -181,8 +186,7 @@ class _SearchResultViewState extends State<SearchResultView> {
             ElevatedButton(
               onPressed: () {
                 setState(() {
-                  _searchFuture =
-                      _apiSearchService.fetchSearchResults(widget.query);
+                  _searchFuture = _fetchSearchResults();
                 });
               },
               style: ElevatedButton.styleFrom(

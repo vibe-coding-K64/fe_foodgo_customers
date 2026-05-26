@@ -163,7 +163,6 @@ class _SearchViewState extends State<SearchView> {
     return StreamBuilder<List<SearchHistoryModel>>(
       stream: _searchService.getSearchHistoryStream(),
       builder: (context, snapshot) {
-        // Dang tai.
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
             child: Padding(
@@ -173,15 +172,25 @@ class _SearchViewState extends State<SearchView> {
           );
         }
 
-        // Co loi.
         if (snapshot.hasError) {
           debugPrint('SearchView: Loi Stream lich su - ${snapshot.error}');
-          return const SizedBox.shrink();
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildEmptyHistoryHint(),
+                const SizedBox(height: 24),
+                _buildPopularSearchTitle(),
+                const SizedBox(height: 12),
+                _buildPopularSearchChipsFromApi(),
+              ],
+            ),
+          );
         }
 
         final histories = snapshot.data ?? [];
 
-        // Rong -> hien thi popular keywords tu API.
         if (histories.isEmpty) {
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -198,7 +207,6 @@ class _SearchViewState extends State<SearchView> {
           );
         }
 
-        // Co du lieu -> hien thi lich su + pho bien.
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(

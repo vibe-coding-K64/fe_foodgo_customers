@@ -731,5 +731,7 @@
   "status_delivering": "Đang giao",
   "status_completed": "Hoàn thành",
   "status_cancelled": "Đã hủy",
-  "finding_driver": "Dang tim tai xe..."
+  "finding_driver": "Dang tim tai xe...",
+  "required": "Bắt buộc",
+  "optional": "Không bắt buộc"
 }

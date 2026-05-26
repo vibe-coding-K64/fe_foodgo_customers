@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../../core/utils/auth_storage.dart';
 import '../../../core/network/api_client.dart';
@@ -148,6 +149,16 @@ class SearchService {
 class ApiSearchService {
   const ApiSearchService();
 
+  /// Lay header Authorization voi Bearer token.
+  Options _authOptions() {
+    final token = AuthStorage.getToken();
+    return Options(
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+  }
+
   /// Lay danh sach tu khoa tim kiem pho bien.
   ///
   /// Endpoint: GET /popular_keywords
@@ -170,23 +181,55 @@ class ApiSearchService {
     }
   }
 
-  /// Lay danh sach ket qua tim kiem tu Mock API.
+  /// Lay danh sach ket qua tim kiem tu API.
   ///
-  /// Endpoint: GET /search_results
-  /// Server da xu ly filter/search phia backend, tra ve day du danh sach.
+  /// Endpoint: GET /api/search
+  /// Params: query, userLat, userLng, sortBy, userId
+  ///
   /// Tra ve List<SearchResultItem>.
-  Future<List<SearchResultItem>> fetchSearchResults(String keyword) async {
+  Future<List<SearchResultItem>> fetchSearchResults({
+    required String keyword,
+    required double userLat,
+    required double userLng,
+    String? sortBy,
+    String? userId,
+  }) async {
     try {
-      final response = await ApiClient.get<List<dynamic>>('/SearchResultItem');
+      final params = <String, dynamic>{
+        'query': keyword,
+        'userLat': userLat,
+        'userLng': userLng,
+      };
 
-      final List<dynamic> rawData = response.data ?? [];
+      if (sortBy != null && sortBy.isNotEmpty) {
+        params['sortBy'] = sortBy;
+      }
 
-      debugPrint(
-          'ApiSearchService: Da nhan ${rawData.length} ket qua');
+      if (userId != null && userId.isNotEmpty) {
+        params['userId'] = userId;
+      }
 
-      return rawData
-          .map((json) =>
-              SearchResultItem.fromJson(json as Map<String, dynamic>))
+      final response = await ApiClient.get<Map<String, dynamic>>(
+        '/search',
+        queryParameters: params,
+        options: _authOptions(),
+      );
+
+      final data = response.data;
+      if (data == null) return [];
+
+      final success = data['success'] as bool? ?? false;
+      if (!success) {
+        debugPrint('ApiSearchService: API tra ve success=false');
+        return [];
+      }
+
+      final items = data['data'] as List<dynamic>? ?? [];
+
+      debugPrint('ApiSearchService: Da nhan ${items.length} ket qua');
+
+      return items
+          .map((json) => SearchResultItem.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
       debugPrint('ApiSearchService: Loi fetchSearchResults - $e');

@@ -23,7 +23,9 @@ class CartBottomBar extends StatelessWidget {
   });
 
   String _formatPrice(double price) {
-    final str = price.toStringAsFixed(0).replaceAllMapped(
+    final str = price
+        .toStringAsFixed(0)
+        .replaceAllMapped(
           RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
           (match) => '${match[1]}.',
         );
@@ -60,7 +62,8 @@ class CartBottomBar extends StatelessWidget {
               value: isAllSelected,
               onChanged: (_) {
                 debugPrint(
-                    'CartView: Checkbox chon tat ca = ${!isAllSelected}');
+                  'CartView: Checkbox chon tat ca = ${!isAllSelected}',
+                );
                 onSelectAllChanged();
               },
               activeColor: AppColors.primary,
@@ -68,8 +71,7 @@ class CartBottomBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
               ),
               side: BorderSide(
-                color:
-                    isAllSelected ? AppColors.primary : AppColors.border,
+                color: isAllSelected ? AppColors.primary : AppColors.border,
                 width: 1.5,
               ),
             ),
@@ -91,10 +93,7 @@ class CartBottomBar extends StatelessWidget {
             children: [
               Text(
                 context.t('cart_estimated_total'),
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textHint,
-                ),
+                style: const TextStyle(fontSize: 12, color: AppColors.textHint),
               ),
               const SizedBox(height: 2),
               Text(
@@ -115,7 +114,8 @@ class CartBottomBar extends StatelessWidget {
             onTap: isEnabled
                 ? () {
                     debugPrint(
-                        'CartView: Nguoi dung bam nut mua hang ($selectedCount mon)');
+                      'CartView: Nguoi dung bam nut mua hang ($selectedCount mon)',
+                    );
                     onCheckout();
                   }
                 : null,
@@ -128,7 +128,8 @@ class CartBottomBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
-                context.t('cart_buy_btn')
+                context
+                    .t('cart_buy_btn')
                     .replaceAll('{count}', '$selectedCount'),
                 style: const TextStyle(
                   fontSize: 14,

@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Collection users: cho phep doc/ghi de xac thuc qua backend API.
+    // App su dung backend API login (JWT) thay vi Firebase Auth,
+    // nen khong co request.auth. Trong moi truong production,
+    // nen su dung Firebase Admin SDK de xac thuc JWT tu backend.
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
+    // Customer profiles: cho phep truy cap theo userId.
+    match /customer_profiles/{userId} {
+      allow read, write: if true;
+      // Sub-collections
+      match /addresses/{docId} {
+        allow read, write: if true;
+      }
+      match /payment_methods/{docId} {
+        allow read, write: if true;
+      }
+      match /notifications/{docId} {
+        allow read, write: if true;
+      }
+      match /cart/{docId} {
+        allow read, write: if true;
+      }
+      match /my_vouchers/{docId} {
+        allow read, write: if true;
+      }
+    }
+
+    // Orders: cho phep doc/ghi tat ca orders.
+    match /orders/{orderId} {
+      allow read, write: if true;
+    }
+
+    // Driver profiles.
+    match /driver_profiles/{userId} {
+      allow read, write: if true;
+      match /notifications/{docId} {
+        allow read, write: if true;
+      }
+    }
+
+    // Merchant profiles.
+    match /merchant_profiles/{userId} {
+      allow read, write: if true;
+      match /notifications/{docId} {
+        allow read, write: if true;
+      }
+    }
+
+    // Stores and products.
+    match /stores/{storeId} {
+      allow read: if true;
+      allow write: if false;
+      match /products/{productId} {
+        allow read: if true;
+        allow write: if false;
+      }
+    }
+
+    // Categories.
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Vouchers.
+    match /vouchers/{voucherId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Catch-all: mat dinh khong cho phep cac collection khac.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

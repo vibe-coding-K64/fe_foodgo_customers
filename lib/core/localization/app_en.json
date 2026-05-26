@@ -725,5 +725,7 @@
   "status_delivering": "Delivering",
   "status_completed": "Completed",
   "status_cancelled": "Cancelled",
-  "finding_driver": "Finding driver..."
+  "finding_driver": "Finding driver...",
+  "required": "Required",
+  "optional": "Optional"
 }

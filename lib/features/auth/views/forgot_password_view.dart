@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
+import '../services/auth_service.dart';
 import 'otp_verification_view.dart';
 
 /// Man hinh Quen mat khau.
@@ -33,24 +34,48 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
   }
 
   /// Xu ly bam nut Gui ma xac nhan.
-  void _onSendOtpPressed() {
+  Future<void> _onSendOtpPressed() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
-      debugPrint('ForgotPasswordView: Gui ma xac nhan toi ${_inputController.text}');
-      // Gia lap goi API, sau 1.5s chuyen sang trang OTP.
-      Future.delayed(const Duration(milliseconds: 1500), () {
+      final contact = _inputController.text.trim();
+      debugPrint('ForgotPasswordView: Gui ma xac nhan toi $contact');
+
+      try {
+        await AuthService.sendOtp(contact);
         if (!mounted) return;
-        setState(() => _isLoading = false);
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => OtpVerificationView(
-              contactInfo: _inputController.text.trim(),
+              contactInfo: contact,
               verifyType: 'forgot_password',
             ),
           ),
         );
-      });
+      } on AuthException catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        debugPrint('ForgotPasswordView: Loi bat ngooi = $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Da xay ra loi, vui long thu lai sau'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
     }
   }
 

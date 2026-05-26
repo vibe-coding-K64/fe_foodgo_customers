@@ -43,21 +43,22 @@ class ProfileHeader extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Avatar hinh tron.
-              CircleAvatar(
-                radius: 50,
-                backgroundColor: Colors.white.withOpacity(0.2),
-                backgroundImage: avatarUrl.isNotEmpty
-                    ? NetworkImage(avatarUrl)
-                    : null,
-                onBackgroundImageError: (_, __) {},
-                child: avatarUrl.isEmpty
-                    ? const Icon(
+              avatarUrl.isNotEmpty
+                  ? CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      backgroundImage: NetworkImage(avatarUrl),
+                      onBackgroundImageError: (_, __) {},
+                    )
+                  : CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      child: const Icon(
                         Icons.person,
                         size: 50,
                         color: Colors.white,
-                      )
-                    : null,
-              ),
+                      ),
+                    ),
               const SizedBox(height: 16),
               // Ten nguoi dung.
               Text(

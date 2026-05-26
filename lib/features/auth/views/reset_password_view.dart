@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
+import '../services/auth_service.dart';
 
 /// Man hinh Dat lai mat khau.
 ///
@@ -12,9 +13,13 @@ class ResetPasswordView extends StatefulWidget {
   /// Email hoac so dien thoai cua nguoi dung (tu trang Quen mat khau).
   final String contactInfo;
 
+  /// Token tam thoi nhan duoc sau khi xac thuc OTP.
+  final String tempToken;
+
   const ResetPasswordView({
     super.key,
     required this.contactInfo,
+    required this.tempToken,
   });
 
   @override
@@ -48,25 +53,50 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
   }
 
   /// Xu ly bam nut Cap nhat mat khau.
-  void _onUpdatePasswordPressed() {
+  Future<void> _onUpdatePasswordPressed() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
       debugPrint('ResetPasswordView: Cap nhat mat khau moi cho ${widget.contactInfo}');
-      // Gia lap goi API, sau 1.5s quay lai trang thai binh thuong.
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) {
-          setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.t('auth_update_password')),
-              backgroundColor: AppColors.primary,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-          // Quay ve man hinh chinh sau khi cap nhat thanh cong.
-          Navigator.of(context).popUntil((route) => route.isFirst);
-        }
-      });
+
+      try {
+        await AuthService.resetPassword(
+          widget.tempToken,
+          _newPasswordController.text,
+        );
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.t('auth_update_password')),
+            backgroundColor: AppColors.primary,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+
+        // Quay ve man hinh chinh sau khi cap nhat thanh cong.
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      } on AuthException catch (e) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        debugPrint('ResetPasswordView: Loi bat ngooi = $e');
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Da xay ra loi, vui long thu lai'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 

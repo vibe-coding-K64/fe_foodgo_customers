@@ -1,17 +1,19 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Lop luu tru thong tin xac thuc cua nguoi dung.
 ///
-/// Su dung SharedPreferences de luu tru userId cua nguoi dang nhap,
+/// Su dung SharedPreferences de luu tru JWT token va thong tin nguoi dung,
 /// giup kiem tra trang thai dang nhap khi app khoi dong.
 class AuthStorage {
   AuthStorage._();
 
   static SharedPreferences? _prefs;
 
-  /// Khoa luu tru userId trong SharedPreferences.
-  static const String _userIdKey = 'auth_user_id';
+  static const String _tokenKey = 'auth_token';
+  static const String _userKey = 'auth_user';
+  static const String _tokenTypeKey = 'auth_token_type';
 
   /// Khoi tao SharedPreferences (goi 1 lan).
   static Future<void> init() async {
@@ -19,28 +21,91 @@ class AuthStorage {
     debugPrint('AuthStorage: Khoi tao thanh cong');
   }
 
-  /// Lay userId da luu. Tra ve null neu chua dang nhap.
-  static String? getUserId() {
-    final value = _prefs?.getString(_userIdKey);
-    debugPrint('AuthStorage: Lay userId = ${value ?? "null"}');
+  /// Lay JWT token da luu. Tra ve null neu chua dang nhap.
+  static String? getToken() {
+    final value = _prefs?.getString(_tokenKey);
+    debugPrint('AuthStorage: Lay token = ${value != null ? "[ Present ]" : "null"}');
     return value;
   }
 
-  /// Luu userId sau khi dang nhap thanh cong.
-  static Future<void> saveUserId(String userId) async {
-    await _prefs?.setString(_userIdKey, userId);
-    debugPrint('AuthStorage: Luu userId thanh cong = $userId');
+  /// Lay token type (thuong la "Bearer").
+  static String? getTokenType() {
+    return _prefs?.getString(_tokenTypeKey);
   }
 
-  /// Xoa userId khi dang xuat.
-  static Future<void> clearUserId() async {
-    await _prefs?.remove(_userIdKey);
-    debugPrint('AuthStorage: Xoa userId thanh cong');
+  /// Lay thong tin nguoi dung da luu.
+  static Map<String, dynamic>? getUser() {
+    final value = _prefs?.getString(_userKey);
+    if (value == null) return null;
+    try {
+      return jsonDecode(value) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('AuthStorage: Loi parse user JSON: $e');
+      return null;
+    }
+  }
+
+  /// Lay userId tu thong tin nguoi dung da luu.
+  static String? getUserId() {
+    final user = getUser();
+    return user?['id'] as String?;
+  }
+
+  /// Luu thong tin sau khi dang nhap thanh cong.
+  static Future<void> saveAuthData({
+    required String token,
+    required String tokenType,
+    required Map<String, dynamic> user,
+  }) async {
+    await _prefs?.setString(_tokenKey, token);
+    await _prefs?.setString(_tokenTypeKey, tokenType);
+    await _prefs?.setString(_userKey, jsonEncode(user));
+    debugPrint('AuthStorage: Luu auth data thanh cong. userId = ${user['id']}');
+  }
+
+  /// Xoa toan bo thong tin xac thuc khi dang xuat.
+  static Future<void> clearAuth() async {
+    await _prefs?.remove(_tokenKey);
+    await _prefs?.remove(_tokenTypeKey);
+    await _prefs?.remove(_userKey);
+    debugPrint('AuthStorage: Xoa auth data thanh cong');
   }
 
   /// Kiem tra nguoi dung da dang nhap chua.
   static bool isLoggedIn() {
-    final userId = getUserId();
-    return userId != null && userId.isNotEmpty;
+    final token = getToken();
+    return token != null && token.isNotEmpty;
+  }
+
+  // --- Location Storage ---
+
+  static const String _userLatKey = 'user_latitude';
+  static const String _userLngKey = 'user_longitude';
+
+  /// Lay vi do nguoi dung da luu. Tra ve null neu chua luu.
+  static double? getUserLatitude() {
+    return _prefs?.getDouble(_userLatKey);
+  }
+
+  /// Lay kinh do nguoi dung da luu. Tra ve null neu chua luu.
+  static double? getUserLongitude() {
+    return _prefs?.getDouble(_userLngKey);
+  }
+
+  /// Luu vi tri nguoi dung (thuong lay tu GPS hoac chon tren ban do).
+  static Future<void> saveUserLocation({
+    required double latitude,
+    required double longitude,
+  }) async {
+    await _prefs?.setDouble(_userLatKey, latitude);
+    await _prefs?.setDouble(_userLngKey, longitude);
+    debugPrint('AuthStorage: Luu vi tri - lat=$latitude, lng=$longitude');
+  }
+
+  /// Xoa vi tri da luu.
+  static Future<void> clearUserLocation() async {
+    await _prefs?.remove(_userLatKey);
+    await _prefs?.remove(_userLngKey);
+    debugPrint('AuthStorage: Xoa vi tri da luu');
   }
 }

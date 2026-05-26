@@ -326,20 +326,22 @@ class _StoreInfoSection extends StatelessWidget {
                 ),
               ],
             ),
-            child: CircleAvatar(
-              radius: 38,
-              backgroundColor: AppColors.surfaceVariant,
-              backgroundImage: store.avtUrl.isNotEmpty
-                  ? NetworkImage(store.avtUrl)
-                  : null,
-              child: store.avtUrl.isEmpty
-                  ? Icon(
+            child: store.avtUrl.isNotEmpty
+                ? CircleAvatar(
+                    radius: 38,
+                    backgroundColor: AppColors.surfaceVariant,
+                    backgroundImage: NetworkImage(store.avtUrl),
+                    onBackgroundImageError: (_, __) {},
+                  )
+                : CircleAvatar(
+                    radius: 38,
+                    backgroundColor: AppColors.surfaceVariant,
+                    child: Icon(
                       Icons.restaurant,
                       size: 36,
                       color: AppColors.primary,
-                    )
-                  : null,
-            ),
+                    ),
+                  ),
           ),
 
           // Gap between avatar and name.

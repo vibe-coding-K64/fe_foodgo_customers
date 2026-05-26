@@ -66,6 +66,8 @@ class _RegisterViewState extends State<RegisterView> {
           builder: (context) => OtpVerificationView(
             contactInfo: _phoneController.text.trim(),
             verifyType: 'register',
+            registerPassword: _passwordController.text,
+            registerFullName: _nameController.text.trim(),
           ),
         ),
       );

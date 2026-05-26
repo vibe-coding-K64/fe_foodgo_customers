@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
+import '../services/auth_service.dart';
 import '../../../../features/main/views/main_view.dart';
 import 'reset_password_view.dart';
 
@@ -20,10 +21,16 @@ class OtpVerificationView extends StatefulWidget {
   /// Kieu xac thuc: 'register' hoac 'forgot_password'.
   final String verifyType;
 
+  /// Thong tin dang ky (chi can khi verifyType == 'register').
+  final String? registerPassword;
+  final String? registerFullName;
+
   const OtpVerificationView({
     super.key,
     required this.contactInfo,
     this.verifyType = 'register',
+    this.registerPassword,
+    this.registerFullName,
   });
 
   @override
@@ -31,26 +38,15 @@ class OtpVerificationView extends StatefulWidget {
 }
 
 class _OtpVerificationViewState extends State<OtpVerificationView> {
-  /// Danh sach controllers cho 6 o nhap OTP.
   final List<TextEditingController> _controllers =
       List.generate(6, (_) => TextEditingController());
-
-  /// Danh sach FocusNode tuong ung voi tung o nhap.
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
-  /// Trang thai loading khi xac thuc.
   bool _isLoading = false;
-
-  /// So giay con lai de gui lai ma.
   int _countdownSeconds = 60;
-
-  /// Da het thoi gian chua gui lai duoc chua.
   bool _canResend = false;
-
-  /// Timer dem nguoc.
   Timer? _countdownTimer;
 
-  /// Chuoi OTP hien tai (ghep 6 ky tu).
   String get _currentOtp =>
       _controllers.map((c) => c.text.trim()).join();
 
@@ -61,7 +57,7 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
   void initState() {
     super.initState();
     _startCountdown();
-    debugPrint('OtpVerificationView: Khoi tao man hinh xac thuc OTP cho ${widget.contactInfo}');
+    debugPrint('OtpVerificationView: Khoi tao cho ${widget.contactInfo}, kieu ${widget.verifyType}');
   }
 
   @override
@@ -76,7 +72,6 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
     super.dispose();
   }
 
-  /// Bat dau dem nguoc 60 giay.
   void _startCountdown() {
     _countdownTimer?.cancel();
     setState(() {
@@ -98,22 +93,34 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
     });
   }
 
-  /// Xu ly gui lai ma OTP.
-  void _onResendPressed() {
+  Future<void> _onResendPressed() async {
     if (!_canResend) return;
-    debugPrint('OtpVerificationView: Nguoi dung bam Gui lai ma OTP');
-    _startCountdown();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.t('auth_verification_email_sent')),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    debugPrint('OtpVerificationView: Gui lai OTP toi ${widget.contactInfo}');
+
+    try {
+      await AuthService.sendOtp(widget.contactInfo);
+      _startCountdown();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.t('auth_verification_email_sent')),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
-  /// Xu ly bam nut Xac nhan.
-  void _onConfirmPressed() {
+  Future<void> _onConfirmPressed() async {
     if (!_isOtpComplete) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -128,32 +135,67 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
     setState(() => _isLoading = true);
     debugPrint('OtpVerificationView: Xac thuc OTP [$_currentOtp], kieu [${widget.verifyType}]');
 
-    // Gia lap goi API, sau 1.5s xu ly chuyen trang theo luong.
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-
+    try {
       if (widget.verifyType == 'forgot_password') {
-        // Luong quen mat khau: chuyen sang trang Dat lai mat khau.
-        debugPrint('OtpVerificationView: Chuyen sang trang Dat lai mat khau');
+        // Luong quen mat khau: xac thuc OTP, lay tempToken, chuyen sang ResetPasswordView.
+        final result = await AuthService.verifyOtp(widget.contactInfo, _currentOtp);
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => ResetPasswordView(
               contactInfo: widget.contactInfo,
+              tempToken: result.tempToken,
             ),
           ),
         );
       } else {
-        // Luong dang ky: chuyen sang man hinh chinh, xoa toan bo lich su Auth.
-        debugPrint('OtpVerificationView: Xac thuc thanh cong, chuyen sang man hinh chinh');
+        // Luong dang ky: goi register -> verify OTP -> auto login.
+        await AuthService.register(
+          email: widget.contactInfo,
+          password: widget.registerPassword ?? '',
+          fullName: widget.registerFullName ?? '',
+          phoneNumber: widget.contactInfo,
+        );
+
+        await AuthService.verifyOtp(widget.contactInfo, _currentOtp);
+
+        // Sau khi verify OTP thanh cong, auto login.
+        await AuthService.login(widget.contactInfo, widget.registerPassword ?? '');
+
+        if (!mounted) return;
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const MainView()),
           (route) => false,
         );
       }
-    });
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      debugPrint('OtpVerificationView: Loi bat ngooi = $e');
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Da xay ra loi, vui long thu lai'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted && !Navigator.of(context).canPop()) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -179,7 +221,6 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
             children: [
               const SizedBox(height: 16),
 
-              // Icon dai dien.
               Container(
                 width: 80,
                 height: 80,
@@ -196,7 +237,6 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
 
               const SizedBox(height: 32),
 
-              // Tieu de.
               Text(
                 context.t('auth_otp_title'),
                 style: theme.textTheme.headlineSmall?.copyWith(
@@ -208,7 +248,6 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
 
               const SizedBox(height: 12),
 
-              // Mo ta.
               Text(
                 context.t('auth_otp_desc'),
                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -219,15 +258,11 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
 
               const SizedBox(height: 40),
 
-              // O nhap OTP.
               _buildOtpInput(),
 
               const SizedBox(height: 16),
-
-              // Khoang trong cho phan dem nguoc.
               const SizedBox(height: 8),
 
-              // Dòng dem nguoc hoac nut gui lai.
               Center(
                 child: _canResend
                     ? TextButton(
@@ -254,10 +289,8 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                       ),
               ),
 
-              // Day nut xac nhan xuong duoi cung.
               const Spacer(),
 
-              // Nut Xac nhan.
               SizedBox(
                 height: 52,
                 child: ElevatedButton(
@@ -299,7 +332,6 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
     );
   }
 
-  /// Xay dung o nhap OTP gom 6 TextField nho nam canh nhau.
   Widget _buildOtpInput() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -345,14 +377,12 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                 FilteringTextInputFormatter.digitsOnly,
               ],
               onChanged: (value) {
-                // Khi nguoi dung nhap mot ky tu, chuyen focus sang o tiep theo.
                 if (value.isNotEmpty && index < 5) {
                   _focusNodes[index + 1].requestFocus();
                 }
                 setState(() {});
               },
               onSubmitted: (_) {
-                // Khi an Done tren o cuoi, chuyen focus ve o dau tien.
                 if (index == 5) {
                   _focusNodes[0].requestFocus();
                 }

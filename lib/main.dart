@@ -30,7 +30,7 @@ void main() async {
   final cartState = CartState();
 
   // Seed du lieu mau vao Firestore (neu chua co).
-  await DataSeeder.seedAll();
+  // await DataSeeder.seedAll();
 
   runApp(
     CartStateScope(

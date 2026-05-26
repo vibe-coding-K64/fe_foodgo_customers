@@ -44,6 +44,36 @@ class UserModel {
   /// Tra ve true neu nguoi dung co quyen quan tri.
   bool get isAdmin => roles.contains(9);
 
+  /// Tao UserModel tu JSON (API response).
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    final rolesData = json['roles'];
+    List<int> parsedRoles;
+
+    if (rolesData is List) {
+      parsedRoles = rolesData
+          .map((e) => e is int ? e : (e is num ? e.toInt() : 0))
+          .where((e) => e != 0)
+          .toList();
+    } else {
+      parsedRoles = List<int>.from(_defaultRoles);
+    }
+
+    if (parsedRoles.isEmpty) {
+      parsedRoles = List<int>.from(_defaultRoles);
+    }
+
+    return UserModel(
+      id: json['id'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+      fullName: json['fullName'] as String? ?? '',
+      phoneNumber: json['phoneNumber'] as String? ?? '',
+      photoUrl: json['photoUrl'] as String?,
+      roles: parsedRoles,
+      createdAt: DateTime.now(),
+      updatedAt: null,
+    );
+  }
+
   /// Tao UserModel tu DocumentSnapshot cua Firestore.
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -75,16 +105,14 @@ class UserModel {
     );
   }
 
-  /// Chuyen doi thanh Map de ghi vao Firestore.
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'email': email,
       'fullName': fullName,
       'phoneNumber': phoneNumber,
       'photoUrl': photoUrl,
       'roles': roles,
-      'createdAt': Timestamp.fromDate(createdAt),
-      'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
     };
   }
 

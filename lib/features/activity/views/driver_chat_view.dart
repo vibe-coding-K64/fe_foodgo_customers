@@ -192,20 +192,22 @@ class _DriverChatViewState extends State<DriverChatView> {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Avatar tai xe.
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: AppColors.surfaceVariant,
-            backgroundImage: widget.chat.driverAvatarUrl.isNotEmpty
-                ? NetworkImage(widget.chat.driverAvatarUrl)
-                : null,
-            child: widget.chat.driverAvatarUrl.isEmpty
-                ? const Icon(
+          widget.chat.driverAvatarUrl.isNotEmpty
+              ? CircleAvatar(
+                  radius: 18,
+                  backgroundColor: AppColors.surfaceVariant,
+                  backgroundImage: NetworkImage(widget.chat.driverAvatarUrl),
+                  onBackgroundImageError: (_, __) {},
+                )
+              : CircleAvatar(
+                  radius: 18,
+                  backgroundColor: AppColors.surfaceVariant,
+                  child: const Icon(
                     Icons.person,
                     size: 20,
                     color: AppColors.textSecondary,
-                  )
-                : null,
-          ),
+                  ),
+                ),
           const SizedBox(width: 10),
           // Ten tai xe va bien so xe.
           Column(

@@ -298,14 +298,14 @@ class PaymentMethodCard extends StatelessWidget {
 
   /// Lay ten nhan hien thi cua nha the.
   String _getCardBrandName(BuildContext ctx) {
-    switch (method.cardBrand) {
-      case CardBrand.visa:
+    switch (method.cardBrand?.toLowerCase()) {
+      case 'visa':
         return ctx.t('payment_visa');
-      case CardBrand.mastercard:
+      case 'mastercard':
         return ctx.t('payment_mastercard');
-      case CardBrand.jcb:
+      case 'jcb':
         return 'JCB';
-      case CardBrand.amex:
+      case 'amex':
         return 'American Express';
       default:
         return ctx.t('payment_card');
@@ -314,14 +314,14 @@ class PaymentMethodCard extends StatelessWidget {
 
   /// Lay chu viet tat hien thi tren logo the.
   String _getCardAbbrev() {
-    switch (method.cardBrand) {
-      case CardBrand.visa:
+    switch (method.cardBrand?.toLowerCase()) {
+      case 'visa':
         return 'VISA';
-      case CardBrand.mastercard:
+      case 'mastercard':
         return 'MC';
-      case CardBrand.jcb:
+      case 'jcb':
         return 'JCB';
-      case CardBrand.amex:
+      case 'amex':
         return 'AMEX';
       default:
         return '****';
@@ -330,14 +330,14 @@ class PaymentMethodCard extends StatelessWidget {
 
   /// Lay mau nen logo the.
   Color _getCardBgColor() {
-    switch (method.cardBrand) {
-      case CardBrand.visa:
+    switch (method.cardBrand?.toLowerCase()) {
+      case 'visa':
         return const Color(0xFF1A1F71);
-      case CardBrand.mastercard:
+      case 'mastercard':
         return const Color(0xFFEB001B);
-      case CardBrand.jcb:
+      case 'jcb':
         return const Color(0xFF0E4D95);
-      case CardBrand.amex:
+      case 'amex':
         return const Color(0xFF007BC1);
       default:
         return AppColors.surfaceVariant;
@@ -346,14 +346,11 @@ class PaymentMethodCard extends StatelessWidget {
 
   /// Lay mau chu tren logo the.
   Color _getCardTextColor() {
-    switch (method.cardBrand) {
-      case CardBrand.visa:
-        return Colors.white;
-      case CardBrand.mastercard:
-        return Colors.white;
-      case CardBrand.jcb:
-        return Colors.white;
-      case CardBrand.amex:
+    switch (method.cardBrand?.toLowerCase()) {
+      case 'visa':
+      case 'mastercard':
+      case 'jcb':
+      case 'amex':
         return Colors.white;
       default:
         return AppColors.textSecondary;
@@ -362,12 +359,12 @@ class PaymentMethodCard extends StatelessWidget {
 
   /// Lay ten hien thi cua vi.
   String _getWalletName(BuildContext ctx) {
-    switch (method.walletBrand) {
-      case WalletBrand.momo:
+    switch (method.walletBrand?.toLowerCase()) {
+      case 'momo':
         return ctx.t('payment_momo');
-      case WalletBrand.zalopay:
+      case 'zalopay':
         return ctx.t('payment_zalopay');
-      case WalletBrand.vnpay:
+      case 'vnpay':
         return ctx.t('payment_vnpay');
       default:
         return ctx.t('payment_wallet');
@@ -376,12 +373,12 @@ class PaymentMethodCard extends StatelessWidget {
 
   /// Lay icon vi.
   IconData _getWalletIcon() {
-    switch (method.walletBrand) {
-      case WalletBrand.momo:
+    switch (method.walletBrand?.toLowerCase()) {
+      case 'momo':
         return Icons.savings_outlined;
-      case WalletBrand.zalopay:
+      case 'zalopay':
         return Icons.account_balance_wallet_outlined;
-      case WalletBrand.vnpay:
+      case 'vnpay':
         return Icons.payment;
       default:
         return Icons.account_balance_wallet_outlined;
@@ -390,12 +387,12 @@ class PaymentMethodCard extends StatelessWidget {
 
   /// Lay mau nen icon vi.
   Color _getWalletBgColor() {
-    switch (method.walletBrand) {
-      case WalletBrand.momo:
+    switch (method.walletBrand?.toLowerCase()) {
+      case 'momo':
         return const Color(0xFFA50064);
-      case WalletBrand.zalopay:
+      case 'zalopay':
         return const Color(0xFF0068FF);
-      case WalletBrand.vnpay:
+      case 'vnpay':
         return const Color(0xFFAE2C1B);
       default:
         return AppColors.surfaceVariant;
@@ -404,10 +401,10 @@ class PaymentMethodCard extends StatelessWidget {
 
   /// Lay mau icon vi.
   Color _getWalletIconColor() {
-    switch (method.walletBrand) {
-      case WalletBrand.momo:
-      case WalletBrand.zalopay:
-      case WalletBrand.vnpay:
+    switch (method.walletBrand?.toLowerCase()) {
+      case 'momo':
+      case 'zalopay':
+      case 'vnpay':
         return Colors.white;
       default:
         return AppColors.textSecondary;

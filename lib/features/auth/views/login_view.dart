@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
+import '../../../../core/state/cart_state.dart';
 import '../../../../features/main/views/main_view.dart';
 import '../services/auth_service.dart';
 import 'register_view.dart';
@@ -9,7 +10,7 @@ import 'forgot_password_view.dart';
 /// Man hinh dang nhap (Login).
 ///
 /// Chuc nang:
-///   - Nhap so dien thoai/email va mat khau.
+///   - Nhap email va mat khau.
 ///   - Hien thi/an mat khau.
 ///   - Quen mat khau.
 ///   - Dang nhap bang Google, Facebook.
@@ -26,7 +27,7 @@ class LoginView extends StatefulWidget {
 }
 
 class _LoginViewState extends State<LoginView> {
-  /// Controller cho o nhap so dien thoai/email.
+  /// Controller cho o nhap email.
   final _emailController = TextEditingController();
 
   /// Controller cho o nhap mat khau.
@@ -57,16 +58,19 @@ class _LoginViewState extends State<LoginView> {
 
   /// Xu ly dang nhap thuc te: goi AuthService, hien thi loading, xu ly loi.
   Future<void> _handleLogin() async {
-    final username = _emailController.text.trim();
+    final email = _emailController.text.trim();
     final password = _passwordController.text;
 
     debugPrint('LoginView: Nguoi dung bam Dang nhap');
-    debugPrint('  Username: $username');
+    debugPrint('  Email: $email');
 
     setState(() => _isLoading = true);
 
     try {
-      await AuthService.login(username, password);
+      await AuthService.login(email, password);
+
+      // Reset CartState truoc khi chuyen sang MainView cua user moi.
+      CartState.of(context).reset();
 
       // Dang nhap thanh cong. Chuyen sang MainView, xoa lich su stack.
       if (!mounted) return;
@@ -75,7 +79,7 @@ class _LoginViewState extends State<LoginView> {
         MaterialPageRoute(builder: (context) => const MainView()),
         (route) => false,
       );
-    } on LoginException catch (e) {
+    } on AuthException catch (e) {
       // Loi tu AuthService - hien thi thong bao.
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

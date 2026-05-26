@@ -39,6 +39,9 @@ class _EditProfileViewState extends State<EditProfileView> {
   /// Controller o nhap email.
   late final TextEditingController _emailController;
 
+  /// URL avatar moi (sau khi upload).
+  String? _newAvatarUrl;
+
   /// Khoa submit (chan double-tap).
   bool _isSubmitting = false;
 
@@ -52,6 +55,7 @@ class _EditProfileViewState extends State<EditProfileView> {
     _emailController = TextEditingController(
       text: widget.user?.email ?? '',
     );
+    _newAvatarUrl = widget.user?.photoUrl;
     debugPrint('EditProfile: Khoi tao voi user = ${widget.user?.fullName ?? "null"}');
   }
 
@@ -356,14 +360,14 @@ class _EditProfileViewState extends State<EditProfileView> {
     );
   }
 
-  /// Buoc 3: Cap nhat ho so qua Firebase.
+  /// Buoc 3: Cap nhat ho so qua API.
   Future<void> _onProfileUpdated() async {
     setState(() => _isSubmitting = true);
 
     try {
       await _profileService.updateProfile(
         fullName: _nameController.text.trim(),
-        email: _emailController.text.trim(),
+        avatarUrl: _newAvatarUrl,
       );
 
       debugPrint('EditProfile: Cap nhat ho so thanh cong');
@@ -452,7 +456,7 @@ class _EditProfileViewState extends State<EditProfileView> {
 
   /// Khu vuc avatar: CircleAvatar + icon camera ghep de.
   Widget _buildAvatarArea() {
-    final avatarUrl = widget.user?.photoUrl;
+    final displayAvatarUrl = _newAvatarUrl;
     return Stack(
       children: [
         // Avatar chinh.
@@ -466,21 +470,22 @@ class _EditProfileViewState extends State<EditProfileView> {
               width: 1.5,
             ),
           ),
-          child: CircleAvatar(
-            radius: 46,
-            backgroundColor: AppColors.surfaceVariant,
-            backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
-                ? NetworkImage(avatarUrl)
-                : null,
-            onBackgroundImageError: (_, __) {},
-            child: (avatarUrl == null || avatarUrl.isEmpty)
-                ? const Icon(
+          child: displayAvatarUrl != null && displayAvatarUrl.isNotEmpty
+              ? CircleAvatar(
+                  radius: 46,
+                  backgroundColor: AppColors.surfaceVariant,
+                  backgroundImage: NetworkImage(displayAvatarUrl),
+                  onBackgroundImageError: (_, __) {},
+                )
+              : CircleAvatar(
+                  radius: 46,
+                  backgroundColor: AppColors.surfaceVariant,
+                  child: const Icon(
                     Icons.person,
                     size: 48,
                     color: AppColors.textHint,
-                  )
-                : null,
-          ),
+                  ),
+                ),
         ),
         // Icon camera o goc phai duoi (phan ghep de).
         Positioned(
@@ -490,6 +495,7 @@ class _EditProfileViewState extends State<EditProfileView> {
             onTap: () {
               debugPrint('EditProfile: Nguoi dung bam doi avatar');
               // TODO: Xu ly upload anh avatar khi da co Firebase Storage.
+              // Tam thoi chi show snackbar thong bao.
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(context.t('edit_avatar_hint')),

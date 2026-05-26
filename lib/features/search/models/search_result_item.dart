@@ -1,62 +1,57 @@
-/// Model ket hop san pham + thong tin cua hang.
+/// Model ket qua tim kiem tu API /api/search.
 ///
-/// Tai vi ProductModel khong co storeName va rating, can mot model trung gian
-/// de hien thi ket qua tim kiem day du (hinh anh, ten mon, ten cua hang,
-/// gia, danh gia, nut them).
+/// Model nay dong hop thong tin san pham + thong tin cua hang de hien thi
+/// trang ket qua tim kiem (hinh anh, ten mon, ten cua hang, gia, danh gia).
 class SearchResultItem {
-  final String id;
+  final String productId;
   final String productName;
-  final String productImageUrl;
-  final double price;
+  final String storeId;
   final String storeName;
+  final double price;
   final double rating;
   final int reviewCount;
-  final bool isOutOfStock;
-  final String productId;
-  final String storeId;
+  final double distance;
+  final String imageUrl;
 
   const SearchResultItem({
-    required this.id,
+    required this.productId,
     required this.productName,
-    required this.productImageUrl,
-    required this.price,
+    required this.storeId,
     required this.storeName,
+    required this.price,
     required this.rating,
     required this.reviewCount,
-    required this.isOutOfStock,
-    required this.productId,
-    required this.storeId,
+    required this.distance,
+    required this.imageUrl,
   });
 
-  /// Parse tu JSON tra ve tu my-json-server.
+  /// Parse tu JSON tra ve tu API /api/search.
   ///
   /// JSON mau:
   /// ```json
   /// {
-  ///   "id": "search_001",
-  ///   "productName": "iPhone 15 Pro Max 256GB",
-  ///   "productImageUrl": "https://example.com/images/iphone15.jpg",
-  ///   "price": 29990000.0,
-  ///   "storeName": "Apple Store Official",
-  ///   "rating": 4.9,
-  ///   "reviewCount": 1250,
-  ///   "isOutOfStock": false,
-  ///   "productId": "p_apple_15pm",
-  ///   "storeId": "s_apple_vn"
+  ///   "productId": "prod_001",
+  ///   "productName": "Com tam suon bi cha",
+  ///   "storeId": "store_001",
+  ///   "storeName": "Com tam Phuc Loc Tho",
+  ///   "price": 45000.0,
+  ///   "rating": 4.8,
+  ///   "reviewCount": 500,
+  ///   "distance": 2.1,
+  ///   "imageUrl": "https://..."
   /// }
   /// ```
   factory SearchResultItem.fromJson(Map<String, dynamic> json) {
     return SearchResultItem(
-      id: json['id'] as String? ?? '',
+      productId: json['productId'] as String? ?? '',
       productName: json['productName'] as String? ?? '',
-      productImageUrl: json['productImageUrl'] as String? ?? '',
-      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      storeId: json['storeId'] as String? ?? '',
       storeName: json['storeName'] as String? ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
-      isOutOfStock: json['isOutOfStock'] as bool? ?? false,
-      productId: json['productId'] as String? ?? '',
-      storeId: json['storeId'] as String? ?? '',
+      distance: (json['distance'] as num?)?.toDouble() ?? 0.0,
+      imageUrl: json['imageUrl'] as String? ?? '',
     );
   }
 }

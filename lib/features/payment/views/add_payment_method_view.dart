@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../models/payment_method_model.dart';
+import '../services/payment_service.dart';
 
 /// Man hinh Them moi phuong thuc thanh toan (the / vi).
 ///
@@ -27,6 +28,9 @@ class AddPaymentMethodView extends StatefulWidget {
 }
 
 class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
+  /// Service quan ly phuong thuc thanh toan.
+  final PaymentService _paymentService = const PaymentService();
+
   /// Controller cac o nhap the.
   final _cardNumberController = TextEditingController();
   final _cardHolderController = TextEditingController();
@@ -223,62 +227,103 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
   }
 
   /// Xu ly xac nhan them the.
-  void _onConfirm() {
+  Future<void> _onConfirm() async {
     if (!_validate(context)) return;
 
     setState(() => _isConfirming = true);
 
-    final last4 = _cardNumberController.text.replaceAll(' ', '').substring(
-        _cardNumberController.text.replaceAll(' ', '').length - 4);
+    try {
+      final last4 = _cardNumberController.text.replaceAll(' ', '').substring(
+          _cardNumberController.text.replaceAll(' ', '').length - 4);
 
-    final method = PaymentMethodModel(
-      id: 'pm_card_${DateTime.now().millisecondsSinceEpoch}',
-      type: PaymentMethodType.card,
-      isDefault: _isSaveCard,
-      createdAt: DateTime.now(),
-      cardBrand: _detectedCardBrand ?? CardBrand.unknown,
-      last4Digits: last4,
-    );
+      final cardBrandStr = _detectedCardBrand != null
+          ? _detectedCardBrand!.name.toUpperCase()
+          : 'Visa';
 
-    debugPrint(
-        'AddPaymentMethod: Xac nhan them the [${method.id}] - ${method.cardBrand}, **** $last4');
+      final method = await _paymentService.addPaymentMethod(
+        type: 'card',
+        name: _cardHolderController.text.trim(),
+        details: '**** **** **** $last4',
+        isDefault: _isSaveCard,
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.t('payment_add_card_saved')),
-        backgroundColor: AppColors.primary,
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+      debugPrint('AddPaymentMethod: Them the thanh cong - $cardBrandStr, **** $last4');
 
-    widget.onConfirm?.call(method);
-    Navigator.pop(context, method);
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.t('payment_add_card_saved')),
+          backgroundColor: AppColors.primary,
+          duration: const Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+      widget.onConfirm?.call(method!);
+      Navigator.pop(context, method);
+    } catch (e) {
+      debugPrint('AddPaymentMethod: Loi them the - $e');
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: AppColors.error,
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isConfirming = false);
+      }
+    }
   }
 
   /// Xu ly lien ket vi dien tu.
-  void _onLinkWallet(BuildContext context, WalletBrand brand) {
-    debugPrint('AddPaymentMethod: Nguoi dung bam lien ket vi ${brand.name}');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.t('payment_add_wallet_linked')),
-        backgroundColor: AppColors.primary,
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  Future<void> _onLinkWallet(BuildContext context, String walletType) async {
+    debugPrint('AddPaymentMethod: Nguoi dung bam lien ket vi $walletType');
 
-    final method = PaymentMethodModel(
-      id: 'pm_wallet_${brand.name}_${DateTime.now().millisecondsSinceEpoch}',
-      type: PaymentMethodType.wallet,
-      isDefault: false,
-      createdAt: DateTime.now(),
-      walletBrand: brand,
-      isLinked: true,
-    );
+    setState(() => _isConfirming = true);
 
-    widget.onConfirm?.call(method);
-    Navigator.pop(context, method);
+    try {
+      final method = await _paymentService.addPaymentMethod(
+        type: walletType,
+        name: walletType == 'momo' ? 'Vi MoMo cua toi' : 'Vi ZaloPay cua toi',
+        isDefault: false,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.t('payment_add_wallet_linked')),
+          backgroundColor: AppColors.primary,
+          duration: const Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+      widget.onConfirm?.call(method!);
+      Navigator.pop(context, method);
+    } catch (e) {
+      debugPrint('AddPaymentMethod: Loi lien ket vi - $e');
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: AppColors.error,
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isConfirming = false);
+      }
+    }
   }
 
   @override
@@ -483,15 +528,15 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
   Widget _buildWalletLinkSection(BuildContext ctx) {
     return Row(
       children: [
-        Expanded(child: _buildWalletButton(ctx, WalletBrand.momo)),
+        Expanded(child: _buildWalletButton(ctx, 'momo')),
         const SizedBox(width: 12),
-        Expanded(child: _buildWalletButton(ctx, WalletBrand.zalopay)),
+        Expanded(child: _buildWalletButton(ctx, 'zalo')),
       ],
     );
   }
 
-  Widget _buildWalletButton(BuildContext ctx, WalletBrand brand) {
-    final isMoMo = brand == WalletBrand.momo;
+  Widget _buildWalletButton(BuildContext ctx, String walletType) {
+    final isMoMo = walletType == 'momo';
     final bgColor = isMoMo ? const Color(0xFFA50064) : const Color(0xFF0068FF);
     final icon = isMoMo ? Icons.savings_outlined : Icons.account_balance_wallet_outlined;
     final label = isMoMo
@@ -499,7 +544,7 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
         : ctx.t('payment_zalopay');
 
     return GestureDetector(
-      onTap: () => _onLinkWallet(context, brand),
+      onTap: () => _onLinkWallet(context, walletType),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(

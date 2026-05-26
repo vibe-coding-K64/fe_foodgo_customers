@@ -67,7 +67,7 @@ class SearchResultCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: Image.network(
-        item.productImageUrl,
+        item.imageUrl,
         width: 80,
         height: 80,
         fit: BoxFit.cover,
@@ -96,9 +96,7 @@ class SearchResultCard extends StatelessWidget {
       style: TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.w600,
-        color: item.isOutOfStock
-            ? AppColors.textHint
-            : AppColors.textPrimary,
+        color: AppColors.textPrimary,
       ),
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
@@ -158,22 +156,6 @@ class SearchResultCard extends StatelessWidget {
   }
 
   Widget _buildAddButton() {
-    if (item.isOutOfStock) {
-      return Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(
-          Icons.remove_circle_outline,
-          color: AppColors.textHint,
-          size: 22,
-        ),
-      );
-    }
-
     return GestureDetector(
       onTap: onAddToCart,
       child: Container(

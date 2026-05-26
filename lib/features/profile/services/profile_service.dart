@@ -1,101 +1,76 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/utils/auth_storage.dart';
 import '../models/user_model.dart';
 
-/// Service quan ly thong tin ho so nguoi dung, tuong tac voi Firebase Firestore.
+/// Service quan ly thong tin ho so nguoi dung.
 ///
-/// Ho tro cac thao tac:
-/// - Lay thong tin nguoi dung hien tai theo Stream (thoi gian thuc)
-/// - Cap nhat ho so (fullName, email)
-/// - Lay thong tin diem thanh vien (loyaltyPoints, membershipTier)
+/// Su dung backend API `/api/customers/*` de lay va cap nhat thong tin.
+/// Ket hop voi Firebase Firestore cho loyalty/reward data.
 class ProfileService {
   const ProfileService();
 
-  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  /// Lay duong dan document cua nguoi dung hien tai trong bang goc `users`.
-  DocumentReference _userDoc() {
-    final userId = AuthStorage.getUserId();
-    if (userId == null || userId.isEmpty) {
-      throw Exception('ProfileService: Nguoi dung chua dang nhap');
-    }
-    return _firestore.collection('users').doc(userId);
+  /// Lay header Authorization voi Bearer token.
+  Options _authOptions() {
+    final token = AuthStorage.getToken();
+    return Options(
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
   }
 
-  /// Lay duong dan document cua nguoi dung hien tai trong nhanh `customer_profiles`.
-  DocumentReference _customerProfileDoc() {
-    final userId = AuthStorage.getUserId();
-    if (userId == null || userId.isEmpty) {
-      throw Exception('ProfileService: Nguoi dung chua dang nhap');
+  /// Lay thong tin nguoi dung hien tai tu API.
+  ///
+  /// Goi GET /api/customers/profile
+  /// Tra ve UserModel neu thanh cong, null neu that bai.
+  Future<UserModel?> getCurrentUser() async {
+    try {
+      final response = await ApiClient.get<Map<String, dynamic>>(
+        '/customers/profile',
+        options: _authOptions(),
+      );
+
+      final data = response.data;
+      if (data == null) return null;
+
+      final success = data['success'] as bool? ?? false;
+      if (!success) {
+        debugPrint('ProfileService: API tra ve success=false');
+        return null;
+      }
+
+      final userData = data['data'] as Map<String, dynamic>?;
+      if (userData == null) return null;
+
+      debugPrint('ProfileService: Lay thong tin thanh cong');
+      return UserModel.fromJson(userData);
+    } on DioException catch (e) {
+      debugPrint('ProfileService: Loi lay thong tin - ${e.message}');
+      return null;
+    } catch (e) {
+      debugPrint('ProfileService: Loi khong xac dinh - $e');
+      return null;
     }
-    return _firestore.collection('customer_profiles').doc(userId);
   }
 
   /// Stream lang nghe thong tin nguoi dung hien tai.
   ///
-  /// Lang nghe document `users/{userId}` de cap nhat UI thoi gian thuc
-  /// khi co thay doi ho so.
+  /// Goi API lay thong tin ban dau, tra ve Stream don (khong phai real-time).
+  /// De real-time, can backend ho tro WebSocket/SSE.
   Stream<UserModel?> getCurrentUserStream() {
-    try {
-      return _userDoc().snapshots().map((snapshot) {
-        if (!snapshot.exists) {
-          debugPrint('ProfileService: Document nguoi dung khong ton tai');
-          return null;
-        }
-        debugPrint('ProfileService: Tai thong tin nguoi dung thanh cong');
-        return UserModel.fromFirestore(snapshot);
-      });
-    } catch (e) {
-      debugPrint('ProfileService: Loi lay thong tin nguoi dung - $e');
-      return Stream.value(null);
-    }
-  }
-
-  /// Lay thong tin diem thanh vien tu nhanh `customer_profiles`.
-  ///
-  /// Tra ve Map chua [loyaltyPoints] va [membershipTier].
-  /// Tra ve null neu chua dang nhap hoac khong tim thay document.
-  Future<Map<String, int>?> getCustomerRewardInfo() async {
-    final userId = AuthStorage.getUserId();
-    if (userId == null || userId.isEmpty) {
-      debugPrint('ProfileService: Nguoi dung chua dang nhap');
-      return null;
-    }
-
-    try {
-      final doc = await _customerProfileDoc().get();
-
-      if (!doc.exists) {
-        debugPrint('ProfileService: Khong tim thay customer_profile cua user $userId');
-        return null;
-      }
-
-      final data = doc.data() as Map<String, dynamic>;
-      final loyaltyPoints = (data['loyaltyPoints'] as num?)?.toInt() ?? 0;
-      final membershipTier = (data['membershipTier'] as num?)?.toInt() ?? 0;
-
-      debugPrint('ProfileService: Lay diem thanh vien - Diem=$loyaltyPoints, Hang=$membershipTier');
-
-      return {
-        'loyaltyPoints': loyaltyPoints,
-        'membershipTier': membershipTier,
-      };
-    } catch (e) {
-      debugPrint('ProfileService: Loi khi lay thong tin diem thanh vien - $e');
-      return null;
-    }
+    return Stream.fromFuture(getCurrentUser());
   }
 
   /// Cap nhat ho so nguoi dung.
   ///
-  /// Chi cap nhat cac truong duoc truyen vao: [fullName] va [email].
-  /// Mot so truong khac (nhu phoneNumber) khong duoc phep sua.
-  ///
-  /// TODO: Xu ly upload anh avatar sau khi da co tich hop Firebase Storage.
-  Future<void> updateProfile({
+  /// Goi PUT /api/customers/profile
+  /// Chi cap nhat cac truong duoc truyen vao: [fullName] va [avatarUrl].
+  /// Tra ve UserModel da cap nhat neu thanh cong, null neu that bai.
+  Future<UserModel?> updateProfile({
     String? fullName,
-    String? email,
+    String? avatarUrl,
   }) async {
     try {
       final updates = <String, dynamic>{};
@@ -104,22 +79,74 @@ class ProfileService {
         updates['fullName'] = fullName.trim();
       }
 
-      if (email != null && email.trim().isNotEmpty) {
-        updates['email'] = email.trim();
+      if (avatarUrl != null && avatarUrl.trim().isNotEmpty) {
+        updates['avatarUrl'] = avatarUrl.trim();
       }
 
       if (updates.isEmpty) {
         debugPrint('ProfileService: Khong co truong nao de cap nhat');
-        return;
+        return null;
       }
 
-      updates['updatedAt'] = FieldValue.serverTimestamp();
+      debugPrint('ProfileService: Cap nhat ho so - $updates');
 
-      await _userDoc().update(updates);
-      debugPrint('ProfileService: Cap nhat ho so thanh cong - $updates');
+      final response = await ApiClient.put<Map<String, dynamic>>(
+        '/customers/profile',
+        data: updates,
+        options: _authOptions(),
+      );
+
+      final data = response.data;
+      if (data == null) return null;
+
+      final success = data['success'] as bool? ?? false;
+      if (!success) {
+        final message = data['message'] as String? ?? 'Cap nhat that bai';
+        throw Exception(message);
+      }
+
+      final userData = data['data'] as Map<String, dynamic>?;
+      if (userData == null) return null;
+
+      final updatedUser = UserModel.fromJson(userData);
+
+      // Cap nhat lai AuthStorage voi thong tin moi.
+      await AuthStorage.saveAuthData(
+        token: AuthStorage.getToken() ?? '',
+        tokenType: AuthStorage.getTokenType() ?? 'Bearer',
+        user: updatedUser.toJson(),
+      );
+
+      debugPrint('ProfileService: Cap nhat ho so thanh cong');
+      return updatedUser;
+    } on DioException catch (e) {
+      final message = _handleDioError(e);
+      debugPrint('ProfileService: Loi cap nhat ho so - $message');
+      throw Exception(message);
     } catch (e) {
       debugPrint('ProfileService: Loi cap nhat ho so - $e');
       rethrow;
+    }
+  }
+
+  /// Xu ly loi tu Dio.
+  String _handleDioError(DioException e) {
+    final statusCode = e.response?.statusCode;
+    final data = e.response?.data;
+
+    if (data is Map<String, dynamic>) {
+      return data['message'] as String? ?? 'Da xay ra loi';
+    }
+
+    switch (statusCode) {
+      case 401:
+        return 'Chua xac thuc. Vui long dang nhap lai.';
+      case 404:
+        return 'Khong tim thay tai khoan.';
+      case 400:
+        return 'Yeu cau khong hop le.';
+      default:
+        return 'Da xay ra loi. Vui long thu lai sau.';
     }
   }
 }
