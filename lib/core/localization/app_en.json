@@ -493,7 +493,7 @@
   "reward_points_required": "points",
   "reward_exchange_confirm_title": "Confirm Points Exchange",
   "reward_exchange_confirm_body": "Are you sure you want to use $1 points to redeem this voucher?",
-  "reward_exchange_success": "Redeemed successfully! Voucher has been added to your account.",
+  "reward_exchange_success": "Redeemed successfully!",
   "reward_no_vouchers": "You don't have any vouchers yet",
   "error_network": "Network error. Please check your connection.",
   "error_server": "Server error. Please try again later.",

@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/utils/auth_storage.dart';
 import '../models/rewards_model.dart';
 
@@ -88,46 +90,128 @@ class OfferService {
     }
   }
 
-  /// Lay danh sach voucher co the doi diem tu collection `system_vouchers`.
+  /// Lay danh sach voucher co the doi diem tu API `/api/vouchers/system`
+  /// (fallback: Firestore `system_vouchers`).
   ///
-  /// Tra ve danh sach [SystemVoucherModel].
-  static Future<List<SystemVoucherModel>> getSystemVouchers() async {
-    debugPrint('OfferService: Lay danh sach system_vouchers');
+  /// Tra ve danh sach [ExchangeVoucherModel].
+  static Future<List<ExchangeVoucherModel>> getSystemVouchers() async {
+    return getSystemVouchersApi();
+  }
+
+  /// Lay danh sach voucher cua nguoi dung tu API `/api/vouchers/my-vouchers`
+  /// (fallback: Firestore `customer_profiles/{userId}/my_vouchers`).
+  ///
+  /// Tra ve danh sach [MyVoucherModel].
+  static Future<List<MyVoucherModel>> getMyVouchers() async {
+    return getMyVouchersApi();
+  }
+
+  /// Lay danh sach voucher he thong co the doi diem tu API `/api/vouchers/system`.
+  ///
+  /// Su dung auth header. Tra ve danh sach [ExchangeVoucherModel].
+  /// Neu API fail thi fallback ve Firestore `system_vouchers`.
+  static Future<List<ExchangeVoucherModel>> getSystemVouchersApi() async {
+    debugPrint('OfferService: Lay danh sach system vouchers tu API');
 
     try {
-      final snapshot = await _firestore.collection('system_vouchers').get();
-
-      debugPrint('OfferService: system_vouchers snapshot size = ${snapshot.docs.length}');
-      for (final doc in snapshot.docs) {
-        debugPrint('  doc.id = ${doc.id}, data = ${doc.data()}');
+      final token = AuthStorage.getToken();
+      if (token == null) {
+        debugPrint('OfferService: Khong co token, fallback ve Firestore');
+        return _fallbackGetSystemVouchers();
       }
 
-      final vouchers = snapshot.docs
-          .map((doc) => SystemVoucherModel.fromFirestore(doc))
+      final response = await ApiClient.get<Map<String, dynamic>>(
+        '/vouchers/system',
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+        ),
+      );
+
+      final data = response.data;
+      if (data == null || data['success'] != true) {
+        debugPrint('OfferService: API tra loi khong thanh cong, fallback ve Firestore');
+        return _fallbackGetSystemVouchers();
+      }
+
+      final list = data['data'] as List<dynamic>? ?? [];
+      final vouchers = list
+          .map((e) => SystemVoucherApi.fromJson(e as Map<String, dynamic>))
+          .map((api) => api.toExchangeVoucher())
           .toList();
 
-      debugPrint('OfferService: Lay duoc ${vouchers.length} system voucher');
-
+      debugPrint('OfferService: Lay tu API duoc ${vouchers.length} system voucher');
       return vouchers;
     } catch (e, st) {
-      debugPrint('OfferService: loi khi lay system_vouchers = $e');
+      debugPrint('OfferService: Loi goi API system vouchers = $e');
       debugPrint('Stack trace: $st');
+      return _fallbackGetSystemVouchers();
+    }
+  }
+
+  /// Fallback: doc tu Firestore `system_vouchers`.
+  static Future<List<ExchangeVoucherModel>> _fallbackGetSystemVouchers() async {
+    debugPrint('OfferService: Fallback - doc system_vouchers tu Firestore');
+    try {
+      final snapshot = await _firestore.collection('system_vouchers').get();
+      final vouchers = snapshot.docs
+          .map((doc) => ExchangeVoucherModel.fromSystemVoucher(
+              SystemVoucherModel.fromFirestore(doc)))
+          .toList();
+      debugPrint('OfferService: Fallback lay duoc ${vouchers.length} system voucher');
+      return vouchers;
+    } catch (e) {
+      debugPrint('OfferService: Fallback that bai = $e');
       return [];
     }
   }
 
-  /// Lay danh sach voucher cua nguoi dung tu sub-collection
-  /// `customer_profiles/{userId}/my_vouchers`.
+  /// Lay danh sach voucher cua nguoi dung tu API `/api/vouchers/my-vouchers`.
   ///
-  /// Tra ve danh sach [MyVoucherModel].
-  static Future<List<MyVoucherModel>> getMyVouchers() async {
-    final userId = AuthStorage.getUserId();
-    if (userId == null) {
-      debugPrint('OfferService: Chua dang nhap, khong lay duoc voucher');
-      return [];
-    }
+  /// Su dung auth header. Tra ve danh sach [MyVoucherModel].
+  /// Neu API fail thi fallback ve Firestore sub-collection.
+  static Future<List<MyVoucherModel>> getMyVouchersApi() async {
+    debugPrint('OfferService: Lay my-vouchers tu API');
 
-    debugPrint('OfferService: Lay my_vouchers cho userId = $userId');
+    try {
+      final token = AuthStorage.getToken();
+      if (token == null) {
+        debugPrint('OfferService: Khong co token, fallback ve Firestore');
+        return _fallbackGetMyVouchers();
+      }
+
+      final response = await ApiClient.get<Map<String, dynamic>>(
+        '/vouchers/my-vouchers',
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+        ),
+      );
+
+      final data = response.data;
+      if (data == null || data['success'] != true) {
+        debugPrint('OfferService: API tra loi khong thanh cong, fallback ve Firestore');
+        return _fallbackGetMyVouchers();
+      }
+
+      final list = data['data'] as List<dynamic>? ?? [];
+      final vouchers = list
+          .map((e) => MyVoucherApi.fromJson(e as Map<String, dynamic>))
+          .map((api) => api.toMyVoucher())
+          .toList();
+
+      debugPrint('OfferService: Lay tu API duoc ${vouchers.length} my voucher');
+      return vouchers;
+    } catch (e, st) {
+      debugPrint('OfferService: Loi goi API my-vouchers = $e');
+      debugPrint('Stack trace: $st');
+      return _fallbackGetMyVouchers();
+    }
+  }
+
+  /// Fallback: doc tu Firestore `customer_profiles/{userId}/my_vouchers`.
+  static Future<List<MyVoucherModel>> _fallbackGetMyVouchers() async {
+    debugPrint('OfferService: Fallback - doc my_vouchers tu Firestore');
+    final userId = AuthStorage.getUserId();
+    if (userId == null) return [];
 
     try {
       final snapshot = await _firestore
@@ -135,23 +219,64 @@ class OfferService {
           .doc(userId)
           .collection('my_vouchers')
           .get();
-
-      debugPrint('OfferService: my_vouchers snapshot size = ${snapshot.docs.length}');
-      for (final doc in snapshot.docs) {
-        debugPrint('  doc.id = ${doc.id}, data = ${doc.data()}');
-      }
-
       final vouchers = snapshot.docs
           .map((doc) => MyVoucherModel.fromFirestore(doc))
           .toList();
-
-      debugPrint('OfferService: Lay duoc ${vouchers.length} my voucher');
-
+      debugPrint('OfferService: Fallback lay duoc ${vouchers.length} my voucher');
       return vouchers;
-    } catch (e, st) {
-      debugPrint('OfferService: loi khi lay my_vouchers = $e');
-      debugPrint('Stack trace: $st');
+    } catch (e) {
+      debugPrint('OfferService: Fallback that bai = $e');
       return [];
+    }
+  }
+
+  /// Dong diem lay voucher qua API `/api/vouchers/exchange`.
+  ///
+  /// Tra ve [ExchangedVoucherData] neu thanh cong, hoac null neu that bai.
+  /// [errorMessage] se chua message loi tu API (neu co).
+  static Future<(ExchangedVoucherData?, String?)> exchangeVoucher({
+    required String voucherId,
+  }) async {
+    debugPrint('OfferService: Dong voucher [$voucherId]');
+
+    try {
+      final token = AuthStorage.getToken();
+      if (token == null) {
+        debugPrint('OfferService: Khong co token');
+        return (null, 'Ban chua dang nhap. Vui long dang nhap lai.');
+      }
+
+      final response = await ApiClient.post<Map<String, dynamic>>(
+        '/vouchers/exchange',
+        data: {'voucherId': voucherId},
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+        ),
+      );
+
+      final data = response.data;
+      if (data == null) {
+        return (null, 'Khong nhan duoc phan hoi tu server.');
+      }
+
+      if (data['success'] != true) {
+        final msg = data['message'] as String? ?? 'Doi voucher that bai.';
+        debugPrint('OfferService: API tra loi loi = $msg');
+        return (null, msg);
+      }
+
+      final json = data['data'] as Map<String, dynamic>?;
+      if (json == null) {
+        return (null, 'Khong nhan duoc du lieu voucher.');
+      }
+
+      final exchanged = ExchangedVoucherData.fromJson(json);
+      debugPrint('OfferService: Doi voucher thanh cong - ${exchanged.name}');
+      return (exchanged, null);
+    } catch (e, st) {
+      debugPrint('OfferService: Loi khi goi API exchange = $e');
+      debugPrint('Stack trace: $st');
+      return (null, 'Khong the ket noi den server. Vui long thu lai sau.');
     }
   }
 }

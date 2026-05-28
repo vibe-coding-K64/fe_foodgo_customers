@@ -19,12 +19,18 @@ enum NotificationType {
 
 /// Model thong bao nguoi dung.
 ///
-/// Su dung cho sub-collection `users/{userId}/notifications`.
+/// Su dung cho sub-collection `customer_profiles/{userId}/notifications`.
 class NotificationModel {
   final String id;
 
   /// Loai thong bao: 0 = He thong, 1 = Khuyen mai, 2 = Don hang.
   final int type;
+
+  /// Tieu de thong bao.
+  final String title;
+
+  /// Noi dung thong bao.
+  final String body;
 
   /// ID tham chieu (ma don hang, ma voucher, ...).
   final String referenceId;
@@ -35,6 +41,8 @@ class NotificationModel {
   const NotificationModel({
     required this.id,
     required this.type,
+    required this.title,
+    required this.body,
     required this.referenceId,
     required this.createdAt,
     required this.isRead,
@@ -71,6 +79,8 @@ class NotificationModel {
     return NotificationModel(
       id: doc.id,
       type: (data['type'] as num?)?.toInt() ?? 0,
+      title: data['title'] as String? ?? '',
+      body: data['body'] as String? ?? '',
       referenceId: data['referenceId'] as String? ?? '',
       createdAt: parsedDate,
       isRead: data['isRead'] as bool? ?? false,
@@ -82,6 +92,8 @@ class NotificationModel {
     return NotificationModel(
       id: id,
       type: type,
+      title: title,
+      body: body,
       referenceId: referenceId,
       createdAt: createdAt,
       isRead: true,

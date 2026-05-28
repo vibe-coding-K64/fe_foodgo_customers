@@ -16,13 +16,11 @@ class HomeService {
   // ================================================================
 
   /// Lay danh sach danh muc (system_categories) theo thoi gian thuc.
-  /// Chi lay nhung ban ghi chua bi xoa mem (deletedAt la null).
   /// Sap xep theo field 'order' tang dan (sort in-memory vi khong co index).
   static Stream<List<CategoryModel>> getCategoriesStream() {
     debugPrint('HomeService: Dang lay Stream danh muc tu Firestore');
     return _firestore
         .collection('system_categories')
-        .where('deletedAt', isNull: true)
         .snapshots()
         .handleError((error) {
       debugPrint('HomeService[Loi Stream danh muc]: $error');

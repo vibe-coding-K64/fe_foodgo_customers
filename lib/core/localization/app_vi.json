@@ -490,7 +490,7 @@
   "reward_points_required": "điểm",
   "reward_exchange_confirm_title": "Xác nhận đổi điểm",
   "reward_exchange_confirm_body": "Bạn có chắc chắn muốn dùng $1 điểm để đổi voucher này không?",
-  "reward_exchange_success": "Đổi điểm thành công! Voucher đã được thêm vào tài khoản.",
+  "reward_exchange_success": "Đổi điểm thành công",
   "reward_no_vouchers": "Bạn chưa có voucher nào",
   "error_network": "Lỗi mạng. Vui lòng kiểm tra kết nối.",
   "error_server": "Lỗi server. Vui lòng thử lại sau.",

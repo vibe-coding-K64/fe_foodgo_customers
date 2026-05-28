@@ -19,25 +19,14 @@ class NotificationCard extends StatelessWidget {
     this.onTap,
   });
 
-  /// Lay tieu de hien thi dua tren loai thong bao.
-  String _getTitle(BuildContext context) {
-    return context.t('notif_type_${notification.type}');
+  /// Lay tieu de hien thi.
+  String _getTitle() {
+    return notification.title;
   }
 
-  /// Lay noi dung hien thi dua tren loai va referenceId.
-  String _getBody(BuildContext context) {
-    switch (notification.type) {
-      case 2:
-        // Don hang.
-        return 'Don hang #${notification.referenceId} cua ban co cap nhat moi.';
-      case 1:
-        // Khuyen mai.
-        return 'Ma khuyen mai #${notification.referenceId} dang cho ban. Hay su dung ngay!';
-      case 0:
-      default:
-        // He thong.
-        return 'Thong bao he thong #${notification.referenceId}.';
-    }
+  /// Lay noi dung hien thi.
+  String _getBody() {
+    return notification.body;
   }
 
   /// Lay icon dua tren loai thong bao.
@@ -110,7 +99,7 @@ class NotificationCard extends StatelessWidget {
                         // Tieu de.
                         Expanded(
                           child: Text(
-                            _getTitle(context),
+                            _getTitle(),
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: notification.isRead
@@ -136,7 +125,7 @@ class NotificationCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     // Noi dung chi tiet.
                     Text(
-                      _getBody(context),
+                      _getBody(),
                       style: const TextStyle(
                         fontSize: 13,
                         color: AppColors.textSecondary,

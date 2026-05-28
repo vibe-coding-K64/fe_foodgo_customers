@@ -8,7 +8,6 @@ import '../models/notification_model.dart';
 /// Nhan vao mot [NotificationModel] va hien thi day du noi dung.
 ///
 /// Hien thi:
-///   - Banner image (chi voi thong bao khuyen mai).
 ///   - Tieu de, thoi gian, noi dung chi tiet.
 ///   - Nut hanh dong thay doi theo loai thong bao.
 ///
@@ -23,22 +22,14 @@ class NotificationDetailView extends StatelessWidget {
     required this.notification,
   });
 
-  /// Lay tieu de hien thi dua tren loai thong bao.
-  String _getTitle(BuildContext context) {
-    return context.t('notif_type_${notification.type}');
+  /// Lay tieu de hien thi.
+  String _getTitle() {
+    return notification.title;
   }
 
-  /// Lay noi dung hien thi dua tren loai va referenceId.
-  String _getBody(BuildContext context) {
-    switch (notification.type) {
-      case 2:
-        return 'Don hang #${notification.referenceId} cua ban co cap nhat moi. Vui long kiem tra trang chi tiet don hang de biet thong tin chi tiet.';
-      case 1:
-        return 'Ma khuyen mai #${notification.referenceId} dang cho ban. Hay su dung ngay de nhan uu dai truoc khi het han!';
-      case 0:
-      default:
-        return 'Thong bao he thong #${notification.referenceId}. Vui long kiem tra de biet thong tin chi tiet.';
-    }
+  /// Lay noi dung hien thi.
+  String _getBody() {
+    return notification.body;
   }
 
   /// Lay nut hanh dong dua tren loai thong bao.
@@ -78,23 +69,6 @@ class NotificationDetailView extends StatelessWidget {
       default:
         return Icons.settings_outlined;
     }
-  }
-
-  /// Lay URL hinh banner dua tren loai thong bao.
-  /// Chi khuyen mai moi co banner.
-  String? _getBannerUrl() {
-    if (notification.type == 1) {
-      return 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=80';
-    }
-    return null;
-  }
-
-  /// Lay icon trai cho banner (neu co).
-  IconData? _getBannerOverlayIcon() {
-    if (notification.type == 1) {
-      return Icons.local_offer;
-    }
-    return null;
   }
 
   /// Format thoi gian thanh chuoi "X gio truoc - dd/MM/yyyy".
@@ -157,8 +131,6 @@ class NotificationDetailView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bannerUrl = _getBannerUrl();
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -190,11 +162,7 @@ class NotificationDetailView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Banner hinh anh (chi hien voi khuyen mai).
-                  if (bannerUrl != null) _buildBanner(bannerUrl),
-                  if (bannerUrl != null) const SizedBox(height: 20),
-                  // Tieu de.
-                  _buildTitle(context),
+                  _buildTitle(),
                   const SizedBox(height: 8),
                   // Thoi gian nhan.
                   _buildTimeLabel(context),
@@ -203,7 +171,7 @@ class NotificationDetailView extends StatelessWidget {
                   _buildDivider(),
                   const SizedBox(height: 16),
                   // Noi dung chi tiet.
-                  _buildBody(context),
+                  _buildBody(),
                   const SizedBox(height: 32),
                 ],
               ),
@@ -216,74 +184,8 @@ class NotificationDetailView extends StatelessWidget {
     );
   }
 
-  /// Widget banner hinh chu nhat bo goc.
-  Widget _buildBanner(String imageUrl) {
-    final overlayIcon = _getBannerOverlayIcon();
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Stack(
-        children: [
-          // Hinh anh.
-          Image.network(
-            imageUrl,
-            width: double.infinity,
-            height: 200,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) {
-              return Container(
-                width: double.infinity,
-                height: 200,
-                color: AppColors.surfaceVariant,
-                child: const Icon(
-                  Icons.image_not_supported_outlined,
-                  size: 48,
-                  color: AppColors.textHint,
-                ),
-              );
-            },
-          ),
-          // Lop phu ban trong suot.
-          Container(
-            width: double.infinity,
-            height: 200,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withAlpha(25),
-                  Colors.black.withAlpha(50),
-                ],
-              ),
-            ),
-          ),
-          // Icon goc trai tren (neu co).
-          if (overlayIcon != null)
-            Positioned(
-              top: 12,
-              left: 12,
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  overlayIcon,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
   /// Widget tieu de thong bao (icon + text, in dam).
-  Widget _buildTitle(BuildContext context) {
+  Widget _buildTitle() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -305,7 +207,7 @@ class NotificationDetailView extends StatelessWidget {
         // Tieu de.
         Expanded(
           child: Text(
-            _getTitle(context),
+            _getTitle(),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -343,9 +245,9 @@ class NotificationDetailView extends StatelessWidget {
   }
 
   /// Widget noi dung chi tiet.
-  Widget _buildBody(BuildContext context) {
+  Widget _buildBody() {
     return Text(
-      _getBody(context),
+      _getBody(),
       style: const TextStyle(
         fontSize: 15,
         color: AppColors.textPrimary,

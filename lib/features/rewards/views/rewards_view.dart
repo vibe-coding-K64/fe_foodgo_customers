@@ -22,13 +22,13 @@ class RewardsView extends StatefulWidget {
 
 class _RewardsViewState extends State<RewardsView> {
   /// Future lay thong tin diem thanh vien.
-  late final Future<UserRewardInfo?> _rewardInfoFuture;
+  Future<UserRewardInfo?>? _rewardInfoFuture;
 
   /// Future lay danh sach voucher co the doi.
-  late final Future<List<SystemVoucherModel>> _systemVouchersFuture;
+  Future<List<ExchangeVoucherModel>>? _systemVouchersFuture;
 
   /// Future lay danh sach voucher cua nguoi dung.
-  late final Future<List<MyVoucherModel>> _myVouchersFuture;
+  Future<List<MyVoucherModel>>? _myVouchersFuture;
 
   @override
   void initState() {
@@ -36,6 +36,14 @@ class _RewardsViewState extends State<RewardsView> {
     _rewardInfoFuture = OfferService.getUserRewardInfo();
     _systemVouchersFuture = OfferService.getSystemVouchers();
     _myVouchersFuture = OfferService.getMyVouchers();
+  }
+
+  void _reloadData() {
+    setState(() {
+      _rewardInfoFuture = OfferService.getUserRewardInfo();
+      _systemVouchersFuture = OfferService.getSystemVouchers();
+      _myVouchersFuture = OfferService.getMyVouchers();
+    });
   }
 
   /// Lay ten hien thi cua hang thanh vien tu so tier.
@@ -178,7 +186,7 @@ class _RewardsViewState extends State<RewardsView> {
         const SizedBox(height: 12),
         SizedBox(
           height: 200,
-          child: FutureBuilder<List<SystemVoucherModel>>(
+          child: FutureBuilder<List<ExchangeVoucherModel>>(
             future: _systemVouchersFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -208,7 +216,8 @@ class _RewardsViewState extends State<RewardsView> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => RewardDetailView(
-                            voucher: ExchangeVoucherModel.fromSystemVoucher(voucher),
+                            voucher: voucher,
+                            onExchangeSuccess: (_) => _reloadData(),
                           ),
                         ),
                       );
@@ -372,7 +381,7 @@ class _RewardsViewState extends State<RewardsView> {
 ///
 /// Trich xuat thanh widget rieng de su dung trong FutureBuilder.
 class _SystemVoucherCard extends StatelessWidget {
-  final SystemVoucherModel voucher;
+  final ExchangeVoucherModel voucher;
   final VoidCallback? onTap;
 
   const _SystemVoucherCard({
