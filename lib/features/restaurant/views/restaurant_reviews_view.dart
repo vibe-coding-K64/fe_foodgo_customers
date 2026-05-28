@@ -117,16 +117,11 @@ class _RestaurantReviewsViewState extends State<RestaurantReviewsView> {
     int star5 = 0, star4 = 0, star3 = 0, star2 = 0, star1 = 0;
     for (final r in _allReviews) {
       switch (r.starRating) {
-        case 5:
-          star5++;
-        case 4:
-          star4++;
-        case 3:
-          star3++;
-        case 2:
-          star2++;
-        case 1:
-          star1++;
+        case 5: star5++; break;
+        case 4: star4++; break;
+        case 3: star3++; break;
+        case 2: star2++; break;
+        case 1: star1++; break;
       }
     }
     return ReviewStarDistribution(

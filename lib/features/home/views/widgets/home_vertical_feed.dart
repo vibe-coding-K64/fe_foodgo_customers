@@ -193,7 +193,11 @@ class _VerticalStoreItem extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: Image.network(
-                store.avtUrl,
+                store.avtUrl.trim().isNotEmpty
+                    ? store.avtUrl.trim()
+                    : store.backUrl.trim().isNotEmpty
+                        ? store.backUrl.trim()
+                        : '',
                 width: 90,
                 height: 90,
                 fit: BoxFit.cover,

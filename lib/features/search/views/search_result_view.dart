@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/state/cart_state.dart';
 import '../../../core/utils/auth_storage.dart';
 import '../../cart/views/cart_view.dart';
+import '../../home/models/product_model.dart';
+import '../../product/views/product_detail_bottom_sheet.dart';
 import '../models/search_result_item.dart';
 import '../services/services.dart';
 import 'widgets/search_filter_bar.dart';
@@ -36,7 +39,6 @@ class _SearchResultViewState extends State<SearchResultView> {
     _searchFuture = _fetchSearchResults();
   }
 
-  /// Goi API /api/search voi vi tri va sort hien tai.
   Future<List<SearchResultItem>> _fetchSearchResults() async {
     final userLat = AuthStorage.getUserLatitude() ?? 10.8500;
     final userLng = AuthStorage.getUserLongitude() ?? 106.7900;
@@ -62,24 +64,204 @@ class _SearchResultViewState extends State<SearchResultView> {
     debugPrint('Sap xep thay doi: $_selectedSort');
   }
 
+  /// Chuyen SearchResultItem thanh ProductModel de mo bottom sheet.
+  ProductModel _toProductModel(SearchResultItem item) {
+    return ProductModel(
+      id: item.productId,
+      storeId: item.storeId,
+      categoryId: '',
+      categoryName: '',
+      name: item.productName,
+      description: '',
+      basePrice: item.price,
+      imageUrl: item.imageUrl,
+      isOutOfStock: item.isOutOfStock,
+      isFeatured: false,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      optionGroups: item.optionGroups
+          .map((g) => OptionGroupModel.fromJson(g))
+          .toList(),
+    );
+  }
+
+  void _onAddToCart(SearchResultItem item) {
+    final userId = AuthStorage.getUserId();
+    if (userId == null || userId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.t('auth_login')),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (item.isOutOfStock) return;
+
+    final product = _toProductModel(item);
+
+    // Neu co option (size/topping) -> mo bottom sheet.
+    if (item.optionGroups.isNotEmpty) {
+      showProductDetailSheet(context, product);
+      return;
+    }
+
+    // Khong co option -> add truc tiep.
+    _addDirectlyToCart(item, product);
+  }
+
+  Future<void> _addDirectlyToCart(
+      SearchResultItem item, ProductModel product) async {
+    final userId = AuthStorage.getUserId();
+    if (userId == null) return;
+
+    final cartState = CartState.of(context);
+    final result = await cartState.addItem(
+      userId,
+      product,
+      quantity: 1,
+    );
+
+    if (!mounted) return;
+
+    switch (result) {
+      case CartAddResult.success:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${item.productName} ${context.t('success_add_to_cart')}'),
+            backgroundColor: AppColors.primary,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 1),
+          ),
+        );
+        break;
+      case CartAddResult.differentStore:
+        _showDifferentStoreDialog(cartState, item, product);
+        break;
+      case CartAddResult.outOfStock:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(cartState.errorMessage ?? 'Mon an dang het hang.'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        break;
+      case CartAddResult.notFound:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(cartState.errorMessage ?? 'San pham khong ton tai.'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        break;
+      case CartAddResult.otherError:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                Text(cartState.errorMessage ?? 'Loi them vao gio hang.'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        break;
+    }
+  }
+
+  void _showDifferentStoreDialog(
+      CartState cartState, SearchResultItem item, ProductModel product) {
+    final message = cartState.differentStoreErrorMessage ??
+        'Gio hang hien co mon tu cua hang khac. Ban co muon xoa gio hang hien tai de them mon nay?';
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Cua hang khac'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Huy',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final userId = AuthStorage.getUserId();
+              if (userId == null) return;
+
+              final result = await cartState.replaceCartAndAddItem(
+                userId,
+                product,
+                quantity: 1,
+              );
+
+              if (!mounted) return;
+
+              if (result == CartAddResult.success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                        '${item.productName} ${context.t('success_add_to_cart')}'),
+                    backgroundColor: AppColors.primary,
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 1),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                        cartState.errorMessage ?? 'Loi them vao gio hang.'),
+                    backgroundColor: AppColors.error,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Xoa va them moi'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Lay so luong trong gio cua mot san pham.
+  int _getCartQuantity(String productId, CartState cartState) {
+    try {
+      final item = cartState.items.where((i) => i.foodId == productId).toList();
+      if (item.isEmpty) return 0;
+      return item.fold(0, (sum, i) => sum + i.quantity);
+    } catch (_) {
+      return 0;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          // Header: nut Back + thanh tim kiem.
           _buildHeader(),
-          // Divider ngan cach header va filter bar.
           Container(height: 1, color: AppColors.divider),
-          // Thanh loc FilterChip.
           SearchFilterBar(
             selectedSort: _selectedSort,
             onSortChanged: _onSortChanged,
           ),
-          // Divider ngan cach filter va danh sach.
           Container(height: 1, color: AppColors.divider),
-          // Danh sach ket qua - FutureBuilder.
           Expanded(
             child: _buildResultsBody(),
           ),
@@ -92,12 +274,10 @@ class _SearchResultViewState extends State<SearchResultView> {
     return FutureBuilder<List<SearchResultItem>>(
       future: _searchFuture,
       builder: (context, snapshot) {
-        // Dang tai.
         if (snapshot.connectionState == ConnectionState.waiting) {
           return _buildLoadingState();
         }
 
-        // Co loi.
         if (snapshot.hasError) {
           debugPrint('SearchResultView: loi API - ${snapshot.error}');
           return _buildErrorState(snapshot.error.toString());
@@ -105,32 +285,30 @@ class _SearchResultViewState extends State<SearchResultView> {
 
         final allResults = snapshot.data ?? [];
 
-        // Rong.
         if (allResults.isEmpty) {
           return _buildEmptyState();
         }
 
-        // Co du lieu -> hien thi danh sach.
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          itemCount: allResults.length,
-          itemBuilder: (context, index) {
-            final item = allResults[index];
-            return SearchResultCard(
-              item: item,
-              onTap: () {
-                debugPrint(
-                    'SearchResultView: Nguoi dung bam san pham [${item.productName}]');
-              },
-              onAddToCart: () {
-                debugPrint(
-                    'SearchResultView: Them vao gio [${item.productName}]');
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${item.productName} da duoc them'),
-                    backgroundColor: AppColors.primary,
-                    duration: const Duration(seconds: 1),
-                  ),
+        return ListenableBuilder(
+          listenable: CartState.of(context),
+          builder: (context, _) {
+            final cartState = CartState.of(context);
+            return ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              itemCount: allResults.length,
+              itemBuilder: (context, index) {
+                final item = allResults[index];
+                final cartQty = _getCartQuantity(item.productId, cartState);
+                return SearchResultCard(
+                  item: item,
+                  cartQuantity: cartQty,
+                  onTap: () {
+                    debugPrint(
+                        'SearchResultView: Nguoi dung bam san pham [${item.productName}]');
+                    final product = _toProductModel(item);
+                    showProductDetailSheet(context, product);
+                  },
+                  onAddToCart: () => _onAddToCart(item),
                 );
               },
             );
@@ -277,23 +455,61 @@ class _SearchResultViewState extends State<SearchResultView> {
               ),
             ),
           ),
-          // Nut gio hang.
-          IconButton(
-            onPressed: () {
-              debugPrint('SearchResultView: Nguoi dung bam icon gio hang');
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CartView()),
-              );
-            },
-            icon: Icon(
-              Icons.shopping_cart_outlined,
-              color: AppColors.textPrimary,
-            ),
-            padding: const EdgeInsets.all(8),
-          ),
+          // Nut gio hang + badge.
+          _buildCartButton(),
         ],
       ),
+    );
+  }
+
+  Widget _buildCartButton() {
+    return ListenableBuilder(
+      listenable: CartState.of(context),
+      builder: (context, _) {
+        final cartState = CartState.of(context);
+        final count = cartState.itemCount;
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            IconButton(
+              onPressed: () {
+                debugPrint('SearchResultView: Nguoi dung bam icon gio hang');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CartView()),
+                );
+              },
+              icon: Icon(
+                Icons.shopping_cart_outlined,
+                color: AppColors.textPrimary,
+              ),
+              padding: const EdgeInsets.all(8),
+            ),
+            if (count > 0)
+              Positioned(
+                top: 2,
+                right: 2,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.error,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  constraints: const BoxConstraints(minWidth: 18),
+                  child: Text(
+                    count > 99 ? '99+' : '$count',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

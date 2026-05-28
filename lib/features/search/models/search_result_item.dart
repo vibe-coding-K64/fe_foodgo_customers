@@ -12,6 +12,9 @@ class SearchResultItem {
   final int reviewCount;
   final double distance;
   final String imageUrl;
+  final bool isOutOfStock;
+  final String? storeAvatarUrl;
+  final List<Map<String, dynamic>> optionGroups;
 
   const SearchResultItem({
     required this.productId,
@@ -23,6 +26,9 @@ class SearchResultItem {
     required this.reviewCount,
     required this.distance,
     required this.imageUrl,
+    this.isOutOfStock = false,
+    this.storeAvatarUrl,
+    this.optionGroups = const [],
   });
 
   /// Parse tu JSON tra ve tu API /api/search.
@@ -42,6 +48,7 @@ class SearchResultItem {
   /// }
   /// ```
   factory SearchResultItem.fromJson(Map<String, dynamic> json) {
+    final optionGroupsRaw = json['optionGroups'] as List<dynamic>? ?? [];
     return SearchResultItem(
       productId: json['productId'] as String? ?? '',
       productName: json['productName'] as String? ?? '',
@@ -52,6 +59,11 @@ class SearchResultItem {
       reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
       distance: (json['distance'] as num?)?.toDouble() ?? 0.0,
       imageUrl: json['imageUrl'] as String? ?? '',
+      isOutOfStock: json['isOutOfStock'] as bool? ?? false,
+      storeAvatarUrl: json['storeAvatarUrl'] as String?,
+      optionGroups: optionGroupsRaw
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList(),
     );
   }
 }

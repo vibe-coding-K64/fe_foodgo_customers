@@ -3,6 +3,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../../../core/state/cart_state.dart';
 import '../../../core/utils/auth_storage.dart';
+import '../../../features/restaurant/services/restaurant_service.dart';
 import '../../checkout/views/checkout_view.dart';
 import '../models/cart_item_model.dart';
 import 'widgets/cart_item_widget.dart';
@@ -217,6 +218,39 @@ class _CartContent extends StatefulWidget {
 class _CartContentState extends State<_CartContent> {
   final Set<String> _selectedIds = {};
 
+  // Cache ten cua hang: storeId -> storeName.
+  final Map<String, String> _storeNames = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStoreNames();
+  }
+
+  @override
+  void didUpdateWidget(covariant _CartContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.cartState.items != widget.cartState.items) {
+      _loadStoreNames();
+    }
+  }
+
+  Future<void> _loadStoreNames() async {
+    final uniqueStoreIds =
+        widget.cartState.items.map((e) => e.storeId).toSet();
+
+    for (final storeId in uniqueStoreIds) {
+      if (!_storeNames.containsKey(storeId)) {
+        final store = await RestaurantService.getStoreById(storeId);
+        if (mounted && store != null) {
+          setState(() {
+            _storeNames[storeId] = store.name;
+          });
+        }
+      }
+    }
+  }
+
   double get _subtotal {
     return widget.cartState.items
         .where((item) => _selectedIds.contains(item.id))
@@ -293,23 +327,74 @@ class _CartContentState extends State<_CartContent> {
     final items = widget.cartState.items;
     final isEmpty = items.isEmpty;
 
+    // Nhom items theo storeId.
+    final grouped = <String, List<CartItemModel>>{};
+    for (final item in items) {
+      grouped.putIfAbsent(item.storeId, () => []).add(item);
+    }
+    // Sap xep theo thu tu xuat hien trong danh sach goc.
+    final storeIds = grouped.keys.toList();
+
     return Column(
       children: [
         Expanded(
-          child: ListView.separated(
+          child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemCount: storeIds.length,
             itemBuilder: (context, index) {
-              final item = items[index];
-              return CartItemWidget(
-                item: item,
-                isSelected: _selectedIds.contains(item.id),
-                onSelectionChanged: (selected) =>
-                    _onToggleItem(item.id, selected),
-                onIncrease: () => _onIncrease(item),
-                onDecrease: () => _onDecrease(item),
-                onDismiss: () => _onDismissItem(item),
+              final storeId = storeIds[index];
+              final storeItems = grouped[storeId]!;
+              final storeName = _storeNames[storeId] ?? '...';
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header ten cua hang.
+                  Padding(
+                    padding: EdgeInsets.only(
+                      left: 4,
+                      bottom: 8,
+                      top: index > 0 ? 8 : 0,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.store_outlined,
+                          size: 16,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            storeName,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Cac item cua cua hang nay.
+                  ...storeItems.map((item) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: CartItemWidget(
+                        item: item,
+                        isSelected: _selectedIds.contains(item.id),
+                        onSelectionChanged: (selected) =>
+                            _onToggleItem(item.id, selected),
+                        onIncrease: () => _onIncrease(item),
+                        onDecrease: () => _onDecrease(item),
+                        onDismiss: () => _onDismissItem(item),
+                      ),
+                    );
+                  }),
+                ],
               );
             },
           ),

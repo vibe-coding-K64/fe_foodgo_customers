@@ -20,10 +20,11 @@ class SearchService {
 
   /// Lay duong dan sub-collection lich su tim kiem cua nguoi dung hien tai.
   /// Duong dan: users/{userId}/search_history.
-  CollectionReference _searchHistoryCollection() {
+  CollectionReference? _searchHistoryCollection() {
     final userId = AuthStorage.getUserId();
     if (userId == null || userId.isEmpty) {
-      throw Exception('SearchService: Nguoi dung chua dang nhap');
+      debugPrint('SearchService: Nguoi dung chua dang nhap, khong doc duoc lich su');
+      return null;
     }
     return _firestore
         .collection('users')
@@ -33,9 +34,16 @@ class SearchService {
 
   /// Stream lang nghe danh sach lich su tim kiem cua nguoi dung hien tai.
   /// Sap xep: theo thoi gian tao moi nhat, gioi han 10 ket qua.
+  /// Tra ve Stream rong neu nguoi dung chua dang nhap.
   Stream<List<SearchHistoryModel>> getSearchHistoryStream() {
+    final collection = _searchHistoryCollection();
+    if (collection == null) {
+      debugPrint('SearchService: Nguoi dung chua dang nhap, tra ve stream rong');
+      return Stream.value([]);
+    }
+
     try {
-      return _searchHistoryCollection()
+      return collection
           .orderBy('createdAt', descending: true)
           .limit(10)
           .snapshots()
@@ -62,18 +70,22 @@ class SearchService {
   ///
   /// Neu tu khoa da ton tai trong lich su, cap nhat createdAt de no troi
   /// len dau danh sach. Neu chua co thi them document moi.
+  /// Khong lam gi neu nguoi dung chua dang nhap.
   Future<void> addSearchKeyword(String keyword) async {
     final trimmedKeyword = keyword.trim();
 
-    // Kiem tra rong.
     if (trimmedKeyword.isEmpty) {
       debugPrint('SearchService: Tu khoa rong, khong luu');
       return;
     }
 
-    try {
-      final collection = _searchHistoryCollection();
+    final collection = _searchHistoryCollection();
+    if (collection == null) {
+      debugPrint('SearchService: Nguoi dung chua dang nhap, khong luu lich su');
+      return;
+    }
 
+    try {
       // Kiem tra tu khoa da ton tai chua.
       final querySnapshot = await collection
           .where('keyword', isEqualTo: trimmedKeyword)
@@ -104,9 +116,16 @@ class SearchService {
   }
 
   /// Xoa 1 item lich su tim kiem theo id.
+  /// Khong lam gi neu nguoi dung chua dang nhap.
   Future<void> deleteSearchHistory(String id) async {
+    final collection = _searchHistoryCollection();
+    if (collection == null) {
+      debugPrint('SearchService: Nguoi dung chua dang nhap, khong xoa duoc');
+      return;
+    }
+
     try {
-      final docRef = _searchHistoryCollection().doc(id);
+      final docRef = collection.doc(id);
       await docRef.delete();
       debugPrint('SearchService: Xoa lich su [$id] thanh cong');
     } catch (e) {
@@ -119,9 +138,15 @@ class SearchService {
   ///
   /// Su dung WriteBatch de dam bao tinh toan ven: lay tat ca document
   /// roi xoa nhieu document cung luc trong 1 batch.
+  /// Khong lam gi neu nguoi dung chua dang nhap.
   Future<void> clearAllHistory() async {
+    final collection = _searchHistoryCollection();
+    if (collection == null) {
+      debugPrint('SearchService: Nguoi dung chua dang nhap, khong xoa duoc');
+      return;
+    }
+
     try {
-      final collection = _searchHistoryCollection();
       final snapshot = await collection.get();
 
       if (snapshot.docs.isEmpty) {

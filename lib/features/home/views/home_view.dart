@@ -603,7 +603,7 @@ class _StoreCard extends StatelessWidget {
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(12)),
               child: Image.network(
-                store.backUrl,
+                store.backUrl.trim().isNotEmpty ? store.backUrl.trim() : store.avtUrl.trim(),
                 height: 100,
                 width: double.infinity,
                 fit: BoxFit.cover,
@@ -842,7 +842,11 @@ class _VerticalStoreItem extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: Image.network(
-                store.avtUrl,
+                store.avtUrl.trim().isNotEmpty
+                    ? store.avtUrl.trim()
+                    : store.backUrl.trim().isNotEmpty
+                        ? store.backUrl.trim()
+                        : '',
                 width: 90,
                 height: 90,
                 fit: BoxFit.cover,

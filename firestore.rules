@@ -7,6 +7,11 @@ service cloud.firestore {
     // nen su dung Firebase Admin SDK de xac thuc JWT tu backend.
     match /users/{userId} {
       allow read, write: if true;
+
+      // search_history sub-collection
+      match /search_history/{docId} {
+        allow read, write: if true;
+      }
     }
 
     // Customer profiles: cho phep truy cap theo userId.

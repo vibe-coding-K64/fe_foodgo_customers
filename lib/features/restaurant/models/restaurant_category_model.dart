@@ -12,9 +12,9 @@ class RestaurantCategoryModel {
 
   factory RestaurantCategoryModel.fromJson(Map<String, dynamic> json) {
     return RestaurantCategoryModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      order: json['order'] as int,
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      order: json['order'] as int? ?? 0,
     );
   }
 

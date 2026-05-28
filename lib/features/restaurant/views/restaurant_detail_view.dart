@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
-import '../../../features/home/models/store_model.dart';
-import '../../../features/home/models/product_model.dart';
+import '../../home/models/store_model.dart';
+import '../../home/models/product_model.dart';
 import '../services/restaurant_service.dart';
 import '../models/restaurant_category_model.dart';
+import '../models/restaurant_detail_response.dart';
 import 'restaurant_reviews_view.dart';
+import '../../product/views/product_detail_bottom_sheet.dart';
 
 /// Trang chi tiet quan an.
 ///
@@ -13,7 +15,7 @@ import 'restaurant_reviews_view.dart';
 /// thanh danh muc mon an sticky khi cuon.
 ///
 /// Tum xuong duoi se thay:
-///   1. SliverAppBar: Anh bi thu nho + Tieu de xuat hien tren AppBar.
+///   1. SliverAppBar: Anh bia + Tieu de xuat hien tren AppBar.
 ///   2. Thong tin co ban: Avatar, Ten, Khoang cach, Danh gia (clickable).
 ///   3. Danh muc sticky: StickyHeader nam ngay duoi AppBar.
 ///   4. Danh sach mon: SliverList cac mon an theo danh muc.
@@ -30,46 +32,67 @@ class RestaurantDetailView extends StatefulWidget {
 }
 
 class _RestaurantDetailViewState extends State<RestaurantDetailView> {
-  // Store mock data.
-  late StoreModel _store;
-  late List<RestaurantCategoryModel> _categories;
-  late String _selectedCategoryId;
+  // Du lieu tu API.
+  RestaurantDetailResponse? _detail;
+  StoreModel? _store;
+  List<RestaurantCategoryModel> _categories = [];
+  List<ProductModel> _allProducts = [];
+  String _selectedCategoryId = 'all';
 
-  // Vi tri tab danh muc dang duoc chon.
-  int _selectedCategoryIndex = 0;
-
-  // Scroll controller de di chuyen thanh danh muc khi bam tab.
-  final ScrollController _scrollController = ScrollController();
+  // Trang thai loading.
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _store = RestaurantService.getMockStore(widget.storeId);
-    _categories = RestaurantService.getCategories();
-    _selectedCategoryId = _categories.first.id;
-    debugPrint(
-        'RestaurantDetailView: Khoi tao trang chi tiet quan [${_store.name}]');
+    _loadRestaurantDetail();
   }
 
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
+  Future<void> _loadRestaurantDetail() async {
+    try {
+      final detail = await RestaurantService.getRestaurantDetail(widget.storeId);
+      if (mounted) {
+        setState(() {
+          _detail = detail;
+          _store = detail.store;
+          _categories = detail.categories;
+          _allProducts = detail.products;
+          _isLoading = false;
+
+          // Chon danh muc dau tien neu co.
+          if (detail.categories.isNotEmpty) {
+            _selectedCategoryId = detail.categories.first.id;
+          }
+
+          if (_store == null) {
+            _errorMessage = 'Khong tim thay cua hang';
+          }
+        });
+        debugPrint(
+            'RestaurantDetailView: Da lay chi tiet - store: ${_store?.name}, '
+            'categories: ${_categories.length}, products: ${_allProducts.length}');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Khong the tai thong tin cua hang';
+        });
+        debugPrint('RestaurantDetailView: Loi loadRestaurantDetail - $e');
+      }
+    }
   }
 
-  // Xu ly khi nguoi dung bam vao tab danh muc.
   void _onCategoryTap(int index) {
     setState(() {
-      _selectedCategoryIndex = index;
       _selectedCategoryId = _categories[index].id;
     });
     debugPrint(
         'RestaurantDetailView: Nguoi dung bam danh muc [${_categories[index].name}]');
   }
 
-  // Xu ly khi nguoi dung bam vao block danh gia.
   void _onRatingTap() {
-    debugPrint('Chuyen sang trang Danh gia');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -78,22 +101,10 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
     );
   }
 
-  // Xu ly khi nguoi dung bam nut (+) them mon vao gio hang.
   void _onAddToCart(ProductModel product) {
-    debugPrint(
-        'RestaurantDetailView: Nguoi dung them mon [${product.name}] vao gio hang');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '${context.t('success_add_to_cart')} ${product.name}',
-        ),
-        backgroundColor: AppColors.primary,
-        duration: const Duration(seconds: 1),
-      ),
-    );
+    showProductDetailSheet(context, product);
   }
 
-  // Lay key localization cua danh muc theo id.
   String _getCategoryDisplayName(RestaurantCategoryModel category) {
     final keyMap = <String, String>{
       'all': 'category_all',
@@ -111,23 +122,17 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
 
   @override
   Widget build(BuildContext context) {
-    final distance = RestaurantService.getMockDistance();
-
     return Scaffold(
-      // Body la CustomScrollView chua cac Sliver.
       body: CustomScrollView(
-        controller: _scrollController,
-
-        // ========== 1. SLIVER APP BAR (ANH BIA + TIEU DE) ==========
         slivers: [
+          // ========== 1. SLIVER APP BAR ==========
           SliverAppBar(
             expandedHeight: 260,
             pinned: true,
             stretch: true,
-            // Anhnen gradient phia sau tieu de.
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
-                _store.name,
+                _store?.name ?? '...',
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -145,22 +150,21 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Anh bia.
-                  Image.network(
-                    _store.backUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
+                  if (_store != null)
+                    Image.network(
+                      _store!.backUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
                         color: AppColors.primaryLight,
                         child: const Icon(
                           Icons.restaurant,
                           size: 80,
                           color: Colors.white54,
                         ),
-                      );
-                    },
-                  ),
-                  // Gradient de tieu de de doc hon.
+                      ),
+                    )
+                  else
+                    Container(color: AppColors.primaryLight),
                   const DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -190,11 +194,9 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
               CircleAvatar(
                 backgroundColor: Colors.black26,
                 child: IconButton(
-                  icon:
-                      const Icon(Icons.favorite_border, color: Colors.white),
+                  icon: const Icon(Icons.favorite_border, color: Colors.white),
                   onPressed: () {
-                    debugPrint(
-                        'RestaurantDetailView: Nguoi dung bam yeu thich');
+                    debugPrint('RestaurantDetailView: Nguoi dung bam yeu thich');
                   },
                 ),
               ),
@@ -210,72 +212,93 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
             ],
           ),
 
-          // ========== 2. THONG TIN CO BAN (AVATAR, TEN, KHOANG CACH, DANH GIA) ==========
-          SliverToBoxAdapter(
-            child: _StoreInfoSection(
-              store: _store,
-              distance: distance,
-              onRatingTap: _onRatingTap,
+          // ========== 2. THONG TIN CO BAN ==========
+          if (_isLoading)
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            )
+          else if (_store == null)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Center(
+                  child: Text(
+                    _errorMessage ?? 'Khong the tai thong tin cua hang',
+                    style: TextStyle(color: AppColors.error),
+                  ),
+                ),
+              ),
+            )
+          else
+            SliverToBoxAdapter(
+              child: _StoreInfoSection(
+                store: _store!,
+                onRatingTap: _onRatingTap,
+              ),
             ),
-          ),
 
-          // ========== 3. STICKY HEADER - DANH MUC MON AN ==========
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _CategoryTabsDelegate(
-              categories: _categories,
-              selectedIndex: _selectedCategoryIndex,
-              onCategoryTap: _onCategoryTap,
-              getDisplayName: _getCategoryDisplayName,
+          // ========== 3. STICKY HEADER - DANH MUC ==========
+          if (_isLoading)
+            const SliverToBoxAdapter(
+              child: SizedBox(height: 52),
+            )
+          else if (_categories.isNotEmpty)
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _CategoryTabsDelegate(
+                categories: _categories,
+                selectedId: _selectedCategoryId,
+                onCategoryTap: _onCategoryTap,
+                getDisplayName: _getCategoryDisplayName,
+              ),
             ),
-          ),
 
           // ========== 4. DANH SACH MON AN ==========
-          // Su dung StreamBuilder de lay san pham theo danh muc da chon.
-          StreamBuilder<List<ProductModel>>(
-            stream: RestaurantService.getProductsByCategoryStream(
-              widget.storeId,
-              _selectedCategoryId,
-            ),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              if (snapshot.hasError) {
-                return SliverFillRemaining(
-                  child: Center(
-                    child:
-                        Text(context.t('error_load_products')),
-                  ),
-                );
-              }
-              final products = snapshot.data ?? [];
-              if (products.isEmpty) {
-                return SliverFillRemaining(
-                  child: Center(
-                    child: Text(
-                      context.t('empty_products'),
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                  ),
-                );
-              }
-              return SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final product = products[index];
-                    return _FoodItemTile(
-                      product: product,
-                      onAddToCart: () => _onAddToCart(product),
-                    );
-                  },
-                  childCount: products.length,
+          if (_isLoading)
+            const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_store == null)
+            const SliverFillRemaining(
+              child: SizedBox(height: 200),
+            )
+          else if (_allProducts.isEmpty)
+            SliverFillRemaining(
+              child: Center(
+                child: Text(
+                  context.t('empty_products'),
+                  style: TextStyle(color: AppColors.textSecondary),
                 ),
-              );
-            },
-          ),
+              ),
+            )
+          else
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final products = _selectedCategoryId == 'all'
+                      ? _allProducts
+                      : _allProducts
+                          .where((p) => p.categoryId == _selectedCategoryId)
+                          .toList();
+                  if (index >= products.length) return null;
+                  final product = products[index];
+                  return _FoodItemTile(
+                    product: product,
+                    onAddToCart: () => _onAddToCart(product),
+                  );
+                },
+                childCount: (_selectedCategoryId == 'all'
+                        ? _allProducts
+                        : _allProducts
+                            .where(
+                                (p) => p.categoryId == _selectedCategoryId)
+                            .toList())
+                    .length,
+              ),
+            ),
 
           // Khoang trong cuoi cung.
           const SliverToBoxAdapter(
@@ -289,17 +312,14 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
 
 // ================================================================
 // WIDGET: PHAN THONG TIN CO BAN CUA QUAN
-// (Avatar, Ten, Khoang cach, Danh gia clickable)
 // ================================================================
 
 class _StoreInfoSection extends StatelessWidget {
   final StoreModel store;
-  final double distance;
   final VoidCallback onRatingTap;
 
   const _StoreInfoSection({
     required this.store,
-    required this.distance,
     required this.onRatingTap,
   });
 
@@ -313,7 +333,7 @@ class _StoreInfoSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar — placed below cover image with white border and shadow.
+          // Avatar.
           Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
@@ -326,11 +346,14 @@ class _StoreInfoSection extends StatelessWidget {
                 ),
               ],
             ),
-            child: store.avtUrl.isNotEmpty
+            child: store.avtUrl.trim().isNotEmpty
                 ? CircleAvatar(
                     radius: 38,
                     backgroundColor: AppColors.surfaceVariant,
-                    backgroundImage: NetworkImage(store.avtUrl),
+                    backgroundImage: NetworkImage(
+                      store.avtUrl.trim(),
+                      headers: {'Accept': 'image/*'},
+                    ),
                     onBackgroundImageError: (_, __) {},
                   )
                 : CircleAvatar(
@@ -344,10 +367,9 @@ class _StoreInfoSection extends StatelessWidget {
                   ),
           ),
 
-          // Gap between avatar and name.
           const SizedBox(height: 12),
 
-          // Store name.
+          // Ten cua hang.
           Text(
             store.name,
             style: theme.textTheme.headlineSmall?.copyWith(
@@ -358,40 +380,7 @@ class _StoreInfoSection extends StatelessWidget {
 
           const SizedBox(height: 4),
 
-          // Distance and delivery time.
-          Row(
-            children: [
-              Icon(
-                Icons.location_on_outlined,
-                size: 16,
-                color: AppColors.textSecondary,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '${context.t('restaurant_distance')} $distance ${context.t('unit_km')}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Icon(
-                Icons.access_time_outlined,
-                size: 16,
-                color: AppColors.textSecondary,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '${context.t('restaurant_delivery_time')} ${store.deliveryTime}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          // Delivery fee.
+          // Thoi gian giao.
           Row(
             children: [
               Icon(
@@ -424,14 +413,12 @@ class _StoreInfoSection extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Yellow star icon.
                   const Icon(
                     Icons.star,
                     color: Colors.amber,
                     size: 22,
                   ),
                   const SizedBox(width: 6),
-                  // Star count.
                   Text(
                     store.rating.toStringAsFixed(1),
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -440,7 +427,6 @@ class _StoreInfoSection extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Review count.
                   Text(
                     '${_formatReviewCount(store.reviewCount)} ${context.t('restaurant_reviews_count')}',
                     style: theme.textTheme.bodyMedium?.copyWith(
@@ -448,7 +434,6 @@ class _StoreInfoSection extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  // Chevron.
                   Icon(
                     Icons.chevron_right,
                     color: AppColors.textSecondary,
@@ -460,7 +445,6 @@ class _StoreInfoSection extends StatelessWidget {
           ),
 
           const SizedBox(height: 16),
-
           Divider(height: 1, color: AppColors.divider),
         ],
       ),
@@ -488,21 +472,25 @@ class _StoreInfoSection extends StatelessWidget {
 
 // ================================================================
 // WIDGET: TIEN DAO STICKY - DANH MUC TAB
-// Su dung SliverPersistentHeaderDelegate de tao sticky header.
 // ================================================================
 
 class _CategoryTabsDelegate extends SliverPersistentHeaderDelegate {
   final List<RestaurantCategoryModel> categories;
-  final int selectedIndex;
+  final String selectedId;
   final Function(int) onCategoryTap;
   final String Function(RestaurantCategoryModel) getDisplayName;
 
   _CategoryTabsDelegate({
     required this.categories,
-    required this.selectedIndex,
+    required this.selectedId,
     required this.onCategoryTap,
     required this.getDisplayName,
   });
+
+  int get _selectedIndex {
+    final idx = categories.indexWhere((c) => c.id == selectedId);
+    return idx >= 0 ? idx : 0;
+  }
 
   @override
   double get minExtent => 52;
@@ -512,7 +500,7 @@ class _CategoryTabsDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(covariant _CategoryTabsDelegate oldDelegate) {
-    return oldDelegate.selectedIndex != selectedIndex ||
+    return oldDelegate.selectedId != selectedId ||
         oldDelegate.categories != categories;
   }
 
@@ -523,6 +511,7 @@ class _CategoryTabsDelegate extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) {
     final theme = Theme.of(context);
+    final selectedIdx = _selectedIndex;
     return Container(
       color: AppColors.surface,
       child: Column(
@@ -534,7 +523,7 @@ class _CategoryTabsDelegate extends SliverPersistentHeaderDelegate {
               itemCount: categories.length,
               itemBuilder: (context, index) {
                 final category = categories[index];
-                final isSelected = index == selectedIndex;
+                final isSelected = index == selectedIdx;
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Align(
@@ -575,7 +564,6 @@ class _CategoryTabsDelegate extends SliverPersistentHeaderDelegate {
               },
             ),
           ),
-          // Duong ke phan cach duoi cung.
           Divider(
             height: 1,
             thickness: 1,
@@ -589,7 +577,6 @@ class _CategoryTabsDelegate extends SliverPersistentHeaderDelegate {
 
 // ================================================================
 // WIDGET: ITEM MON AN
-// (Anh, Ten, Mo ta, Gia, Nut +)
 // ================================================================
 
 class _FoodItemTile extends StatelessWidget {
@@ -611,7 +598,7 @@ class _FoodItemTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ========== ANH MON AN ==========
+          // Anh mon an.
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: Stack(
@@ -634,7 +621,6 @@ class _FoodItemTile extends StatelessWidget {
                     );
                   },
                 ),
-                // Neu het hang thi hien thi overlay.
                 if (product.isOutOfStock)
                   Positioned.fill(
                     child: Container(
@@ -659,12 +645,11 @@ class _FoodItemTile extends StatelessWidget {
           ),
           const SizedBox(width: 12),
 
-          // ========== THONG TIN MON AN ==========
+          // Thong tin mon an.
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Ten mon.
                 Text(
                   product.name,
                   style: theme.textTheme.titleMedium?.copyWith(
@@ -675,8 +660,6 @@ class _FoodItemTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
-
-                // Mo ta ngan.
                 Text(
                   product.description,
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -686,13 +669,10 @@ class _FoodItemTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
-
-                // Gia tien (mau xanh la) + Nut them.
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Gia.
                     Text(
                       _formatPrice(product.basePrice),
                       style: theme.textTheme.titleSmall?.copyWith(
@@ -700,8 +680,6 @@ class _FoodItemTile extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
-                    // Nut (+) them vao gio.
                     if (!product.isOutOfStock)
                       GestureDetector(
                         onTap: onAddToCart,

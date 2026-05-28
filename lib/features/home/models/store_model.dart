@@ -11,6 +11,8 @@ class StoreModel {
   final bool isOpen;
   final String deliveryTime;
   final double deliveryFee;
+  final double? lat;
+  final double? lng;
   final double distance;
   final List<String> categoryIds;
   final DateTime createdAt;
@@ -31,6 +33,8 @@ class StoreModel {
     required this.categoryIds,
     required this.createdAt,
     required this.updatedAt,
+    this.lat,
+    this.lng,
   });
 
   /// Parse tu JSON cua my-json-server (db.json).
@@ -42,9 +46,9 @@ class StoreModel {
       address: json['address'] as String? ?? '',
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       reviewCount: json['reviewCount'] as int? ?? 0,
-      avtUrl: json['avtUrl'] as String? ?? '',
-      backUrl: json['backUrl'] as String? ?? '',
-      isOpen: json['isOpen'] as bool? ?? true,
+      avtUrl: _parseImageUrl(json, 'avtUrl', 'logoUrl', 'avatarUrl', 'avatar', 'imageUrl', 'image'),
+      backUrl: _parseImageUrl(json, 'backUrl', 'coverImageUrl', 'coverImage', 'coverUrl', 'imageUrl', 'image'),
+      isOpen: json['isOpen'] as bool? ?? json['isAcceptingOrders'] as bool? ?? true,
       deliveryTime: json['deliveryTime'] as String? ?? '15-25 phut',
       deliveryFee: (json['deliveryFee'] as num?)?.toDouble() ?? 0.0,
       distance: (json['distance'] as num?)?.toDouble() ?? 0.0,
@@ -55,6 +59,25 @@ class StoreModel {
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
+  }
+
+  /// Parse image URL voi nhieu fallback key name.
+  static String _parseImageUrl(
+    Map<String, dynamic> json,
+    String primary,
+    String fallback1,
+    String fallback2,
+    String fallback3,
+    String fallback4,
+    String fallback5,
+  ) {
+    return (json[primary] as String?) ??
+        (json[fallback1] as String?) ??
+        (json[fallback2] as String?) ??
+        (json[fallback3] as String?) ??
+        (json[fallback4] as String?) ??
+        (json[fallback5] as String?) ??
+        '';
   }
 
   factory StoreModel.fromFirestore(DocumentSnapshot doc) {
@@ -80,6 +103,8 @@ class StoreModel {
           [],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      lat: (data['lat'] as num?)?.toDouble(),
+      lng: (data['lng'] as num?)?.toDouble(),
     );
   }
 
@@ -99,6 +124,8 @@ class StoreModel {
       'categoryIds': categoryIds,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      if (lat != null) 'lat': lat,
+      if (lng != null) 'lng': lng,
     };
   }
 
@@ -117,6 +144,8 @@ class StoreModel {
     List<String>? categoryIds,
     DateTime? createdAt,
     DateTime? updatedAt,
+    double? lat,
+    double? lng,
   }) {
     return StoreModel(
       id: id ?? this.id,
@@ -133,6 +162,8 @@ class StoreModel {
       categoryIds: categoryIds ?? this.categoryIds,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      lat: lat ?? this.lat,
+      lng: lng ?? this.lng,
     );
   }
 }

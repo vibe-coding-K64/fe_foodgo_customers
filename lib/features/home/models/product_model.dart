@@ -40,9 +40,25 @@ class OptionGroupModel {
     return OptionGroupModel(
       name: json['name'] as String? ?? '',
       isRequired: json['isRequired'] as bool? ?? json['required'] as bool? ?? false,
-      isSingleSelect: json['isSingleSelect'] as bool? ?? json['singleSelect'] as bool? ?? true,
+      isSingleSelect: json['isSingleSelect'] as bool? ??
+          json['singleSelect'] as bool? ??
+          _inferIsSingleSelect(json['name'] as String?),
       options: optionsList,
     );
+  }
+
+  /// Infer isSingleSelect tu ten group khi API khong tra ve field nay.
+  /// Topping -> multi-select (false), Kich thuoc -> single-select (true).
+  static bool _inferIsSingleSelect(String? name) {
+    if (name == null) return true;
+    final lower = name.toLowerCase();
+    if (lower.contains('topping')) return false;
+    if (lower.contains('size') ||
+        lower.contains('kich thuoc') ||
+        lower.contains('kích thước')) {
+      return true;
+    }
+    return false;
   }
 
   Map<String, dynamic> toJson() => {
@@ -72,11 +88,16 @@ class StoreSummary {
   });
 
   factory StoreSummary.fromJson(Map<String, dynamic> json) {
+    final avtUrl = (json['avtUrl'] as String?) ??
+        (json['logoUrl'] as String?) ??
+        (json['avatarUrl'] as String?) ??
+        (json['imageUrl'] as String?) ??
+        '';
     return StoreSummary(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? '',
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
-      avtUrl: json['avtUrl'] as String? ?? '',
+      avtUrl: avtUrl,
       deliveryFee: (json['deliveryFee'] as num?)?.toDouble() ?? 0.0,
       deliveryTime: json['deliveryTime'] as String? ?? '',
     );
@@ -149,6 +170,13 @@ class ProductModel {
           StoreSummary.fromJson(json['store'] as Map<String, dynamic>);
     }
 
+    // Parse optionGroups tu API (flat structure: optionGroups[].options[])
+    final groups = (json['optionGroups'] as List<dynamic>?)
+            ?.map((g) =>
+                OptionGroupModel.fromJson(g as Map<String, dynamic>))
+            .toList() ??
+        [];
+
     return ProductModel(
       id: json['id']?.toString() ?? '',
       storeId: json['storeId']?.toString() ?? '',
@@ -160,7 +188,13 @@ class ProductModel {
           (json['price'] as num?)?.toDouble() ??
           0.0,
       imageUrl:
-          json['imageUrl'] as String? ?? json['image_url'] as String? ?? '',
+          json['imageUrl'] as String? ??
+          json['image_url'] as String? ??
+          json['image'] as String? ??
+          json['imgUrl'] as String? ??
+          json['photoUrl'] as String? ??
+          json['thumbnail'] as String? ??
+          '',
       isOutOfStock: json['isOutOfStock'] as bool? ??
           json['is_out_of_stock'] as bool? ??
           false,
@@ -169,6 +203,7 @@ class ProductModel {
           false,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
+      optionGroups: groups,
       lat: (json['lat'] as num?)?.toDouble(),
       lng: (json['lng'] as num?)?.toDouble(),
       distance: (json['distance'] as num?)?.toDouble(),

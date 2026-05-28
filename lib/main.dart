@@ -8,7 +8,6 @@ import 'core/localization/language_service.dart';
 import 'core/state/locale_provider.dart';
 import 'core/state/cart_state.dart';
 import 'core/theme/app_theme.dart';
-import 'core/utils/data_seeder.dart';
 import 'core/utils/auth_storage.dart';
 
 void main() async {
@@ -28,9 +27,6 @@ void main() async {
 
   // Tao CartState de quan ly gio hang real-time voi Firestore.
   final cartState = CartState();
-
-  // Seed du lieu mau vao Firestore (neu chua co).
-  // await DataSeeder.seedAll();
 
   runApp(
     CartStateScope(

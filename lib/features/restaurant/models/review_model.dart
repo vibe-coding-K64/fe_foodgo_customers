@@ -28,21 +28,38 @@ class ReviewModel {
 
   factory ReviewModel.fromJson(Map<String, dynamic> json) {
     return ReviewModel(
-      id: json['id'] as String,
+      id: json['id'] as String? ?? '',
       orderId: json['orderId'] as String?,
-      storeId: json['storeId'] as String,
-      userId: json['userId'] as String,
-      userName: json['userName'] as String,
-      userAvatarUrl: (json['userAvatarUrl'] as String?) ?? '',
-      starRating: json['starRating'] as int,
+      storeId: json['storeId'] as String? ?? '',
+      userId: json['userId'] as String? ?? '',
+      userName: json['userName'] as String? ?? '',
+      userAvatarUrl: (json['userAvatarUrl'] as String?) ??
+                     (json['avatarUrl'] as String?) ??
+                     (json['avatar'] as String?) ?? '',
+      starRating: json['starRating'] as int? ?? 0,
       comment: json['comment'] as String?,
       imageUrls: (json['imageUrls'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
+          (json['reviewImages'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          (json['images'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
           [],
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      createdAt: _parseDateTime(json['createdAt']),
+      updatedAt: _parseDateTime(json['updatedAt']),
     );
+  }
+
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is DateTime) return value;
+    if (value is String) {
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+    return DateTime.now();
   }
 
   Map<String, dynamic> toJson() {

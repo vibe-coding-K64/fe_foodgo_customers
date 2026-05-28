@@ -120,8 +120,33 @@ class StoreService {
 
   List<dynamic> _extractList(Map<String, dynamic>? data) {
     if (data == null) return [];
-    if (data['data'] is List) return data['data'] as List;
-    if (data['items'] is List) return data['items'] as List;
+
+    // 1. Thuong gap: { success: true, data: [...] }
+    if (data['data'] is List) {
+      return data['data'] as List;
+    }
+
+    // 2. Thuong gap: { success: true, items: [...] }
+    if (data['items'] is List) {
+      return data['items'] as List;
+    }
+
+    // 3. Gap truc tiep: [...] (mang truc tiep, khong co wrapper)
+    if (data['success'] is! bool && data.length <= 3) {
+      for (final value in data.values) {
+        if (value is List && value.isNotEmpty && value.first is Map) {
+          debugPrint('StoreService: Phat hien mang truc tiep trong response');
+          return value;
+        }
+      }
+    }
+
+    // 4. Fallback: neu chinh no la 1 List
+    if (data is List) {
+      return data as List;
+    }
+
+    debugPrint('StoreService: Khong tim thay mang trong response - keys: ${data.keys.toList()}');
     return [];
   }
 }
