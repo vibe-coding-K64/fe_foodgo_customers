@@ -11,10 +11,6 @@ import 'search_result_view.dart';
 /// Hien thi thanh tim kiem de nguoi dung nhap tu khoa va nhan tim.
 /// Khi nguoi dung nhan tim (nut enter hoac icon), chuyen sang
 /// SearchResultView voi tu khoa da nhap.
-///
-/// Su dung trong 2 truong hop:
-///   1. Tu trang chu: bam vao thanh tim kiem HomeSearchBar.
-///   2. Tu tab Tim kiem o BottomNavigation (neu co).
 class SearchView extends StatefulWidget {
   const SearchView({super.key});
 
@@ -46,18 +42,11 @@ class _SearchViewState extends State<SearchView> {
     super.dispose();
   }
 
-  Future<void> _onSearch() async {
+  void _onSearch() {
     final query = _searchController.text.trim();
     if (query.isEmpty) {
       return;
     }
-
-    try {
-      await _searchService.addSearchKeyword(query);
-    } catch (e) {
-      debugPrint('SearchView: Loi khi luu lich su tim kiem - $e');
-    }
-
     _navigateToResult(query);
   }
 
@@ -164,9 +153,9 @@ class _SearchViewState extends State<SearchView> {
       stream: _searchService.getSearchHistoryStream(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
+          return Center(
             child: Padding(
-              padding: EdgeInsets.all(32),
+              padding: const EdgeInsets.all(32),
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
           );
@@ -174,37 +163,13 @@ class _SearchViewState extends State<SearchView> {
 
         if (snapshot.hasError) {
           debugPrint('SearchView: Loi Stream lich su - ${snapshot.error}');
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildEmptyHistoryHint(),
-                const SizedBox(height: 24),
-                _buildPopularSearchTitle(),
-                const SizedBox(height: 12),
-                _buildPopularSearchChipsFromApi(),
-              ],
-            ),
-          );
+          return _buildPopularSection();
         }
 
         final histories = snapshot.data ?? [];
 
         if (histories.isEmpty) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildEmptyHistoryHint(),
-                const SizedBox(height: 24),
-                _buildPopularSearchTitle(),
-                const SizedBox(height: 12),
-                _buildPopularSearchChipsFromApi(),
-              ],
-            ),
-          );
+          return _buildPopularSection();
         }
 
         return SingleChildScrollView(
@@ -223,20 +188,6 @@ class _SearchViewState extends State<SearchView> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildEmptyHistoryHint() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Text(
-        'Chua co lich su tim kiem',
-        style: TextStyle(
-          fontSize: 14,
-          color: AppColors.textHint,
-          fontStyle: FontStyle.italic,
-        ),
-      ),
     );
   }
 
@@ -279,19 +230,11 @@ class _SearchViewState extends State<SearchView> {
       children: histories.map((item) {
         return _HistorySearchChip(
           keyword: item.keyword,
-          onTap: () => _onHistoryItemTap(item.keyword),
+          onTap: () => _navigateToResult(item.keyword),
           onDelete: () => _onDeleteHistoryItem(item.id),
         );
       }).toList(),
     );
-  }
-
-  void _onHistoryItemTap(String keyword) {
-    _searchController.text = keyword;
-    _searchController.selection = TextSelection.fromPosition(
-      TextPosition(offset: keyword.length),
-    );
-    _onSearch();
   }
 
   void _onDeleteHistoryItem(String id) {
@@ -331,6 +274,20 @@ class _SearchViewState extends State<SearchView> {
     }
   }
 
+  Widget _buildPopularSection() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildPopularSearchTitle(),
+          const SizedBox(height: 12),
+          _buildPopularSearchChipsFromApi(),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPopularSearchTitle() {
     return Text(
       context.t('search_popular'),
@@ -342,12 +299,10 @@ class _SearchViewState extends State<SearchView> {
     );
   }
 
-  /// Hien thi cac chip tu khoa pho bien tu API (FutureBuilder).
   Widget _buildPopularSearchChipsFromApi() {
     return FutureBuilder<List<String>>(
       future: _popularKeywordsFuture,
       builder: (context, snapshot) {
-        // Dang tai.
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Wrap(
             spacing: 8,
@@ -359,10 +314,8 @@ class _SearchViewState extends State<SearchView> {
           );
         }
 
-        // Co loi -> hien thi mac dinh.
         if (snapshot.hasError) {
-          debugPrint(
-              'SearchView: Loi tai tu khoa pho bien - ${snapshot.error}');
+          debugPrint('SearchView: Loi tai tu khoa pho bien - ${snapshot.error}');
           return _buildPopularSearchChipsFallback();
         }
 
@@ -386,7 +339,6 @@ class _SearchViewState extends State<SearchView> {
     );
   }
 
-  /// Fallback chip pho bien khi API loi hoac khong co du lieu.
   Widget _buildPopularSearchChipsFallback() {
     return Wrap(
       spacing: 8,
@@ -474,7 +426,7 @@ class _PopularSearchChip extends StatelessWidget {
     if (lower.contains('ca phe') || lower.contains('cafe') || lower.contains('cappuccino')) {
       return Icons.coffee;
     }
-    if (lower.contains('tra sua') || lower.contains('tra') || lower.contains('tra sua')) {
+    if (lower.contains('tra sua') || lower.contains('tra')) {
       return Icons.local_cafe;
     }
     if (lower.contains('com') || lower.contains('bun')) return Icons.rice_bowl;

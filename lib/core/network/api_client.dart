@@ -11,7 +11,7 @@ class ApiClient {
   // static const String _baseUrl =
   //     'https://my-json-server.typicode.com/ngominhkhoi05/foodgo-mock-api';
   static const String _baseUrl =
-      'http://192.168.1.6:8080/api';
+      'http://192.168.1.2:8080/api';
 
   /// Dio instance dung chung, khoi tao lazy (chi khi can).
   static Dio? _dio;

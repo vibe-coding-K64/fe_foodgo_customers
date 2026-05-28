@@ -104,11 +104,11 @@ class _VoucherApplicableProductsViewState
 
   /// Tao tieu de dong cho AppBar.
   String _titleText(BuildContext context) {
-    final discountText = widget.voucher.isPercentage
+    final discountText = widget.voucher.type == 1
         ? context.t('voucher_discount_percent')
-            .replaceAll('\$1', widget.voucher.discountValue.toInt().toString())
+            .replaceAll('\$1', widget.voucher.value.toInt().toString())
         : context.t('voucher_discount_amount')
-            .replaceAll('\$1', widget.voucher.discountValue.toInt().toString());
+            .replaceAll('\$1', widget.voucher.value.toInt().toString());
     final titleTemplate =
         context.t('voucher_apply_title').replaceAll('\$1', discountText);
     return titleTemplate;

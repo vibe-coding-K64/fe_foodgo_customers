@@ -64,9 +64,7 @@ class RewardsVoucherCard extends StatelessWidget {
 
   /// Phan ben trai: So % giam gia trong o vuong cam vang.
   Widget _buildLeftSection(BuildContext context, bool isExpired) {
-    final discountText = voucher.isPercentage
-        ? '${voucher.discountValue.toInt()}%'
-        : '${voucher.discountValue.toInt()}K';
+    final discountText = voucher.discountText;
 
     return Container(
       width: 90,

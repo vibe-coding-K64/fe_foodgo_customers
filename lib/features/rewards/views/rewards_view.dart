@@ -39,8 +39,8 @@ class _RewardsViewState extends State<RewardsView> {
   }
 
   /// Lay ten hien thi cua hang thanh vien tu so tier.
-  String _getTierName(int tier) {
-    switch (tier) {
+  String _getTierName(int? tier) {
+    switch (tier ?? 0) {
       case 0:
         return context.t('tier_0');
       case 1:
@@ -140,6 +140,7 @@ class _RewardsViewState extends State<RewardsView> {
           currentPoints: info.loyaltyPoints,
           memberTier: _getTierName(info.membershipTier),
           nextTierPoints: info.nextTierPoints,
+          rank: info.rank,
         );
       },
     );
@@ -403,51 +404,102 @@ class _SystemVoucherCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Hinh anh voucher.
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(12),
-              ),
-              child: Container(
-                height: 80,
-                width: double.infinity,
-                color: AppColors.surfaceVariant,
-                child: voucher.imageUrl.isNotEmpty
-                    ? Image.network(
-                        voucher.imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _buildPlaceholder(),
-                      )
-                    : _buildPlaceholder(),
-              ),
+            // Hinh anh + badge giam gia.
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(12),
+                  ),
+                  child: Container(
+                    height: 70,
+                    width: double.infinity,
+                    color: AppColors.surfaceVariant,
+                    child: voucher.imageUrl.isNotEmpty
+                        ? Image.network(
+                            voucher.imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                          )
+                        : _buildPlaceholder(),
+                  ),
+                ),
+                // Badge gia tri giam.
+                Positioned(
+                  top: 6,
+                  left: 6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      voucher.discountText,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
             // Thong tin voucher.
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       voucher.title,
                       style: const TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
                       voucher.subtitle,
                       style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: 10,
                         color: AppColors.textSecondary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: 3),
+                    // Don toi thieu.
+                    Text(
+                      'Tối thiểu ${voucher.minOrderValue.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}đ',
+                      style: const TextStyle(
+                        fontSize: 9,
+                        color: AppColors.textHint,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    // So luong con lai.
+                    if (voucher.remaining > 0)
+                      Text(
+                        'Còn ${voucher.remaining} voucher',
+                        style: const TextStyle(
+                          fontSize: 9,
+                          color: AppColors.greenGradientEnd,
+                        ),
+                      )
+                    else
+                      const Text(
+                        'Hết voucher',
+                        style: TextStyle(
+                          fontSize: 9,
+                          color: AppColors.error,
+                        ),
+                      ),
                     const Spacer(),
                     // Nut doi diem.
                     SizedBox(
@@ -460,7 +512,7 @@ class _SystemVoucherCard extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          padding: const EdgeInsets.symmetric(vertical: 5),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -469,12 +521,12 @@ class _SystemVoucherCard extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.stars, size: 14),
-                            const SizedBox(width: 4),
+                            const Icon(Icons.stars, size: 13),
+                            const SizedBox(width: 3),
                             Text(
                               '${voucher.pointsRequired}',
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: 11,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

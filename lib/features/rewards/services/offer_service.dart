@@ -6,16 +6,20 @@ import '../models/rewards_model.dart';
 /// Thong tin diem va hang thanh vien cua nguoi dung.
 class UserRewardInfo {
   final int loyaltyPoints;
-  final int membershipTier;
+  final int? membershipTier;
+  /// Thu hang cua nguoi dung (bat dau tu 1).
+  final int rank;
 
   const UserRewardInfo({
     required this.loyaltyPoints,
-    required this.membershipTier,
+    this.membershipTier,
+    this.rank = 0,
   });
 
   /// So diem can dat de len hang tiep theo.
   int get nextTierPoints {
-    switch (membershipTier) {
+    final tier = membershipTier ?? 0;
+    switch (tier) {
       case 0:
         return 1000;
       case 1:
@@ -36,7 +40,7 @@ class OfferService {
 
   /// Lay thong tin diem thanh vien va hang hien tai cua nguoi dung.
   ///
-  /// Doc tu document cua nguoi dung trong collection `users`.
+  /// Doc tu document cua nguoi dung trong collection `customer_profiles`.
   /// Tra ve [UserRewardInfo] hoac null neu chua dang nhap.
   static Future<UserRewardInfo?> getUserRewardInfo() async {
     final userId = AuthStorage.getUserId();
@@ -48,7 +52,6 @@ class OfferService {
     debugPrint('OfferService: Lay thong tin diem cho userId = $userId');
 
     try {
-      // Lay thong tin diem thanh vien tu nhanh customer_profiles.
       final doc = await _firestore.collection('customer_profiles').doc(userId).get();
 
       if (!doc.exists) {
@@ -60,14 +63,26 @@ class OfferService {
       final points = (data['loyaltyPoints'] as num?)?.toInt() ?? 0;
       final tier = (data['membershipTier'] as num?)?.toInt() ?? 0;
 
-      debugPrint('OfferService: Diem = $points, Hang = $tier');
+      int calculatedRank = 0;
+      try {
+        final snapshot = await _firestore
+            .collection('customer_profiles')
+            .where('loyaltyPoints', isGreaterThan: points)
+            .get();
+        calculatedRank = snapshot.docs.length + 1;
+      } catch (e) {
+        debugPrint('OfferService: loi tinh rank = $e');
+      }
+
+      debugPrint('OfferService: Diem = $points, Hang = $tier, Rank = $calculatedRank');
 
       return UserRewardInfo(
         loyaltyPoints: points,
         membershipTier: tier,
+        rank: calculatedRank,
       );
     } catch (e, st) {
-      debugPrint('OfferService: Loi khi lay thong tin diem = $e');
+      debugPrint('OfferService: loi khi lay thong tin diem = $e');
       debugPrint('Stack trace: $st');
       return null;
     }
@@ -82,6 +97,11 @@ class OfferService {
     try {
       final snapshot = await _firestore.collection('system_vouchers').get();
 
+      debugPrint('OfferService: system_vouchers snapshot size = ${snapshot.docs.length}');
+      for (final doc in snapshot.docs) {
+        debugPrint('  doc.id = ${doc.id}, data = ${doc.data()}');
+      }
+
       final vouchers = snapshot.docs
           .map((doc) => SystemVoucherModel.fromFirestore(doc))
           .toList();
@@ -90,14 +110,14 @@ class OfferService {
 
       return vouchers;
     } catch (e, st) {
-      debugPrint('OfferService: Loi khi lay system_vouchers = $e');
+      debugPrint('OfferService: loi khi lay system_vouchers = $e');
       debugPrint('Stack trace: $st');
       return [];
     }
   }
 
   /// Lay danh sach voucher cua nguoi dung tu sub-collection
-  /// `users/{userId}/my_vouchers`.
+  /// `customer_profiles/{userId}/my_vouchers`.
   ///
   /// Tra ve danh sach [MyVoucherModel].
   static Future<List<MyVoucherModel>> getMyVouchers() async {
@@ -116,6 +136,11 @@ class OfferService {
           .collection('my_vouchers')
           .get();
 
+      debugPrint('OfferService: my_vouchers snapshot size = ${snapshot.docs.length}');
+      for (final doc in snapshot.docs) {
+        debugPrint('  doc.id = ${doc.id}, data = ${doc.data()}');
+      }
+
       final vouchers = snapshot.docs
           .map((doc) => MyVoucherModel.fromFirestore(doc))
           .toList();
@@ -124,7 +149,7 @@ class OfferService {
 
       return vouchers;
     } catch (e, st) {
-      debugPrint('OfferService: Loi khi lay my_vouchers = $e');
+      debugPrint('OfferService: loi khi lay my_vouchers = $e');
       debugPrint('Stack trace: $st');
       return [];
     }

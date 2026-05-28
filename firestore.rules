@@ -78,6 +78,24 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // System vouchers (voucher doi diem).
+    match /system_vouchers/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // System categories (danh muc).
+    match /system_categories/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Banners.
+    match /banners/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // Catch-all: mat dinh khong cho phep cac collection khac.
     match /{document=**} {
       allow read, write: if false;

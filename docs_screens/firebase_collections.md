@@ -507,21 +507,27 @@ Firestore Root
 | 1   | `id`             | String       | Có       | ID document từ Firestore            |
 | 2   | `title`          | String       | Có       | Tiêu đề voucher                     |
 | 3   | `subtitle`       | String       | Có       | Mô tả ngắn gọn                      |
-| 4   | `pointsRequired` | Number       | Có       | Số điểm cần để đổi voucher này     |
-| 5   | `imageUrl`       | String       | Có       | Đường dẫn ảnh voucher               |
-| 6   | `remaining`      | Number       | Có       | Số lượng voucher còn lại            |
-| 7   | `terms`          | String       | Có       | Điều khoản sử dụng                  |
-| 8   | `minOrderValue`  | Number       | Có       | Đơn hàng tối thiểu để sử dụng (VND) |
-| 9   | `createdAt`      | Timestamp    | Có       | Thời điểm tạo                       |
-| 10  | `updatedAt`      | Timestamp    | Có       | Thời điểm cập nhật                  |
+| 4   | `code`           | String       | Có       | Mã voucher dùng khi apply           |
+| 5   | `type`           | Number       | Có       | Loại giảm giá: 1=%, 2=giảm theo tiền (VND) |
+| 6   | `value`          | Number       | Có       | Giá trị giảm (type=1: %; type=2: VND) |
+| 7   | `pointsRequired` | Number       | Có       | Số điểm cần để đổi voucher này     |
+| 8   | `imageUrl`       | String       | Có       | Đường dẫn ảnh voucher               |
+| 9   | `remaining`      | Number       | Có       | Số lượng voucher còn lại            |
+| 10  | `terms`          | String       | Có       | Điều khoản sử dụng                  |
+| 11  | `minOrderValue`  | Number       | Có       | Đơn hàng tối thiểu để sử dụng (VND) |
+| 12  | `createdAt`      | Timestamp    | Có       | Thời điểm tạo                       |
+| 13  | `updatedAt`      | Timestamp    | Có       | Thời điểm cập nhật                  |
 
 **Dữ liệu mẫu (Mock Data):**
 
 ```json
 {
-  "id": "sys_voucher_001",
+  "id": "voucher_001",
   "title": "Giảm 20K cho đơn từ 100K",
   "subtitle": "Dành cho khách hàng mới",
+  "code": "GIAM20K",
+  "type": 2,
+  "value": 20000.0,
   "pointsRequired": 200,
   "imageUrl": "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&q=80",
   "remaining": 100,
@@ -815,20 +821,41 @@ Firestore Root
 
 **Các trường (Fields):**
 
-| STT | Tên trường       | Kiểu dữ liệu | Bắt buộc | Mô tả                    |
-| --- | ---------------- | ------------ | -------- | ------------------------ |
-| 1   | `id`             | String       | Có       | ID document từ Firestore |
-| 2   | `title`          | String       | Có       | Tiêu đề voucher          |
-| 3   | `subtitle`       | String       | Có       | Mô tả ngắn gọn           |
-| 4   | `pointsRequired` | Number       | Có       | Số điểm cần để đổi       |
-| 5   | `imageUrl`       | String       | Có       | Đường dẫn ảnh voucher    |
-| 6   | `remaining`      | Number       | Có       | Số lượng voucher còn lại |
-| 7   | `terms`          | String       | Có       | Điều khoản sử dụng       |
-| 8   | `minOrderValue`  | Number       | Có       | Đơn hàng tối thiểu (VND) |
-| 9   | `createdAt`      | Timestamp    | Có       | Thời điểm tạo            |
-| 10  | `updatedAt`      | Timestamp    | Có       | Thời điểm cập nhật       |
+| STT | Tên trường       | Kiểu dữ liệu | Bắt buộc | Mô tả                                              |
+| --- | ---------------- | ------------ | -------- | -------------------------------------------------- |
+| 1   | `id`             | String       | Có       | ID document từ Firestore                            |
+| 2   | `title`          | String       | Có       | Tiêu đề voucher                                    |
+| 3   | `subtitle`       | String       | Có       | Mô tả ngắn gọn                                     |
+| 4   | `type`           | Number       | Có       | Loại giảm giá: 1=%, 2=giảm theo tiền (VND)        |
+| 5   | `value`          | Number       | Có       | Giá trị giảm (type=1: %; type=2: VND)             |
+| 6   | `pointsRequired` | Number       | Có       | Số điểm cần để đổi                                 |
+| 7   | `imageUrl`       | String       | Có       | Đường dẫn ảnh voucher                             |
+| 8   | `remaining`      | Number       | Có       | Số lượng voucher còn lại                           |
+| 9   | `terms`          | String       | Có       | Điều khoản sử dụng                                 |
+| 10  | `minOrderValue`  | Number       | Có       | Đơn hàng tối thiểu để sử dụng (VND)               |
+| 11  | `createdAt`      | Timestamp    | Có       | Thời điểm tạo                                      |
+| 12  | `updatedAt`      | Timestamp    | Có       | Thời điểm cập nhật                                 |
 
-**Ghi chú:** Hiện tại trong code, collection này chưa được seed. Chỉ `vouchers` (root) được seed. Nếu người dùng muốn sử dụng `system_vouchers`, cần bổ sung seed trong `DataSeeder`.
+**Dữ liệu mẫu (Mock Data):**
+
+```json
+{
+  "id": "sys_voucher_001",
+  "title": "Giảm 20K cho đơn từ 100K",
+  "subtitle": "Dành cho khách hàng mới",
+  "type": 2,
+  "value": 20000.0,
+  "pointsRequired": 200,
+  "imageUrl": "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&q=80",
+  "remaining": 100,
+  "terms": "Áp dụng cho tất cả quán ăn.",
+  "minOrderValue": 100000.0,
+  "createdAt": "2026-04-07T00:00:00Z",
+  "updatedAt": "2026-04-07T00:00:00Z"
+}
+```
+
+**Ghi chú:** Nếu người dùng muốn sử dụng `system_vouchers`, cần bổ sung seed trong `DataSeeder`.
 
 ---
 
@@ -1039,18 +1066,18 @@ Firestore Root
 
 **Các trường (Fields):**
 
-| STT | Tên trường      | Kiểu dữ liệu | Bắt buộc | Mô tả                              |
-| --- | --------------- | ------------ | -------- | ---------------------------------- |
-| 1   | `id`            | String       | Có       | ID document từ Firestore           |
-| 2   | `name`          | String       | Có       | Tên voucher                        |
-| 3   | `code`          | String       | Có       | Mã voucher                         |
-| 4   | `description`   | String       | Có       | Mô tả chi tiết                     |
-| 5   | `expiryDate`    | Timestamp    | Có       | Ngày hết hạn                       |
-| 6   | `discountValue` | Number       | Có       | Giá trị giảm (nếu không phần trăm) |
-| 7   | `isPercentage`  | Boolean      | Có       | Là phần trăm giảm không            |
-| 8   | `minOrderValue` | Number       | Có       | Đơn hàng tối thiểu (VND)           |
-| 9   | `createdAt`     | Timestamp    | Có       | Thời điểm tạo                      |
-| 10  | `updatedAt`     | Timestamp    | Có       | Thời điểm cập nhật                 |
+| STT | Tên trường      | Kiểu dữ liệu | Bắt buộc | Mô tả                                    |
+| --- | --------------- | ------------ | -------- | ---------------------------------------- |
+| 1   | `id`            | String       | Có       | ID document từ Firestore                 |
+| 2   | `name`          | String       | Có       | Tên voucher                              |
+| 3   | `code`          | String       | Có       | Mã voucher                               |
+| 4   | `description`   | String       | Có       | Mô tả chi tiết                           |
+| 5   | `expiryDate`    | Timestamp    | Có       | Ngày hết hạn                            |
+| 6   | `type`          | Number       | Có       | Loại giảm giá: 1=%, 2=giảm theo tiền (VND) |
+| 7   | `value`         | Number       | Có       | Giá trị giảm (type=1: %; type=2: VND)   |
+| 8   | `minOrderValue` | Number       | Có       | Đơn hàng tối thiểu (VND)                |
+| 9   | `createdAt`     | Timestamp    | Có       | Thời điểm tạo                           |
+| 10  | `updatedAt`     | Timestamp    | Có       | Thời điểm cập nhật                      |
 
 **Dữ liệu mẫu (Mock Data):**
 
@@ -1061,8 +1088,8 @@ Firestore Root
   "code": "FREESHIP20",
   "description": "Áp dụng cho đơn từ 100K",
   "expiryDate": "2026-04-30T23:59:59Z",
-  "discountValue": 20000.0,
-  "isPercentage": false,
+  "type": 2,
+  "value": 20000.0,
   "minOrderValue": 100000.0,
   "createdAt": "2026-04-07T00:00:00Z",
   "updatedAt": "2026-04-07T00:00:00Z"

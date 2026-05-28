@@ -30,38 +30,98 @@ class SearchResultView extends StatefulWidget {
 class _SearchResultViewState extends State<SearchResultView> {
   final ApiSearchService _apiSearchService = const ApiSearchService();
   SearchSortType _selectedSort = SearchSortType.none;
+  double? _minPrice;
+  double? _maxPrice;
+  double? _minRating;
 
-  late final Future<List<SearchResultItem>> _searchFuture;
+  List<SearchResultItem> _allResults = [];
+  bool _isLoading = true;
+  Object? _loadError;
 
   @override
   void initState() {
     super.initState();
-    _searchFuture = _fetchSearchResults();
+    _fetchSearchResults();
   }
 
-  Future<List<SearchResultItem>> _fetchSearchResults() async {
-    final userLat = AuthStorage.getUserLatitude() ?? 10.8500;
-    final userLng = AuthStorage.getUserLongitude() ?? 106.7900;
-    final sortBy = _selectedSort == SearchSortType.none
-        ? null
-        : _selectedSort.name;
-    final userId = AuthStorage.getUserId();
+  Future<void> _fetchSearchResults() async {
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
 
-    return _apiSearchService.fetchSearchResults(
-      keyword: widget.query,
-      userLat: userLat,
-      userLng: userLng,
-      sortBy: sortBy,
-      userId: userId,
-    );
+    try {
+      final userLat = AuthStorage.getUserLatitude() ?? 10.8500;
+      final userLng = AuthStorage.getUserLongitude() ?? 106.7900;
+      final userId = AuthStorage.getUserId();
+
+      final results = await _apiSearchService.fetchSearchResults(
+        keyword: widget.query,
+        userLat: userLat,
+        userLng: userLng,
+        sortBy: null,
+        userId: userId,
+      );
+
+      setState(() {
+        _allResults = results;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _loadError = e;
+        _isLoading = false;
+      });
+    }
+  }
+
+  List<SearchResultItem> get _filteredResults {
+    var results = List<SearchResultItem>.from(_allResults);
+
+    if (_minPrice != null) {
+      results = results.where((r) => r.price >= _minPrice!).toList();
+    }
+    if (_maxPrice != null) {
+      results = results.where((r) => r.price <= _maxPrice!).toList();
+    }
+    if (_minRating != null) {
+      results = results.where((r) => r.rating >= _minRating!).toList();
+    }
+
+    switch (_selectedSort) {
+      case SearchSortType.priceAsc:
+        results.sort((a, b) => a.price.compareTo(b.price));
+        break;
+      case SearchSortType.priceDesc:
+        results.sort((a, b) => b.price.compareTo(a.price));
+        break;
+      case SearchSortType.ratingDesc:
+        results.sort((a, b) => b.rating.compareTo(a.rating));
+        break;
+      case SearchSortType.none:
+        break;
+    }
+
+    return results;
   }
 
   void _onSortChanged(SearchSortType sort) {
     setState(() {
       _selectedSort = _selectedSort == sort ? SearchSortType.none : sort;
-      _searchFuture = _fetchSearchResults();
     });
-    debugPrint('Sap xep thay doi: $_selectedSort');
+  }
+
+  void _onPriceFilterChanged(double? min, double? max) {
+    setState(() {
+      _minPrice = min;
+      _maxPrice = max;
+    });
+  }
+
+  void _onRatingFilterChanged(double? min) {
+    setState(() {
+      _minRating = _minRating == min ? null : min;
+    });
   }
 
   /// Chuyen SearchResultItem thanh ProductModel de mo bottom sheet.
@@ -259,7 +319,12 @@ class _SearchResultViewState extends State<SearchResultView> {
           Container(height: 1, color: AppColors.divider),
           SearchFilterBar(
             selectedSort: _selectedSort,
+            minPrice: _minPrice,
+            maxPrice: _maxPrice,
+            minRating: _minRating,
             onSortChanged: _onSortChanged,
+            onPriceFilterChanged: _onPriceFilterChanged,
+            onRatingFilterChanged: _onRatingFilterChanged,
           ),
           Container(height: 1, color: AppColors.divider),
           Expanded(
@@ -271,46 +336,41 @@ class _SearchResultViewState extends State<SearchResultView> {
   }
 
   Widget _buildResultsBody() {
-    return FutureBuilder<List<SearchResultItem>>(
-      future: _searchFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildLoadingState();
-        }
+    if (_isLoading) {
+      return _buildLoadingState();
+    }
 
-        if (snapshot.hasError) {
-          debugPrint('SearchResultView: loi API - ${snapshot.error}');
-          return _buildErrorState(snapshot.error.toString());
-        }
+    if (_loadError != null) {
+      debugPrint('SearchResultView: loi API - $_loadError');
+      return _buildErrorState(_loadError.toString());
+    }
 
-        final allResults = snapshot.data ?? [];
+    final allResults = _filteredResults;
 
-        if (allResults.isEmpty) {
-          return _buildEmptyState();
-        }
+    if (allResults.isEmpty) {
+      return _buildEmptyState();
+    }
 
-        return ListenableBuilder(
-          listenable: CartState.of(context),
-          builder: (context, _) {
-            final cartState = CartState.of(context);
-            return ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              itemCount: allResults.length,
-              itemBuilder: (context, index) {
-                final item = allResults[index];
-                final cartQty = _getCartQuantity(item.productId, cartState);
-                return SearchResultCard(
-                  item: item,
-                  cartQuantity: cartQty,
-                  onTap: () {
-                    debugPrint(
-                        'SearchResultView: Nguoi dung bam san pham [${item.productName}]');
-                    final product = _toProductModel(item);
-                    showProductDetailSheet(context, product);
-                  },
-                  onAddToCart: () => _onAddToCart(item),
-                );
+    return ListenableBuilder(
+      listenable: CartState.of(context),
+      builder: (context, _) {
+        final cartState = CartState.of(context);
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          itemCount: allResults.length,
+          itemBuilder: (context, index) {
+            final item = allResults[index];
+            final cartQty = _getCartQuantity(item.productId, cartState);
+            return SearchResultCard(
+              item: item,
+              cartQuantity: cartQty,
+              onTap: () {
+                debugPrint(
+                    'SearchResultView: Nguoi dung bam san pham [${item.productName}]');
+                final product = _toProductModel(item);
+                showProductDetailSheet(context, product);
               },
+              onAddToCart: () => _onAddToCart(item),
             );
           },
         );
@@ -362,11 +422,7 @@ class _SearchResultViewState extends State<SearchResultView> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _searchFuture = _fetchSearchResults();
-                });
-              },
+              onPressed: _fetchSearchResults,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
