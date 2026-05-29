@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../../core/network/api_client.dart';
 import '../../home/models/product_model.dart';
@@ -104,6 +105,39 @@ class ProductService {
     } catch (e) {
       debugPrint('ProductService: loi getProductsByStoreId - $e');
       rethrow;
+    }
+  }
+
+  /// Lay thong tin mot san pham theo foodId.
+  ///
+  /// Endpoint: GET /api/products/{foodId}
+  /// Su dung de lay imageUrl thuc cua san pham trong gio hang.
+  Future<ProductModel?> getProductById(String foodId) async {
+    try {
+      final response = await ApiClient.get<Map<String, dynamic>>(
+        '/products/$foodId',
+      );
+
+      if (response.data == null) return null;
+
+      final data = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : (response.data?['data'] as Map<String, dynamic>?);
+
+      if (data == null) return null;
+
+      debugPrint('ProductService: Lay product [$foodId] tu API');
+      return ProductModel.fromJson(data);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        debugPrint('ProductService: Product [$foodId] khong tim thay');
+        return null;
+      }
+      debugPrint('ProductService: loi getProductById - $e');
+      return null;
+    } catch (e) {
+      debugPrint('ProductService: loi getProductById - $e');
+      return null;
     }
   }
 }

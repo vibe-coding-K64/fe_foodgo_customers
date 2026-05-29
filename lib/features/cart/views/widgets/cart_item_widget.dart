@@ -97,20 +97,53 @@ class CartItemWidget extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
-                item.imageUrl ?? '',
+                item.imageUrlOrDefault,
                 width: 72,
                 height: 72,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  width: 72,
-                  height: 72,
-                  color: AppColors.surfaceVariant,
-                  child: const Icon(
-                    Icons.fastfood,
-                    color: AppColors.textHint,
-                    size: 28,
-                  ),
-                ),
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  debugPrint('CartItemImage: [${item.name}] Dang tai anh: ${item.imageUrlOrDefault}');
+                  return Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.textHint,
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                  loadingProgress.expectedTotalBytes!
+                              : null,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  debugPrint('CartItemImage: [${item.name}] Loi tai anh: ${item.imageUrlOrDefault}');
+                  debugPrint('CartItemImage: Error = $error, stack = $stackTrace');
+                  return Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.fastfood,
+                      color: AppColors.textHint,
+                      size: 28,
+                    ),
+                  );
+                },
               ),
             ),
             const SizedBox(width: 12),

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import '../../features/cart/models/cart_item_model.dart';
 import '../../features/cart/services/cart_api_service.dart';
+import '../../features/store/services/product_service.dart';
 
 /// Ket qua them san pham vao gio hang.
 enum CartAddResult {
@@ -27,6 +28,7 @@ enum CartAddResult {
 /// state moi nhat tu server.
 class CartState extends ChangeNotifier {
   final CartApiService _apiService = const CartApiService();
+  final ProductService _productService = const ProductService();
 
   List<CartItemModel> _items = [];
   bool _isLoading = false;
@@ -72,6 +74,8 @@ class CartState extends ChangeNotifier {
           .map((item) =>
               CartItemModel.fromApiJson(item as Map<String, dynamic>))
           .toList();
+
+      await _enrichImages();
       _errorMessage = null;
     } on DioException catch (e) {
       final message =
@@ -82,6 +86,27 @@ class CartState extends ChangeNotifier {
       debugPrint('CartState: loi fetchCart - $e');
       _errorMessage = e.toString();
     }
+  }
+
+  /// Lay imageUrl thuc tu ProductService de thay the URL placeholder.
+  Future<void> _enrichImages() async {
+    if (_items.isEmpty) return;
+
+    final futures = _items.map((item) async {
+      if (item.imageUrl == null ||
+          item.imageUrl!.isEmpty ||
+          item.imageUrl!.contains('example.com')) {
+        final product = await _productService.getProductById(item.foodId);
+        if (product != null && product.imageUrl.isNotEmpty) {
+          debugPrint(
+              'CartState: Enrich [${item.name}] tu placeholder sang: ${product.imageUrl}');
+          return item.copyWith(imageUrl: product.imageUrl);
+        }
+      }
+      return item;
+    });
+
+    _items = await Future.wait(futures);
   }
 
   /// Khoi dong - goi API lay gio hang.

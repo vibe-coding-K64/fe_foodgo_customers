@@ -85,7 +85,7 @@ service cloud.firestore {
     }
 
     // System categories (danh muc).
-    match /system_categories/{docId} {
+    match /categories/{docId} {
       allow read: if true;
       allow write: if false;
     }

@@ -15,12 +15,14 @@ class HomeService {
   // STREAM: DANH MUC (Categories)
   // ================================================================
 
-  /// Lay danh sach danh muc (system_categories) theo thoi gian thuc.
+  /// Lay danh sach danh muc (categories) theo thoi gian thuc.
+  /// Chi lay categories he thong (storeId = null).
   /// Sap xep theo field 'order' tang dan (sort in-memory vi khong co index).
   static Stream<List<CategoryModel>> getCategoriesStream() {
     debugPrint('HomeService: Dang lay Stream danh muc tu Firestore');
     return _firestore
-        .collection('system_categories')
+        .collection('categories')
+        .where('storeId', isNull: true)
         .snapshots()
         .handleError((error) {
       debugPrint('HomeService[Loi Stream danh muc]: $error');

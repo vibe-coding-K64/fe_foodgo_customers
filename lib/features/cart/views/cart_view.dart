@@ -217,6 +217,7 @@ class _CartContent extends StatefulWidget {
 
 class _CartContentState extends State<_CartContent> {
   final Set<String> _selectedIds = {};
+  String? _activeStoreId;
 
   // Cache ten cua hang: storeId -> storeName.
   final Map<String, String> _storeNames = {};
@@ -253,33 +254,33 @@ class _CartContentState extends State<_CartContent> {
 
   double get _subtotal {
     return widget.cartState.items
-        .where((item) => _selectedIds.contains(item.id))
+        .where((item) =>
+            _activeStoreId != null &&
+            item.storeId == _activeStoreId &&
+            _selectedIds.contains(item.id))
         .fold<double>(0, (sum, item) => sum + item.totalPrice);
   }
 
   int get _selectedCount => _selectedIds.length;
 
-  bool get _isAllSelected =>
-      widget.cartState.items.isNotEmpty &&
-      widget.cartState.items.every((item) => _selectedIds.contains(item.id));
-
-  void _onToggleSelectAll() {
-    setState(() {
-      if (_isAllSelected) {
-        _selectedIds.clear();
-      } else {
-        _selectedIds.addAll(widget.cartState.items.map((e) => e.id));
-      }
-    });
-    debugPrint('CartView: Chon tat ca = ${!_isAllSelected}');
-  }
-
-  void _onToggleItem(String itemId, bool selected) {
+  void _onToggleItem(String itemId, bool selected, String itemStoreId) {
     setState(() {
       if (selected) {
+        // Neu dang co activeStoreId va khac cua hang nay -> reset
+        if (_activeStoreId != null && _activeStoreId != itemStoreId) {
+          _selectedIds.clear();
+        }
+        _activeStoreId = itemStoreId;
         _selectedIds.add(itemId);
       } else {
         _selectedIds.remove(itemId);
+        // Neu bo chon ma khong con item nao thuoc cua hang -> reset activeStoreId
+        final stillSelected = widget.cartState.items
+            .where((i) => _selectedIds.contains(i.id) && i.storeId == itemStoreId)
+            .toList();
+        if (stillSelected.isEmpty) {
+          _activeStoreId = null;
+        }
       }
     });
   }
@@ -302,6 +303,15 @@ class _CartContentState extends State<_CartContent> {
     final userId = AuthStorage.getUserId();
     if (userId == null) return;
     _selectedIds.remove(item.id);
+    // Neu xoa item cua cua hang dang active va khong con item nao cung cua hang -> reset
+    if (_activeStoreId == item.storeId) {
+      final stillInCart = widget.cartState.items
+          .where((i) => i.id != item.id && i.storeId == item.storeId)
+          .toList();
+      if (stillInCart.isEmpty) {
+        _activeStoreId = null;
+      }
+    }
     widget.cartState.removeItem(userId, item.id);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -387,7 +397,7 @@ class _CartContentState extends State<_CartContent> {
                         item: item,
                         isSelected: _selectedIds.contains(item.id),
                         onSelectionChanged: (selected) =>
-                            _onToggleItem(item.id, selected),
+                            _onToggleItem(item.id, selected, item.storeId),
                         onIncrease: () => _onIncrease(item),
                         onDecrease: () => _onDecrease(item),
                         onDismiss: () => _onDismissItem(item),
@@ -401,11 +411,8 @@ class _CartContentState extends State<_CartContent> {
         ),
         if (!isEmpty)
           CartBottomBar(
-            isAllSelected: _isAllSelected,
             selectedCount: _selectedCount,
-            totalCount: items.length,
             subtotal: _subtotal,
-            onSelectAllChanged: _onToggleSelectAll,
             onCheckout: _onCheckout,
           ),
       ],

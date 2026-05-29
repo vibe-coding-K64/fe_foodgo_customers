@@ -70,40 +70,34 @@ class RestaurantService {
       products = [];
     }
 
-    // Step 3: Lay categories tu store.categoryIds
+    // Step 3: Lay categories tu Firestore (collection 'categories')
+    // Loc: storeId == null (he thong) HOAC storeId == currentStoreId (cua hang)
     List<RestaurantCategoryModel> categories;
     try {
-      final categoryIds = store.categoryIds;
+      final snap = await _firestore
+          .collection('categories')
+          .get();
+
+      final allCates = snap.docs
+          .map((doc) => RestaurantCategoryModel.fromFirestore(doc))
+          .toList();
+
+      // Loc: null = danh muc he thong, co gia tri = danh muc cua cua hang do
+      final filtered = allCates.where((c) =>
+          c.storeId == null || c.storeId == storeId).toList();
+
+      // Sort theo order
+      filtered.sort((a, b) => a.order.compareTo(b.order));
+
+      // Them "Tat ca" o dau
       categories = [
-        RestaurantCategoryModel(id: 'all', name: 'Tất cả', order: 0),
+        RestaurantCategoryModel(id: 'all', name: 'Tat ca', order: 0),
+        ...filtered,
       ];
-      for (int i = 0; i < categoryIds.length; i++) {
-        final cid = categoryIds[i];
-        try {
-          final cateResponse = await _apiGet<Map<String, dynamic>>(
-            '/categories/$cid',
-          );
-          if (cateResponse.data != null) {
-            final cateJson = cateResponse.data as Map<String, dynamic>;
-            categories.add(RestaurantCategoryModel(
-              id: cateJson['id']?.toString() ?? cid,
-              name: cateJson['name']?.toString() ?? cid,
-              order: i + 1,
-            ));
-          }
-        } catch (_) {
-          categories.add(RestaurantCategoryModel(
-            id: cid,
-            name: cid,
-            order: i + 1,
-          ));
-        }
-      }
-      categories.sort((a, b) => a.order.compareTo(b.order));
     } catch (e) {
       debugPrint('RestaurantService: Loi lay categories - $e');
       categories = [
-        RestaurantCategoryModel(id: 'all', name: 'Tất cả', order: 0),
+        RestaurantCategoryModel(id: 'all', name: 'Tat ca', order: 0),
       ];
     }
 
@@ -218,55 +212,32 @@ class RestaurantService {
 
   /// Lay danh sach danh muc cua mot quan.
   ///
-  /// Doc `categoryIds` tu store, map sang `system_categories`.
+  /// Doc `categoryIds` tu store, map sang `categories`.
   /// Tra ve list `RestaurantCategoryModel` voi "Tat ca" o dau.
-  /// Fallback ve `getCategories()` (mock) neu store khong co categoryIds.
+  /// Doc toan bo 'categories' tu Firestore, loc theo storeId.
+  /// null = danh muc he thong, co gia tri = danh muc cua cua hang do.
   static Future<List<RestaurantCategoryModel>> getCategories(String storeId) async {
     debugPrint('RestaurantService: Lay danh muc cho store [$storeId]');
 
     try {
-      final storeDoc =
-          await _firestore.collection('stores').doc(storeId).get();
+      final snap = await _firestore.collection('categories').get();
 
-      if (!storeDoc.exists) {
-        return _getDefaultCategories();
-      }
+      final allCates = snap.docs
+          .map((doc) => RestaurantCategoryModel.fromFirestore(doc))
+          .toList();
 
-      final storeData = storeDoc.data()!;
-      final categoryIds = (storeData['categoryIds'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          [];
+      // Loc: null = danh muc he thong, co gia tri = danh muc cua cua hang do
+      final filtered = allCates.where((c) =>
+          c.storeId == null || c.storeId == storeId).toList();
 
-      if (categoryIds.isEmpty) {
-        return _getDefaultCategories();
-      }
+      // Sort theo order
+      filtered.sort((a, b) => a.order.compareTo(b.order));
 
-      final List<RestaurantCategoryModel> result = [
+      final result = [
         RestaurantCategoryModel(id: 'all', name: 'Tat ca', order: 0),
+        ...filtered,
       ];
 
-      for (final cid in categoryIds) {
-        try {
-          final cateDoc = await _firestore
-              .collection('system_categories')
-              .doc(cid)
-              .get();
-
-          if (cateDoc.exists && cateDoc.data() != null) {
-            final data = cateDoc.data()!;
-            result.add(RestaurantCategoryModel(
-              id: cid,
-              name: data['name'] as String? ?? cid,
-              order: (data['order'] as int? ?? 0) + 1,
-            ));
-          }
-        } catch (e) {
-          debugPrint('RestaurantService: Loi doc category [$cid] - $e');
-        }
-      }
-
-      result.sort((a, b) => a.order.compareTo(b.order));
       debugPrint(
           'RestaurantService: Lay duoc ${result.length} danh muc cho store [$storeId]');
       return result;

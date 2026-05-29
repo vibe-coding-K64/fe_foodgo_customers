@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 /// Model topping trong gio hang.
 class CartTopping {
@@ -217,6 +218,15 @@ class CartItemModel {
 
   /// Tong gia cua item = don gia * so luong.
   double get totalPrice => price * quantity;
+
+  /// Tra ve imageUrl, neu null hoac rong thi tra ve placeholder.
+  String get imageUrlOrDefault {
+    final url = (imageUrl != null && imageUrl!.isNotEmpty)
+        ? imageUrl!
+        : 'https://picsum.photos/seed/${foodId.hashCode.abs()}/200';
+    debugPrint('CartItem [$name] imageUrlOrDefault = $url (original = $imageUrl)');
+    return url;
+  }
 
   /// Tong gia toppings = sum of each topping price * quantity.
   double get toppingsTotal =>
