@@ -8,8 +8,7 @@ import '../../../../features/payment/models/payment_method_model.dart';
 class CheckoutPromotions extends StatelessWidget {
   final VoidCallback? onVoucherTap;
   final VoidCallback? onPaymentMethodTap;
-  final String? selectedVoucher;
-  final String? selectedVoucherName;
+  final String? selectedVouchersSummary;
   final String selectedPaymentMethod;
   final PaymentMethodModel? selectedPaymentMethodInfo;
   final String orderNote;
@@ -19,8 +18,7 @@ class CheckoutPromotions extends StatelessWidget {
     super.key,
     this.onVoucherTap,
     this.onPaymentMethodTap,
-    this.selectedVoucher,
-    this.selectedVoucherName,
+    this.selectedVouchersSummary,
     this.selectedPaymentMethod = 'cash',
     this.selectedPaymentMethodInfo,
     this.orderNote = '',
@@ -34,15 +32,18 @@ class CheckoutPromotions extends StatelessWidget {
       children: [
         _PromoRow(
           icon: Icons.local_offer_outlined,
-          label: selectedVoucherName ?? context.t('checkout_voucher'),
+          label: selectedVouchersSummary?.isNotEmpty == true
+              ? context.t('checkout_vouchers_selected')
+              : context.t('checkout_voucher'),
           iconColor: AppColors.secondary,
-          valueColor:
-              selectedVoucher != null ? AppColors.primary : AppColors.textHint,
+          valueColor: selectedVouchersSummary?.isNotEmpty == true
+              ? AppColors.primary
+              : AppColors.textHint,
           onTap: onVoucherTap,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (selectedVoucher != null)
+              if (selectedVouchersSummary?.isNotEmpty == true)
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -51,12 +52,14 @@ class CheckoutPromotions extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    selectedVoucherName ?? selectedVoucher!,
+                    selectedVouchersSummary!,
                     style: const TextStyle(
                       fontSize: 11,
                       color: AppColors.primary,
                       fontWeight: FontWeight.w500,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               const SizedBox(width: 4),

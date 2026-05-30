@@ -176,6 +176,7 @@
   "checkout_your_order": "Your order",
   "checkout_add_more": "+ Add more items",
   "checkout_voucher": "Select Voucher/Promotion",
+  "checkout_vouchers_selected": "Vouchers selected",
   "checkout_use_points": "Use loyalty points",
   "checkout_points_note": "Use 1000 points to deduct 10,000 VND",
   "checkout_payment_method": "Payment method",

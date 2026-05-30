@@ -56,9 +56,10 @@ class _CheckoutViewState extends State<CheckoutView> {
   // Danh sach mon trong gio hang (du lieu gia).
   late List<CheckoutCartItem> _cartItems;
 
-  // Phuong thuc thanh toan.
-  String _selectedVoucher = '';
-  String _selectedVoucherName = '';
+  // Voucher: moi tab chon 1 voucher, 3 tab doc lap.
+  String _selectedDiscountVoucher = '';
+  String _selectedShopVoucher = '';
+  String _selectedFreeshipVoucher = '';
   String _selectedPaymentMethod = 'cash';
   String _orderNote = '';
 
@@ -129,27 +130,45 @@ class _CheckoutViewState extends State<CheckoutView> {
   }
 
   double get _discount {
-    if (_selectedVoucher.isEmpty) return 0;
-    final voucher = _findSelectedVoucher();
-    return _getVoucherDiscount(voucher);
+    final discount = _findSelectedDiscountVoucher();
+    return _getVoucherDiscount(discount);
   }
 
-  VoucherModel? _findSelectedVoucher() {
-    if (_selectedVoucher.isEmpty) return null;
-    for (final v in (_freeshipVouchers ?? [])) {
-      if (v.id == _selectedVoucher) return v;
-    }
+  double get _freeshipDiscount {
+    final voucher = _findSelectedFreeshipVoucher();
+    if (voucher == null) return 0;
+    return _deliveryFee.clamp(0, voucher.value);
+  }
+
+  VoucherModel? _findSelectedDiscountVoucher() {
+    if (_selectedDiscountVoucher.isEmpty) return null;
     for (final v in (_discountVouchers ?? [])) {
-      if (v.id == _selectedVoucher) return v;
+      if (v.id == _selectedDiscountVoucher) return v;
     }
     for (final v in (_shopVouchers ?? [])) {
-      if (v.id == _selectedVoucher) return v;
+      if (v.id == _selectedDiscountVoucher) return v;
+    }
+    return null;
+  }
+
+  VoucherModel? _findSelectedShopVoucher() {
+    if (_selectedShopVoucher.isEmpty) return null;
+    for (final v in (_shopVouchers ?? [])) {
+      if (v.id == _selectedShopVoucher) return v;
+    }
+    return null;
+  }
+
+  VoucherModel? _findSelectedFreeshipVoucher() {
+    if (_selectedFreeshipVoucher.isEmpty) return null;
+    for (final v in (_freeshipVouchers ?? [])) {
+      if (v.id == _selectedFreeshipVoucher) return v;
     }
     return null;
   }
 
   double get _totalPayment {
-    return _subtotal + _deliveryFee - _discount;
+    return _subtotal + _deliveryFee - _discount - _freeshipDiscount;
   }
 
   /// Khoi tao du lieu.
@@ -270,19 +289,22 @@ class _CheckoutViewState extends State<CheckoutView> {
     }
   }
 
-  /// Lay voucher name tu id duoc chon.
-  String _getSelectedVoucherName() {
-    if (_selectedVoucher.isEmpty) return '';
-    for (final v in (_freeshipVouchers ?? [])) {
-      if (v.id == _selectedVoucher) return v.name;
+  /// Lay danh sach ten voucher da chon (hien thi tren UI).
+  String _getSelectedVouchersSummary() {
+    final parts = <String>[];
+    if (_selectedDiscountVoucher.isNotEmpty) {
+      final v = _findSelectedDiscountVoucher();
+      if (v != null) parts.add(v.name);
     }
-    for (final v in (_discountVouchers ?? [])) {
-      if (v.id == _selectedVoucher) return v.name;
+    if (_selectedShopVoucher.isNotEmpty) {
+      final v = _findSelectedShopVoucher();
+      if (v != null) parts.add(v.name);
     }
-    for (final v in (_shopVouchers ?? [])) {
-      if (v.id == _selectedVoucher) return v.name;
+    if (_selectedFreeshipVoucher.isNotEmpty) {
+      final v = _findSelectedFreeshipVoucher();
+      if (v != null) parts.add(v.name);
     }
-    return _selectedVoucherName;
+    return parts.isEmpty ? '' : parts.join(', ');
   }
 
   /// Lay giam gia tu voucher duoc chon.
@@ -426,16 +448,16 @@ class _CheckoutViewState extends State<CheckoutView> {
     }
     debugPrint('Tam tinh: ${_formatPrice(_subtotal)} VND');
     debugPrint('Phi giao hang: ${_formatPrice(_deliveryFee)} VND');
-    debugPrint('Giam gia: -${_formatPrice(_discount)} VND');
+    debugPrint('Giam gia voucher: -${_formatPrice(_discount)} VND');
+    debugPrint('Giam gia freeship: -${_formatPrice(_freeshipDiscount)} VND');
     debugPrint('Tong thanh toan: ${_formatPrice(_totalPayment)} VND');
     debugPrint('Phuong thuc thanh toan: $_selectedPaymentMethod');
-    debugPrint(
-      'Voucher: ${_selectedVoucher.isEmpty ? "khong" : _selectedVoucher}',
-    );
+    debugPrint('Voucher discount: ${_selectedDiscountVoucher.isEmpty ? "khong" : _selectedDiscountVoucher}');
+    debugPrint('Voucher shop: ${_selectedShopVoucher.isEmpty ? "khong" : _selectedShopVoucher}');
+    debugPrint('Voucher freeship: ${_selectedFreeshipVoucher.isEmpty ? "khong" : _selectedFreeshipVoucher}');
     debugPrint('Ghi chu: $_orderNote');
     debugPrint('==========================================');
 
-    // Hien thi loading
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -447,7 +469,9 @@ class _CheckoutViewState extends State<CheckoutView> {
         userId: 'user_001',
         addressId: _deliveryAddress!.id,
         paymentMethod: _selectedPaymentMethod,
-        voucherId: _selectedVoucher.isEmpty ? null : _selectedVoucher,
+        discountVoucherId: _selectedDiscountVoucher.isEmpty ? null : _selectedDiscountVoucher,
+        shopVoucherId: _selectedShopVoucher.isEmpty ? null : _selectedShopVoucher,
+        freeshipVoucherId: _selectedFreeshipVoucher.isEmpty ? null : _selectedFreeshipVoucher,
         note: _orderNote.isEmpty ? null : _orderNote,
       );
 
@@ -603,10 +627,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                   CheckoutPromotions(
                     onVoucherTap: _onVoucherTap,
                     onPaymentMethodTap: _onPaymentMethodTap,
-                    selectedVoucher: _selectedVoucher.isEmpty
-                        ? null
-                        : _selectedVoucher,
-                    selectedVoucherName: _getSelectedVoucherName(),
+                    selectedVouchersSummary: _getSelectedVouchersSummary(),
                     selectedPaymentMethod: _selectedPaymentMethod,
                     selectedPaymentMethodInfo: _paymentMethods.isEmpty
                         ? null
@@ -894,14 +915,41 @@ class _CheckoutViewState extends State<CheckoutView> {
                         _buildVoucherList(
                           vouchers: _discountVouchers,
                           emptyLabel: sheetContext.t('checkout_voucher_empty'),
+                          tabIndex: 0,
+                          onSelect: (id) => setState(() {
+                            if (_selectedDiscountVoucher == id) {
+                              _selectedDiscountVoucher = '';
+                            } else {
+                              _selectedDiscountVoucher = id;
+                            }
+                          }),
+                          isSelected: (id) => _selectedDiscountVoucher == id,
                         ),
                         _buildVoucherList(
                           vouchers: _shopVouchers,
                           emptyLabel: sheetContext.t('checkout_voucher_empty'),
+                          tabIndex: 1,
+                          onSelect: (id) => setState(() {
+                            if (_selectedShopVoucher == id) {
+                              _selectedShopVoucher = '';
+                            } else {
+                              _selectedShopVoucher = id;
+                            }
+                          }),
+                          isSelected: (id) => _selectedShopVoucher == id,
                         ),
                         _buildVoucherList(
                           vouchers: _freeshipVouchers,
                           emptyLabel: sheetContext.t('checkout_voucher_empty'),
+                          tabIndex: 2,
+                          onSelect: (id) => setState(() {
+                            if (_selectedFreeshipVoucher == id) {
+                              _selectedFreeshipVoucher = '';
+                            } else {
+                              _selectedFreeshipVoucher = id;
+                            }
+                          }),
+                          isSelected: (id) => _selectedFreeshipVoucher == id,
                         ),
                       ],
                     ),
@@ -946,6 +994,9 @@ class _CheckoutViewState extends State<CheckoutView> {
   Widget _buildVoucherList({
     required List<VoucherModel>? vouchers,
     required String emptyLabel,
+    required int tabIndex,
+    required void Function(String) onSelect,
+    required bool Function(String) isSelected,
   }) {
     if (_isLoadingVouchers) {
       return const Center(child: CircularProgressIndicator());
@@ -967,16 +1018,12 @@ class _CheckoutViewState extends State<CheckoutView> {
         final voucher = list[index];
         return _VoucherCard(
           voucher: voucher,
-          isSelected: _selectedVoucher == voucher.id,
+          isSelected: isSelected(voucher.id),
           onApply: () {
             debugPrint(
-              'Checkout: Ap dung voucher [${voucher.id}] - ${voucher.name}',
+              'Checkout: [Tab $tabIndex] Chon/bo voucher [${voucher.id}] - ${voucher.name}',
             );
-            setState(() {
-              _selectedVoucher = voucher.id;
-              _selectedVoucherName = voucher.name;
-            });
-            Navigator.pop(context);
+            onSelect(voucher.id);
           },
         );
       },

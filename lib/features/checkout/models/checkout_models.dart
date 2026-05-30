@@ -60,14 +60,18 @@ class CheckoutRequest {
   final String userId;
   final String addressId;
   final String paymentMethod;
-  final String? voucherId;
+  final String? discountVoucherId;
+  final String? shopVoucherId;
+  final String? freeshipVoucherId;
   final String? note;
 
   const CheckoutRequest({
     required this.userId,
     required this.addressId,
     required this.paymentMethod,
-    this.voucherId,
+    this.discountVoucherId,
+    this.shopVoucherId,
+    this.freeshipVoucherId,
     this.note,
   });
 
@@ -76,7 +80,12 @@ class CheckoutRequest {
       'userId': userId,
       'addressId': addressId,
       'paymentMethod': paymentMethod,
-      if (voucherId != null && voucherId!.isNotEmpty) 'voucherId': voucherId,
+      if (discountVoucherId != null && discountVoucherId!.isNotEmpty)
+        'discountVoucherId': discountVoucherId,
+      if (shopVoucherId != null && shopVoucherId!.isNotEmpty)
+        'shopVoucherId': shopVoucherId,
+      if (freeshipVoucherId != null && freeshipVoucherId!.isNotEmpty)
+        'freeshipVoucherId': freeshipVoucherId,
       if (note != null && note!.isNotEmpty) 'note': note,
     };
   }
