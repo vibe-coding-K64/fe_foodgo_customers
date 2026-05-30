@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 /// Model dia chi nguoi dung, tuong thich voi API response `/api/addresses`.
 ///
 /// Cac truong tu API response:
@@ -64,6 +66,32 @@ class AddressModel {
           ? DateTime.tryParse(json['deletedAt'] as String)
           : null,
     );
+  }
+
+  /// Tao AddressModel tu Firestore document.
+  factory AddressModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+    return AddressModel(
+      id: doc.id,
+      userId: data['userId'] as String? ?? '',
+      name: data['name'] as String? ?? '',
+      address: data['address'] as String? ?? '',
+      receiverName: data['receiverName'] as String? ?? '',
+      receiverPhone: data['receiverPhone'] as String? ?? '',
+      lat: (data['lat'] as num?)?.toDouble(),
+      lng: (data['lng'] as num?)?.toDouble(),
+      isDefault: data['isDefault'] as bool? ?? false,
+      createdAt: _parseTimestamp(data['createdAt']),
+      updatedAt: _parseTimestamp(data['updatedAt']),
+      deletedAt: _parseTimestamp(data['deletedAt']),
+    );
+  }
+
+  static DateTime? _parseTimestamp(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
   }
 
   /// Chuyen AddressModel thanh Map de gui len API (POST/PUT).

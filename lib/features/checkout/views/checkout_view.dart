@@ -5,6 +5,7 @@ import 'package:fe_foodgo_customers/features/order/models/order_model.dart';
 import 'package:fe_foodgo_customers/features/address/models/address_model.dart';
 import 'package:fe_foodgo_customers/features/cart/models/cart_item_model.dart';
 import 'package:fe_foodgo_customers/features/home/models/product_model.dart';
+import 'package:fe_foodgo_customers/features/address/services/address_service.dart';
 import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_delivery_info.dart';
 import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_cart_item.dart';
 import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_cart_items.dart';
@@ -44,8 +45,9 @@ class CheckoutView extends StatefulWidget {
 }
 
 class _CheckoutViewState extends State<CheckoutView> {
-  // Dia chi giao hang mac dinh (du lieu gia).
-  late AddressModel _deliveryAddress;
+  // Dia chi giao hang (load tu Firestore).
+  AddressModel? _deliveryAddress;
+  final AddressService _addressService = const AddressService();
 
   // Danh sach mon trong gio hang (du lieu gia).
   late List<CheckoutCartItem> _cartItems;
@@ -189,19 +191,6 @@ class _CheckoutViewState extends State<CheckoutView> {
   @override
   void initState() {
     super.initState();
-    _deliveryAddress = AddressModel(
-      id: 'addr_001',
-      userId: 'user_001',
-      name: 'Nhà riêng',
-      address: '123 Nguyen Hue, Quan 1, TP.HCM',
-      receiverName: 'Nguyen Van A',
-      receiverPhone: '0901234567',
-      lat: 10.7769,
-      lng: 106.7009,
-      isDefault: true,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
 
     // Neu co don hang cu thi chuyen doi sang gio hang, nguoc lai su dung mock.
     if (widget.selectedCartItems != null &&
@@ -258,6 +247,17 @@ class _CheckoutViewState extends State<CheckoutView> {
           ],
         ),
       ];
+    }
+    _selectedPaymentMethod = 'cash';
+    _loadDefaultAddress();
+  }
+
+  Future<void> _loadDefaultAddress() async {
+    final address = await _addressService.getDefaultAddressFromFirestore();
+    if (mounted && address != null) {
+      setState(() {
+        _deliveryAddress = address;
+      });
     }
   }
 
@@ -381,7 +381,7 @@ class _CheckoutViewState extends State<CheckoutView> {
     }
 
     debugPrint('========== CHECKOUT: DAT HANG ==========');
-    debugPrint('Dia chi giao hang: ${_deliveryAddress.address}');
+    debugPrint('Dia chi giao hang: ${_deliveryAddress?.address ?? "Chua co dia chi"}');
     debugPrint('So mon: ${_cartItems.length}');
     for (final item in _cartItems) {
       debugPrint(
@@ -409,7 +409,7 @@ class _CheckoutViewState extends State<CheckoutView> {
     try {
       final request = CheckoutRequest(
         userId: 'user_001',
-        addressId: _deliveryAddress.id,
+        addressId: _deliveryAddress!.id,
         paymentMethod: _selectedPaymentMethod,
         voucherId: _selectedVoucher.isEmpty ? null : _selectedVoucher,
         note: _orderNote.isEmpty ? null : _orderNote,
@@ -526,8 +526,15 @@ class _CheckoutViewState extends State<CheckoutView> {
                 children: [
                   // PHAN 1: Thong tin giao hang.
                   CheckoutDeliveryInfo(
-                    address: _deliveryAddress,
-                    estimatedTime: '15-20 ${context.t('unit_min')}',
+                    address: _deliveryAddress ?? AddressModel(
+                      id: '',
+                      userId: '',
+                      name: '',
+                      address: 'Chua co dia chi',
+                      receiverName: '',
+                      receiverPhone: '',
+                      isDefault: false,
+                    ),
                     onChangeAddressTap: () async {
                       debugPrint('Checkout: Mo man hinh doi dia chi');
                       final selected = await Navigator.push<AddressModel>(

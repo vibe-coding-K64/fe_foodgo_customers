@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../../../core/network/api_client.dart';
@@ -58,6 +59,31 @@ class AddressService {
     } on DioException catch (e) {
       debugPrint('AddressService: Loi lay danh sach dia chi - ${e.message}');
       rethrow;
+    }
+  }
+
+  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  /// Lay dia chi mac dinh tu Firestore.
+  ///
+  /// Doc tu collection customer_profiles/{userId}/addresses,
+  /// loc document co isDefault = true.
+  Future<AddressModel?> getDefaultAddressFromFirestore() async {
+    final userId = _getUserId();
+    try {
+      final snap = await _firestore
+          .collection('customer_profiles')
+          .doc(userId)
+          .collection('addresses')
+          .where('isDefault', isEqualTo: true)
+          .limit(1)
+          .get();
+
+      if (snap.docs.isEmpty) return null;
+      return AddressModel.fromFirestore(snap.docs.first);
+    } catch (e) {
+      debugPrint('AddressService: Loi lay dia chi mac dinh tu Firestore - $e');
+      return null;
     }
   }
 

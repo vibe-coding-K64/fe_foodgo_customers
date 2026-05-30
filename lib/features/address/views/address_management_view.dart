@@ -33,6 +33,7 @@ class _AddressManagementViewState extends State<AddressManagementView> {
   final AddressService _addressService = AddressService();
 
   List<AddressModel> _addresses = [];
+  AddressModel? _selectedAddress;
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -40,6 +41,12 @@ class _AddressManagementViewState extends State<AddressManagementView> {
   void initState() {
     super.initState();
     _loadAddresses();
+  }
+
+  void _onSelectAddress(AddressModel address) {
+    setState(() {
+      _selectedAddress = address;
+    });
   }
 
   /// Tai danh sach dia chi tu API.
@@ -245,6 +252,10 @@ class _AddressManagementViewState extends State<AddressManagementView> {
           final address = _addresses[index];
           return AddressCardWidget(
             address: address,
+            isSelected: _selectedAddress?.id == address.id,
+            onTap: widget.isFromCheckout
+                ? () => _onSelectAddress(address)
+                : null,
             onSetDefault: () => _onSetDefault(address.id),
             onEdit: () => _onEdit(address),
             onDelete: () => _onDelete(address),
@@ -428,21 +439,19 @@ class _AddressManagementViewState extends State<AddressManagementView> {
   }
 
   Widget _buildConfirmButton(BuildContext context) {
-    final selected = _addresses.where((a) => a.isDefault).firstOrNull;
-
     return GestureDetector(
-      onTap: selected != null
+      onTap: _selectedAddress != null
           ? () {
               debugPrint(
-                  'AddressManagement: Xac nhan dia chi [${selected.id}] - ${selected.address}');
-              Navigator.pop(context, selected);
+                  'AddressManagement: Xac nhan dia chi [${_selectedAddress!.id}] - ${_selectedAddress!.address}');
+              Navigator.pop(context, _selectedAddress);
             }
           : null,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: selected != null
+          color: _selectedAddress != null
               ? AppColors.primary
               : AppColors.primary.withAlpha(100),
           borderRadius: BorderRadius.circular(12),

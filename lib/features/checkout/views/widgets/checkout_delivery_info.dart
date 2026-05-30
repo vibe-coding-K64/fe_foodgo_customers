@@ -7,13 +7,11 @@ import '../../../address/models/address_model.dart';
 /// Hien thi card chua: ten nguoi nhan, SDT, dia chi, thoi gian du kien.
 class CheckoutDeliveryInfo extends StatelessWidget {
   final AddressModel address;
-  final String estimatedTime;
   final VoidCallback? onChangeAddressTap;
 
   const CheckoutDeliveryInfo({
     super.key,
     required this.address,
-    required this.estimatedTime,
     this.onChangeAddressTap,
   });
 
@@ -137,33 +135,6 @@ class CheckoutDeliveryInfo extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 10),
-          // Thoi gian du kien giao hang.
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withAlpha(25),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.access_time,
-                  color: AppColors.primary,
-                  size: 14,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${context.t('checkout_estimated_time')}: $estimatedTime',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
