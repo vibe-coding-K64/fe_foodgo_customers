@@ -3,6 +3,7 @@ import 'package:fe_foodgo_customers/core/constants/app_colors.dart';
 import 'package:fe_foodgo_customers/core/localization/language_service.dart';
 import 'package:fe_foodgo_customers/features/order/models/order_model.dart';
 import 'package:fe_foodgo_customers/features/address/models/address_model.dart';
+import 'package:fe_foodgo_customers/features/cart/models/cart_item_model.dart';
 import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_delivery_info.dart';
 import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_cart_item.dart';
 import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_cart_items.dart';
@@ -19,11 +20,23 @@ import 'package:fe_foodgo_customers/features/checkout/models/checkout_models.dar
 /// Thuoc tinh [initialOrder] cho phep dat lai don hang cu:
 ///   - Neu la [OrderModel]: hien thi san danh sach mon cu trong gio hang.
 ///   - Neu la null: su dung gio hang mac dinh (mock data).
+///
+/// Thuoc tinh [selectedCartItems] truyen tu CartView khi nguoi dung
+/// bam "Dat hang" tu trang gio hang. Cac mon da chon se duoc hien thi
+/// cung topping va gia da bao gom topping.
 class CheckoutView extends StatefulWidget {
   /// Don hang cu de dat lai. Neu null, su dung gio hang mac dinh.
   final OrderModel? initialOrder;
 
-  const CheckoutView({super.key, this.initialOrder});
+  /// Cac mon da chon tu trang gio hang (CartView).
+  /// Neu duoc truyen, cac mon nay se duoc hien thi thay vi mock data.
+  final List<CartItemModel>? selectedCartItems;
+
+  const CheckoutView({
+    super.key,
+    this.initialOrder,
+    this.selectedCartItems,
+  });
 
   @override
   State<CheckoutView> createState() => _CheckoutViewState();
@@ -190,7 +203,13 @@ class _CheckoutViewState extends State<CheckoutView> {
     );
 
     // Neu co don hang cu thi chuyen doi sang gio hang, nguoc lai su dung mock.
-    if (widget.initialOrder != null) {
+    if (widget.selectedCartItems != null &&
+        widget.selectedCartItems!.isNotEmpty) {
+      debugPrint(
+        'Checkout: Su dung ${widget.selectedCartItems!.length} mon tu CartView',
+      );
+      _cartItems = _convertCartItemsToCheckoutItems(widget.selectedCartItems!);
+    } else if (widget.initialOrder != null) {
       debugPrint(
         'Checkout: Dat lai don hang [${widget.initialOrder!.id}], ten quan [${widget.initialOrder!.storeName}]',
       );
@@ -204,7 +223,8 @@ class _CheckoutViewState extends State<CheckoutView> {
           storeId: 'store_001',
           name: 'Tra Sua Tran Chau Duong',
           imageUrl: 'https://picsum.photos/seed/milktea1/200',
-          unitPrice: 35000,
+          basePrice: 35000,
+          unitPrice: 48000,
           quantity: 2,
           toppings: [
             CheckoutTopping(name: 'Tran chau', price: 5000),
@@ -217,6 +237,7 @@ class _CheckoutViewState extends State<CheckoutView> {
           storeId: 'store_001',
           name: 'Ca phe sua da',
           imageUrl: 'https://picsum.photos/seed/coffee2/200',
+          basePrice: 29000,
           unitPrice: 29000,
           quantity: 1,
           toppings: [CheckoutTopping(name: 'Da', price: 0)],
@@ -227,6 +248,7 @@ class _CheckoutViewState extends State<CheckoutView> {
           storeId: 'store_001',
           name: 'Tra vai Thach Vuive',
           imageUrl: 'https://picsum.photos/seed/greentea3/200',
+          basePrice: 24000,
           unitPrice: 42000,
           quantity: 1,
           toppings: [
@@ -241,12 +263,17 @@ class _CheckoutViewState extends State<CheckoutView> {
   /// Chuyen doi danh sach mon cua don hang cu sang dinh dang gio hang checkout.
   List<CheckoutCartItem> _convertOrderToCartItems(OrderModel order) {
     return order.items.map((item) {
+      final toppingsTotal = (item.options ?? []).fold<double>(
+        0, (sum, o) => sum + o.price,
+      );
+      final basePrice = (item.price - toppingsTotal).clamp(0.0, double.infinity);
       return CheckoutCartItem(
         id: 'reorder_${order.id}_${item.name.hashCode}',
         foodId: item.foodId,
         storeId: order.storeId,
         name: item.name,
         imageUrl: item.imageUrl ?? '',
+        basePrice: basePrice,
         unitPrice: item.price,
         quantity: item.quantity,
         toppings: (item.options ?? [])
@@ -257,6 +284,46 @@ class _CheckoutViewState extends State<CheckoutView> {
             .toList(),
       );
     }).toList();
+  }
+
+  /// Chuyen doi danh sach CartItemModel tu CartView sang dinh dang checkout.
+  /// Bao gom topping, gia (da bao gom topping), size, ghi chu.
+  List<CheckoutCartItem> _convertCartItemsToCheckoutItems(
+      List<CartItemModel> cartItems) {
+    return cartItems.map((cart) {
+      final unitPrice = cart.unitPriceOf(cart.product);
+      final basePrice = cart.product?.basePrice ?? 0.0;
+
+      return CheckoutCartItem(
+        id: cart.id,
+        foodId: cart.foodId,
+        storeId: cart.storeId,
+        name: cart.name,
+        imageUrl: cart.imageUrlOrDefault,
+        basePrice: basePrice,
+        unitPrice: unitPrice,
+        quantity: cart.quantity,
+        toppings: cart.selectedToppings
+            .map((t) {
+              final opt = _findToppingOption(cart.product, t.name);
+              return CheckoutTopping(name: t.name, price: opt?.price ?? 0.0);
+            })
+            .toList(),
+        note: cart.note ?? '',
+      );
+    }).toList();
+  }
+
+  _ToppingOption? _findToppingOption(dynamic product, String toppingName) {
+    if (product == null) return null;
+    for (final group in (product.optionGroups as List)) {
+      if (group.name.toLowerCase().contains('topping')) {
+        for (final opt in (group.options as List)) {
+          if (opt.name == toppingName) return opt;
+        }
+      }
+    }
+    return null;
   }
 
   String _formatPrice(double price) {
@@ -271,14 +338,8 @@ class _CheckoutViewState extends State<CheckoutView> {
 
   void _onQuantityChanged(int index, int newQuantity) {
     setState(() {
-      _cartItems[index] = CheckoutCartItem(
-        id: _cartItems[index].id,
-        name: _cartItems[index].name,
-        imageUrl: _cartItems[index].imageUrl,
-        unitPrice: _cartItems[index].unitPrice,
-        quantity: newQuantity,
-        toppings: _cartItems[index].toppings,
-      );
+      final current = _cartItems[index];
+      _cartItems[index] = current.copyWith(quantity: newQuantity);
     });
     debugPrint(
       'Checkout: Cap nhat so luong mon [${_cartItems[index].name}] = $newQuantity',

@@ -206,13 +206,27 @@ class _CartItemCard extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 6),
-                  Text(
-                    '${_formatPrice(item.unitPrice)} ${context.t('unit_currency')}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        '${_formatPrice(item.totalPrice)} ${context.t('unit_currency')}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      if (item.basePrice != item.unitPrice) ...[
+                        const SizedBox(width: 4),
+                        Text(
+                          '(${_formatPrice(item.basePrice)} + topping)',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),

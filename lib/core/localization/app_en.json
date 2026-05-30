@@ -162,6 +162,7 @@
   "cart_select_all": "Select all",
   "cart_estimated_total": "Estimated total",
   "cart_buy_btn": "Buy ({count})",
+  "cart_checkout_no_selection": "Please select at least one item to place an order",
   "cart_item_removed": "Item removed from cart",
   "cart_item_size": "Size: $1",
   "cart_item_topping": "Topping: $1",

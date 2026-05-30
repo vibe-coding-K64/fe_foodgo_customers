@@ -146,7 +146,6 @@ class _ProductDetailBottomSheetState
       userId,
       widget.product,
       selectedSize: selectedSize,
-      sizePrice: sizeExtra,
       selectedToppings: selectedToppings,
       note: _noteController.text.trim(),
       quantity: _quantity,

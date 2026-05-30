@@ -71,7 +71,7 @@ class RestaurantService {
     }
 
     // Step 3: Lay categories tu Firestore (collection 'categories')
-    // Loc: storeId == null (he thong) HOAC storeId == currentStoreId (cua hang)
+    // Chi hien thi danh muc thuoc ve cua hang do (storeId == storeId)
     List<RestaurantCategoryModel> categories;
     try {
       final snap = await _firestore
@@ -82,9 +82,9 @@ class RestaurantService {
           .map((doc) => RestaurantCategoryModel.fromFirestore(doc))
           .toList();
 
-      // Loc: null = danh muc he thong, co gia tri = danh muc cua cua hang do
+      // Loc: chi hien thi danh muc thuoc ve cua hang do
       final filtered = allCates.where((c) =>
-          c.storeId == null || c.storeId == storeId).toList();
+          c.storeId == storeId).toList();
 
       // Sort theo order
       filtered.sort((a, b) => a.order.compareTo(b.order));
@@ -226,9 +226,9 @@ class RestaurantService {
           .map((doc) => RestaurantCategoryModel.fromFirestore(doc))
           .toList();
 
-      // Loc: null = danh muc he thong, co gia tri = danh muc cua cua hang do
+      // Loc: chi hien thi danh muc thuoc ve cua hang do
       final filtered = allCates.where((c) =>
-          c.storeId == null || c.storeId == storeId).toList();
+          c.storeId == storeId).toList();
 
       // Sort theo order
       filtered.sort((a, b) => a.order.compareTo(b.order));

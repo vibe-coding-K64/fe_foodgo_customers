@@ -3,6 +3,9 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../../../core/state/cart_state.dart';
 import '../../../core/utils/auth_storage.dart';
+import '../../../features/home/models/product_model.dart';
+import '../../../features/home/services/home_service.dart';
+import '../../../features/product/views/product_detail_bottom_sheet.dart';
 import '../../../features/restaurant/services/restaurant_service.dart';
 import '../../checkout/views/checkout_view.dart';
 import '../models/cart_item_model.dart';
@@ -219,13 +222,16 @@ class _CartContentState extends State<_CartContent> {
   final Set<String> _selectedIds = {};
   String? _activeStoreId;
 
-  // Cache ten cua hang: storeId -> storeName.
   final Map<String, String> _storeNames = {};
+
+  /// Cache products: foodId -> ProductModel (de tinh gia).
+  final Map<String, ProductModel> _products = {};
 
   @override
   void initState() {
     super.initState();
     _loadStoreNames();
+    _loadProducts();
   }
 
   @override
@@ -233,6 +239,20 @@ class _CartContentState extends State<_CartContent> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.cartState.items != widget.cartState.items) {
       _loadStoreNames();
+      _loadProducts();
+    }
+  }
+
+  Future<void> _loadProducts() async {
+    for (final item in widget.cartState.items) {
+      if (!_products.containsKey(item.foodId)) {
+        final product = await HomeService.getProductById(item.foodId);
+        if (product != null && mounted) {
+          setState(() {
+            _products[item.foodId] = product;
+          });
+        }
+      }
     }
   }
 
@@ -252,13 +272,32 @@ class _CartContentState extends State<_CartContent> {
     }
   }
 
+  Future<void> _onTapItem(CartItemModel item) async {
+    final product = _products[item.foodId] ?? await HomeService.getProductById(item.foodId);
+    if (product != null && mounted) {
+      showProductDetailSheet(context, product);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Khong lay duoc thong tin san pham'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  double _itemTotalPrice(CartItemModel item) {
+    final product = _products[item.foodId];
+    return item.totalPriceOf(product);
+  }
+
   double get _subtotal {
     return widget.cartState.items
         .where((item) =>
             _activeStoreId != null &&
             item.storeId == _activeStoreId &&
             _selectedIds.contains(item.id))
-        .fold<double>(0, (sum, item) => sum + item.totalPrice);
+        .fold<double>(0, (sum, item) => sum + _itemTotalPrice(item));
   }
 
   int get _selectedCount => _selectedIds.length;
@@ -325,10 +364,31 @@ class _CartContentState extends State<_CartContent> {
   }
 
   void _onCheckout() {
-    debugPrint('CartView: Chuyen sang trang thanh toan');
+    final selectedItems = widget.cartState.items
+        .where((item) => _selectedIds.contains(item.id))
+        .toList();
+
+    if (selectedItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.t('cart_checkout_no_selection')),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    debugPrint(
+      'CartView: Chuyen sang trang thanh toan voi ${selectedItems.length} mon da chon',
+    );
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const CheckoutView()),
+      MaterialPageRoute(
+        builder: (context) => CheckoutView(
+          selectedCartItems: selectedItems,
+        ),
+      ),
     );
   }
 
@@ -395,12 +455,15 @@ class _CartContentState extends State<_CartContent> {
                       padding: const EdgeInsets.only(bottom: 12),
                       child: CartItemWidget(
                         item: item,
+                        product: _products[item.foodId],
                         isSelected: _selectedIds.contains(item.id),
+                        isOutOfStock: _products[item.foodId]?.isOutOfStock ?? false,
                         onSelectionChanged: (selected) =>
                             _onToggleItem(item.id, selected, item.storeId),
                         onIncrease: () => _onIncrease(item),
                         onDecrease: () => _onDecrease(item),
                         onDismiss: () => _onDismissItem(item),
+                        onItemTap: () => _onTapItem(item),
                       ),
                     );
                   }),

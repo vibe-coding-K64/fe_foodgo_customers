@@ -1,27 +1,36 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
+import '../../../home/models/product_model.dart';
 import '../../models/cart_item_model.dart';
 
 /// Widget hien thi mot item trong danh sach gio hang.
 ///
-/// Co checkbox, hinh anh, ten, don gia, bo dem +/-, va Dismissible xoa.
+/// [product] duoc truyen vao de tinh gia chinh xac (basePrice + sizePrice + toppings).
+/// [isOutOfStock] cho biet san pham co dang het hang hay khong.
+/// Neu het hang: item bi mo di, checkbox bi disable, khong cho tang/giam so luong.
 class CartItemWidget extends StatelessWidget {
   final CartItemModel item;
+  final ProductModel? product;
   final bool isSelected;
+  final bool isOutOfStock;
   final ValueChanged<bool> onSelectionChanged;
   final VoidCallback onIncrease;
   final VoidCallback onDecrease;
   final VoidCallback onDismiss;
+  final VoidCallback onItemTap;
 
   const CartItemWidget({
     super.key,
     required this.item,
+    this.product,
     required this.isSelected,
+    required this.isOutOfStock,
     required this.onSelectionChanged,
     required this.onIncrease,
     required this.onDecrease,
     required this.onDismiss,
+    required this.onItemTap,
   });
 
   String _formatPrice(double price) {
@@ -54,44 +63,48 @@ class CartItemWidget extends StatelessWidget {
           size: 26,
         ),
       ),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Checkbox chon mon.
-            Transform.scale(
-              scale: 1.1,
-              child: Checkbox(
-                value: isSelected,
-                onChanged: (value) {
-                  debugPrint(
-                      'CartView: Checkbox mon [${item.name}] = ${value ?? false}');
-                  onSelectionChanged(value ?? false);
-                },
-                activeColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                side: BorderSide(
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.border,
-                  width: 1.5,
+      child: Opacity(
+        opacity: isOutOfStock ? 0.5 : 1.0,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Checkbox chon mon.
+              Transform.scale(
+                scale: 1.1,
+                child: Checkbox(
+                  value: isSelected,
+                  onChanged: isOutOfStock
+                      ? null
+                      : (value) {
+                          debugPrint(
+                              'CartView: Checkbox mon [${item.name}] = ${value ?? false}');
+                          onSelectionChanged(value ?? false);
+                        },
+                  activeColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  side: BorderSide(
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.border,
+                    width: 1.5,
+                  ),
                 ),
               ),
-            ),
             const SizedBox(width: 10),
             // Hinh anh san pham.
             ClipRRect(
@@ -147,9 +160,12 @@ class CartItemWidget extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            // Thong tin san pham.
+            // Thong tin san pham (tap de xem chi tiet).
             Expanded(
-              child: Column(
+              child: GestureDetector(
+                onTap: onItemTap,
+                behavior: HitTestBehavior.opaque,
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -162,19 +178,19 @@ class CartItemWidget extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (item.size != null && item.size!.isNotEmpty) ...[
+                  if (item.selectedSize != null && item.selectedSize!.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
                       context
                           .t('cart_item_size')
-                          .replaceFirst('\$1', item.size!),
+                          .replaceFirst('\$1', item.selectedSize!),
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade600,
                       ),
                     ),
                   ],
-                  if (item.toppings.isNotEmpty) ...[
+                  if (item.selectedToppings.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(
                       context
@@ -207,7 +223,7 @@ class CartItemWidget extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        '${_formatPrice(item.price)} ${context.t('unit_currency')}',
+                        '${_formatPrice(product != null ? item.totalPriceOf(product) : 0.0)} ${context.t('unit_currency')}',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -223,26 +239,37 @@ class CartItemWidget extends StatelessWidget {
                             color: Colors.grey.shade600,
                           ),
                         ),
-                        const Spacer(),
-                        Text(
-                          '${_formatPrice(item.totalPrice)} ${context.t('unit_currency')}',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                          ),
-                        ),
                       ],
                     ],
                   ),
                   const SizedBox(height: 8),
                   // Bo dem so luong.
                   _buildQuantityControl(),
+                  if (isOutOfStock) ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        context.t('product_out_of_stock'),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
+          ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -258,7 +285,7 @@ class CartItemWidget extends StatelessWidget {
         children: [
           // Nut giam.
           GestureDetector(
-            onTap: item.quantity > 1
+            onTap: !isOutOfStock && item.quantity > 1
                 ? () {
                     debugPrint(
                         'CartView: Giam so luong mon [${item.name}] = ${item.quantity - 1}');
@@ -272,7 +299,7 @@ class CartItemWidget extends StatelessWidget {
               child: Icon(
                 Icons.remove,
                 color:
-                    item.quantity > 1 ? AppColors.primary : AppColors.textHint,
+                    !isOutOfStock && item.quantity > 1 ? AppColors.primary : AppColors.textHint,
                 size: 16,
               ),
             ),
@@ -292,18 +319,20 @@ class CartItemWidget extends StatelessWidget {
           ),
           // Nut tang.
           GestureDetector(
-            onTap: () {
-              debugPrint(
-                  'CartView: Tang so luong mon [${item.name}] = ${item.quantity + 1}');
-              onIncrease();
-            },
+            onTap: isOutOfStock
+                ? null
+                : () {
+                    debugPrint(
+                        'CartView: Tang so luong mon [${item.name}] = ${item.quantity + 1}');
+                    onIncrease();
+                  },
             child: Container(
               width: 32,
               height: 32,
               alignment: Alignment.center,
-              child: const Icon(
+              child: Icon(
                 Icons.add,
-                color: AppColors.primary,
+                color: isOutOfStock ? AppColors.textHint : AppColors.primary,
                 size: 16,
               ),
             ),

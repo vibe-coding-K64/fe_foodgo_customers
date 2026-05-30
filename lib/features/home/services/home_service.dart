@@ -185,6 +185,28 @@ class HomeService {
   }
 
   // ================================================================
+  // ONE-TIME FETCH: SAN PHAM (Products)
+  // ================================================================
+
+  /// Lay thong tin mot san pham theo ID tu Firestore.
+  /// Dung khi can chi tiet day du (optionGroups) cua san pham.
+  static Future<ProductModel?> getProductById(String productId) async {
+    debugPrint('HomeService: Lay san pham [$productId] tu Firestore');
+    try {
+      final doc =
+          await _firestore.collection('products').doc(productId).get();
+      if (!doc.exists) {
+        debugPrint('HomeService: San pham [$productId] khong ton tai');
+        return null;
+      }
+      return ProductModel.fromFirestore(doc);
+    } catch (e) {
+      debugPrint('HomeService[Loi lay san pham $productId]: $e');
+      return null;
+    }
+  }
+
+  // ================================================================
   // STREAM: BANNER (Banners)
   // ================================================================
 

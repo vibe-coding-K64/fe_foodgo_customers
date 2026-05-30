@@ -1,16 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import '../../../core/network/api_client.dart';
 import '../models/cart_item_model.dart';
 
 /// Service tuong tac voi Firestore de quan ly gio hang.
 ///
 /// Duong dan collection: customer_profiles/{userId}/cart
+///
+/// Cart KHONG luu gia tri price/sizePrice/toppings[].price.
+/// Gia duoc tinh dong khi hien thi bang cach lay tu collection products.
 class CartService {
   const CartService();
 
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Lay duong dan sub-collection cart cua nguoi dung.
   CollectionReference _cartCollection(String userId) {
     return _firestore
         .collection('customer_profiles')
@@ -18,9 +21,29 @@ class CartService {
         .collection('cart');
   }
 
-  /// Stream lang nghe danh sach gio hang real-time.
+  /// Lay danh sach gio hang (doc 1 lan, khong stream).
   ///
-  /// Su dung snapshot() de lang nghe thay doi tu Firestore.
+  /// Tra ve danh sach CartItemModel TU cart collection.
+  /// Gia chua duoc tinh o day - can goi enrich o CartState.
+  Future<List<CartItemModel>> getCart(String userId) async {
+    try {
+      final snapshot = await _cartCollection(userId).get();
+      if (snapshot.docs.isEmpty) {
+        debugPrint('CartService: Gio hang rong');
+        return <CartItemModel>[];
+      }
+      final items = snapshot.docs
+          .map((doc) => CartItemModel.fromFirestore(doc))
+          .toList();
+      debugPrint('CartService: Da doc ${items.length} items tu Firestore');
+      return items;
+    } catch (e) {
+      debugPrint('CartService: loi getCart - $e');
+      rethrow;
+    }
+  }
+
+  /// Stream lang nghe danh sach gio hang real-time.
   Stream<List<CartItemModel>> getCartStream(String userId) {
     return _cartCollection(userId).snapshots().map((snapshot) {
       if (snapshot.docs.isEmpty) {
@@ -35,52 +58,71 @@ class CartService {
     });
   }
 
-  /// Them mon vao gio hang.
+  /// Them mon vao gio hang qua API.
   ///
-  /// Neu mon da ton tai (cung foodId), tang quantity len.
-  /// Neu chua ton tai, tao document moi.
-  Future<void> addToCart(String userId, CartItemModel item) async {
+  /// POST /cart/add
+  /// Body: { userId, storeId, foodId, size, toppings[], note, quantity }
+  Future<void> addToCart({
+    required String userId,
+    required String storeId,
+    required String foodId,
+    required String? selectedSize,
+    required List<CartTopping>? selectedToppings,
+    required String? note,
+    required int quantity,
+  }) async {
     try {
-      final collection = _cartCollection(userId);
+      final toppings = selectedToppings
+          ?.map((t) => {
+                'name': t.name,
+                'price': t.price,
+              })
+          .toList();
 
-      // Tim xem mon nay da co trong gio chua (theo foodId).
-      final querySnapshot = await collection
-          .where('foodId', isEqualTo: item.foodId)
-          .limit(1)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        // Da ton tai -> tang so luong.
-        final existingDoc = querySnapshot.docs.first;
-        final existingData = existingDoc.data()! as Map<String, dynamic>;
-        final currentQuantity = (existingData['quantity'] as num?)?.toInt() ?? 1;
-        final newQuantity = currentQuantity + item.quantity;
-
-        await existingDoc.reference.update({
-          'quantity': newQuantity,
-          'updatedAt': Timestamp.now(),
-        });
-        debugPrint(
-            'CartService: Tang so luong [$newQuantity] cho mon [${item.name}]');
-      } else {
-        // Chua ton tai -> them moi.
-        final now = Timestamp.now();
-        final newItem = CartItemModel(
-          id: '',
-          storeId: item.storeId,
-          foodId: item.foodId,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          imageUrl: item.imageUrl,
-          createdAt: now.toDate(),
-          updatedAt: now.toDate(),
-        );
-        await collection.add(newItem.toFirestore());
-        debugPrint('CartService: Them mon [${item.name}] vao gio hang');
-      }
+      await ApiClient.post(
+        '/cart/add',
+        data: {
+          'userId': userId,
+          'storeId': storeId,
+          'foodId': foodId,
+          'size': selectedSize,
+          'toppings': toppings,
+          'note': note,
+          'quantity': quantity,
+        },
+      );
+      debugPrint('CartService: Them mon [$foodId] vao gio hang qua API');
     } catch (e) {
-      debugPrint('CartService: Loi addToCart - $e');
+      debugPrint('CartService: loi addToCart - $e');
+      rethrow;
+    }
+  }
+
+  /// Them mon vao gio hang (dang CartItemModel) qua API.
+  Future<void> addToCartFromItem(String userId, CartItemModel item) async {
+    try {
+      final toppings = item.selectedToppings
+          .map((t) => {
+                'name': t.name,
+                'price': t.price,
+              })
+          .toList();
+
+      await ApiClient.post(
+        '/cart/add',
+        data: {
+          'userId': userId,
+          'storeId': item.storeId,
+          'foodId': item.foodId,
+          'size': item.selectedSize,
+          'toppings': toppings,
+          'note': item.note,
+          'quantity': item.quantity,
+        },
+      );
+      debugPrint('CartService: Them mon [${item.foodId}] vao gio hang qua API');
+    } catch (e) {
+      debugPrint('CartService: loi addToCartFromItem - $e');
       rethrow;
     }
   }
@@ -90,7 +132,6 @@ class CartService {
       String userId, String cartItemId, int newQuantity) async {
     try {
       if (newQuantity <= 0) {
-        // Neu so luong <= 0, xoa khoi gio hang.
         await removeFromCart(userId, cartItemId);
         return;
       }
@@ -102,7 +143,7 @@ class CartService {
       debugPrint(
           'CartService: Cap nhat so luong [$newQuantity] cho item [$cartItemId]');
     } catch (e) {
-      debugPrint('CartService: Loi updateQuantity - $e');
+      debugPrint('CartService: loi updateQuantity - $e');
       rethrow;
     }
   }
@@ -113,7 +154,23 @@ class CartService {
       await _cartCollection(userId).doc(cartItemId).delete();
       debugPrint('CartService: Xoa item [$cartItemId] khoi gio hang');
     } catch (e) {
-      debugPrint('CartService: Loi removeFromCart - $e');
+      debugPrint('CartService: loi removeFromCart - $e');
+      rethrow;
+    }
+  }
+
+  /// Xoa toan bo gio hang.
+  Future<void> clearCart(String userId) async {
+    try {
+      final snapshot = await _cartCollection(userId).get();
+      final batch = _firestore.batch();
+      for (final doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+      debugPrint('CartService: Da xoa toan bo gio hang');
+    } catch (e) {
+      debugPrint('CartService: loi clearCart - $e');
       rethrow;
     }
   }

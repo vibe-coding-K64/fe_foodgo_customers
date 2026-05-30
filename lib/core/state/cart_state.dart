@@ -1,9 +1,11 @@
-import 'package:dio/dio.dart';
+import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import '../../features/cart/models/cart_item_model.dart';
-import '../../features/cart/services/cart_api_service.dart';
-import '../../features/store/services/product_service.dart';
+import '../../features/cart/services/cart_service.dart';
+import '../../features/home/models/product_model.dart';
 
 /// Ket qua them san pham vao gio hang.
 enum CartAddResult {
@@ -14,26 +16,24 @@ enum CartAddResult {
   otherError,
 }
 
-/// State quan ly gio hang, dong bo voi API server.
+/// State quan ly gio hang, dong bo voi Firestore.
 ///
-/// Cac endpoint API:
+/// Tat ca thao tac doc/ghi deu thong qua collection
+/// customer_profiles/{userId}/cart.
 ///
-///   GET    /api/cart                  - Lay danh sach gio hang
-///   POST   /api/cart/add             - Them mon vao gio hang
-///   PUT    /api/cart/{itemId}/quantity - Cap nhat so luong
-///   DELETE /api/cart/{itemId}       - Xoa mot mon
-///   DELETE /api/cart                - Xoa toan bo gio hang
-///
-/// Sau moi thao tac them/cap-nhat/xoa, goi lai GET /api/cart de lay
-/// state moi nhat tu server.
+/// Gia cua item duoc tinh dong tu collection products/{foodId}.
 class CartState extends ChangeNotifier {
-  final CartApiService _apiService = const CartApiService();
-  final ProductService _productService = const ProductService();
+  final CartService _cartService = const CartService();
 
   List<CartItemModel> _items = [];
   bool _isLoading = false;
   String? _errorMessage;
   String? _currentUserId;
+  StreamSubscription<List<CartItemModel>>? _cartSubscription;
+  /// Stream lang nghe cac product documents trong cart.
+  /// Key = foodId, Value = subscription cua document do.
+  final Map<String, StreamSubscription<DocumentSnapshot>> _productSubscriptions =
+      {};
 
   List<CartItemModel> get items => _items;
   bool get isLoading => _isLoading;
@@ -45,13 +45,15 @@ class CartState extends ChangeNotifier {
 
   int get uniqueItemCount => _items.length;
 
-  double get subtotal =>
-      _items.fold<double>(0, (sum, item) => sum + item.totalPrice);
+  /// Tong gia cua gio hang. Chi tinh khi cac item da co product.
+  double get subtotal => _items.fold<double>(0, (sum, item) {
+        if (item.product != null) {
+          return sum + item.totalPriceOf(item.product);
+        }
+        return sum;
+      });
 
-  /// Thong tin loi khac cua hang.
   String? _differentStoreErrorMessage;
-
-  /// Thong bao loi chung (khac cua hang).
   String? get differentStoreErrorMessage => _differentStoreErrorMessage;
 
   Map<String, List<CartItemModel>> get itemsByStore {
@@ -62,54 +64,98 @@ class CartState extends ChangeNotifier {
     return grouped;
   }
 
-  /// Lay danh sach gio hang tu API.
+  /// Lay danh sach gio hang tu Firestore (fetch 1 lan).
+  ///
+  /// 1. Doc cart items tu collection customer_profiles/{userId}/cart.
+  /// 2. Enrich moi item voi ProductModel tu collection products/{foodId}.
   Future<void> _fetchCart() async {
     if (_currentUserId == null) return;
     try {
-      final responseData = await _apiService.getCart(userId: _currentUserId!);
-      final data = responseData['data'] as Map<String, dynamic>?;
-      final itemsList = (data?['items'] as List<dynamic>?) ?? [];
+      _isLoading = true;
+      notifyListeners();
 
-      _items = itemsList
-          .map((item) =>
-              CartItemModel.fromApiJson(item as Map<String, dynamic>))
-          .toList();
-
-      await _enrichImages();
+      final cartItems = await _cartService.getCart(_currentUserId!);
+      _items = await _enrichItems(cartItems);
       _errorMessage = null;
-    } on DioException catch (e) {
-      final message =
-          e.response?.data?['message'] as String? ?? e.message ?? 'Loi lay gio hang';
-      debugPrint('CartState: loi fetchCart - $message');
-      _errorMessage = message;
     } catch (e) {
       debugPrint('CartState: loi fetchCart - $e');
       _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
-  /// Lay imageUrl thuc tu ProductService de thay the URL placeholder.
-  Future<void> _enrichImages() async {
-    if (_items.isEmpty) return;
+  /// Enrich danh sach cart items voi ProductModel tu Firestore.
+  Future<List<CartItemModel>> _enrichItems(List<CartItemModel> items) async {
+    return Future.wait(
+      items.map((item) async {
+        try {
+          final productDoc = await FirebaseFirestore.instance
+              .collection('products')
+              .doc(item.foodId)
+              .get();
 
-    final futures = _items.map((item) async {
-      if (item.imageUrl == null ||
-          item.imageUrl!.isEmpty ||
-          item.imageUrl!.contains('example.com')) {
-        final product = await _productService.getProductById(item.foodId);
-        if (product != null && product.imageUrl.isNotEmpty) {
-          debugPrint(
-              'CartState: Enrich [${item.name}] tu placeholder sang: ${product.imageUrl}');
-          return item.copyWith(imageUrl: product.imageUrl);
+          if (!productDoc.exists) return item;
+
+          final product = ProductModel.fromFirestore(productDoc);
+          return item.copyWith(
+            imageUrl: product.imageUrl.isNotEmpty ? product.imageUrl : null,
+            product: product,
+          );
+        } catch (e) {
+          debugPrint('CartState: Loi enrich item [${item.foodId}] - $e');
+          return item;
         }
-      }
-      return item;
-    });
-
-    _items = await Future.wait(futures);
+      }),
+    );
   }
 
-  /// Khoi dong - goi API lay gio hang.
+  /// Lang nghe realtime cac product documents trong cart.
+  ///
+  /// Moi khi product nao do thay doi (vi du isOutOfStock),
+  /// se enrich lai item tuong ung va thong bao UI cap nhat.
+  void _subscribeToProducts(List<CartItemModel> items) {
+    // Huy cac subscription cu.
+    for (final sub in _productSubscriptions.values) {
+      sub.cancel();
+    }
+    _productSubscriptions.clear();
+
+    if (items.isEmpty) return;
+
+    for (final item in items) {
+      _productSubscriptions[item.foodId] = FirebaseFirestore.instance
+          .collection('products')
+          .doc(item.foodId)
+          .snapshots()
+          .listen(
+        (doc) async {
+          if (!doc.exists) return;
+
+          // Tim item trong _items hien tai.
+          final idx = _items.indexWhere((i) => i.id == item.id);
+          if (idx < 0) return;
+
+          final product = ProductModel.fromFirestore(doc);
+          _items[idx] = _items[idx].copyWith(
+            imageUrl: product.imageUrl.isNotEmpty ? product.imageUrl : null,
+            product: product,
+          );
+          notifyListeners();
+        },
+        onError: (e) {
+          debugPrint('CartState: Loi stream product [${item.foodId}] - $e');
+        },
+      );
+    }
+  }
+
+  /// Khoi dong - lang nghe gio hang theo thoi gian thuc.
+  ///
+  /// 1. Fetch lan dau ngay de co du lieu (neu co).
+  /// 2. Sau do lang nghe stream cart de cap nhat khi cart thay doi.
+  /// 3. Dong thoi lang nghe tung product document trong cart de phat hien isOutOfStock.
   Future<void> startListening(String userId) async {
     _currentUserId = userId;
     _isLoading = true;
@@ -117,18 +163,47 @@ class CartState extends ChangeNotifier {
     notifyListeners();
 
     await _fetchCart();
-    _isLoading = false;
-    notifyListeners();
+
+    // Lang nghe cac product documents trong cart.
+    _subscribeToProducts(_items);
+
+    await _cartSubscription?.cancel();
+
+    // Lang nghe stream cart (cho phep add/remove items).
+    _cartSubscription = _cartService.getCartStream(userId).listen(
+      (items) async {
+        _items = await _enrichItems(items);
+        _isLoading = false;
+        _errorMessage = null;
+        // Cap nhat product subscriptions khi cart items thay doi.
+        _subscribeToProducts(_items);
+        notifyListeners();
+      },
+      onError: (e) {
+        debugPrint('CartState: Stream error - $e');
+        _errorMessage = e.toString();
+        _isLoading = false;
+        notifyListeners();
+      },
+    );
   }
 
-  /// Dung listener. Khong goi API nua.
+  /// Dung lang nghe stream khi thoat khoi man hinh gio hang.
   void stopListening() {
+    _cartSubscription?.cancel();
+    _cartSubscription = null;
+    for (final sub in _productSubscriptions.values) {
+      sub.cancel();
+    }
+    _productSubscriptions.clear();
     _currentUserId = null;
   }
 
-  /// Reset toan bo state ve ban dau.
-  /// Can goi khi nguoi dung dang xuat.
   void reset() {
+    for (final sub in _productSubscriptions.values) {
+      sub.cancel();
+    }
+    _productSubscriptions.clear();
     _items = [];
     _isLoading = false;
     _errorMessage = null;
@@ -137,7 +212,6 @@ class CartState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Lay storeId cua product - uu tien field top-level, fallback sang nested store.id.
   String _extractStoreId(dynamic product) {
     final direct = product.storeId as String?;
     if (direct != null && direct.isNotEmpty) return direct;
@@ -145,11 +219,9 @@ class CartState extends ChangeNotifier {
     final nested = product.store?.id as String?;
     if (nested != null && nested.isNotEmpty) return nested;
 
-    throw ArgumentError('Khong the lay storeId tu product. '
-        'product.storeId=$direct, product.store?.id=$nested');
+    throw ArgumentError('Khong the lay storeId tu product');
   }
 
-  /// Lay foodId cua product.
   String _extractFoodId(dynamic product) {
     final id = product.id as String?;
     if (id == null || id.isEmpty) {
@@ -158,15 +230,24 @@ class CartState extends ChangeNotifier {
     return id;
   }
 
-  /// Them mot san pham vao gio hang qua API.
+  String _extractName(dynamic product) {
+    final name = product.name as String?;
+    if (name != null && name.isNotEmpty) return name;
+    throw ArgumentError('Khong the lay name tu product');
+  }
+
+  String? _extractImageUrl(dynamic product) {
+    final url = product.imageUrl as String?;
+    return (url != null && url.isNotEmpty) ? url : null;
+  }
+
+  /// Them mot san pham vao gio hang (goi API).
   ///
-  /// Tra ve [CartAddResult] de UI xu ly dialog neu can.
-  /// Sau khi goi POST thanh cong, fetch lai cart tu server de dam bao state chinh xac.
+  /// Sau khi API tra ve, fetch lai cart de enrich gia.
   Future<CartAddResult> addItem(
     String userId,
     dynamic product, {
     String? selectedSize,
-    double? sizePrice,
     List<Map<String, dynamic>> selectedToppings = const [],
     String? note,
     int quantity = 1,
@@ -179,51 +260,28 @@ class CartState extends ChangeNotifier {
     final foodId = _extractFoodId(product);
 
     try {
-      await _apiService.addToCart(
+      await _cartService.addToCart(
         userId: userId,
         storeId: storeId,
         foodId: foodId,
         quantity: quantity,
-        size: selectedSize,
-        toppings: selectedToppings.isNotEmpty ? selectedToppings : null,
+        selectedSize: selectedSize,
+        selectedToppings: selectedToppings.isNotEmpty
+            ? selectedToppings
+                .map((t) => CartTopping(name: t['name'] as String))
+                .toList()
+            : null,
         note: note,
       );
 
       await _fetchCart();
       _errorMessage = null;
       _differentStoreErrorMessage = null;
-      notifyListeners();
       return CartAddResult.success;
-    } on DioException catch (e) {
-      final statusCode = e.response?.statusCode;
-      final message =
-          e.response?.data?['message'] as String? ?? e.message ?? 'Loi them mon';
-      debugPrint('CartState: loi addItem - status=$statusCode, msg=$message');
-
-      if (statusCode == 400) {
-        if (message.contains('cua hang') || message.contains('mot cua hang')) {
-          _differentStoreErrorMessage = message;
-          notifyListeners();
-          return CartAddResult.differentStore;
-        }
-        if (message.contains('het hang') || message.contains('out of stock')) {
-          _errorMessage = message;
-          notifyListeners();
-          return CartAddResult.outOfStock;
-        }
-      }
-
-      if (statusCode == 404) {
-        _errorMessage = message;
-        notifyListeners();
-        return CartAddResult.notFound;
-      }
-
-      _errorMessage = message;
-      notifyListeners();
-      return CartAddResult.otherError;
     } catch (e) {
       debugPrint('CartState: loi addItem - $e');
+      _errorMessage = e.toString();
+      notifyListeners();
       return CartAddResult.otherError;
     }
   }
@@ -233,7 +291,6 @@ class CartState extends ChangeNotifier {
     String userId,
     dynamic product, {
     String? selectedSize,
-    double? sizePrice,
     List<Map<String, dynamic>> selectedToppings = const [],
     String? note,
     int quantity = 1,
@@ -242,7 +299,7 @@ class CartState extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _apiService.clearCart(userId: userId);
+      await _cartService.clearCart(userId);
       _items = [];
     } catch (e) {
       debugPrint('CartState: loi clearCart khi replace - $e');
@@ -252,14 +309,13 @@ class CartState extends ChangeNotifier {
       userId,
       product,
       selectedSize: selectedSize,
-      sizePrice: sizePrice,
       selectedToppings: selectedToppings,
       note: note,
       quantity: quantity,
     );
   }
 
-  /// Cap nhat so luong cua mot mon trong gio hang qua API.
+  /// Cap nhat so luong cua mot mon trong gio hang (Firestore).
   Future<void> updateQuantity(
       String userId, String cartItemId, int newQuantity) async {
     if (newQuantity <= 0) {
@@ -280,11 +336,7 @@ class CartState extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _apiService.updateQuantity(
-        itemId: cartItemId,
-        userId: userId,
-        quantity: newQuantity,
-      );
+      await _cartService.updateQuantity(userId, cartItemId, newQuantity);
       _errorMessage = null;
     } catch (e) {
       _items = [
@@ -292,42 +344,35 @@ class CartState extends ChangeNotifier {
           if (i == index) oldItem else _items[i],
       ];
       notifyListeners();
-
       debugPrint('CartState: loi updateQuantity - $e');
       rethrow;
     }
   }
 
-  /// Xoa mot mon khoi gio hang qua API.
+  /// Xoa mot mon khoi gio hang (Firestore).
   Future<void> removeItem(String userId, String cartItemId) async {
-    final savedItems = List<CartItemModel>.from(_items);
-    _items = _items.where((i) => i.id != cartItemId).toList();
-    notifyListeners();
-
     try {
-      await _apiService.removeFromCart(itemId: cartItemId, userId: userId);
+      await _cartService.removeFromCart(userId, cartItemId);
+      _items = _items.where((i) => i.id != cartItemId).toList();
       _errorMessage = null;
+      notifyListeners();
     } catch (e) {
       debugPrint('CartState: loi removeItem - $e');
-      _items = savedItems;
+      _errorMessage = e.toString();
       notifyListeners();
       rethrow;
     }
   }
 
-  /// Xoa toan bo gio hang qua API.
+  /// Xoa toan bo gio hang (Firestore).
   Future<void> clearCart(String userId) async {
     final savedItems = List<CartItemModel>.from(_items);
     _items = [];
     notifyListeners();
 
     try {
-      await _apiService.clearCart(userId: userId);
+      await _cartService.clearCart(userId);
       _errorMessage = null;
-    } on DioException {
-      _items = savedItems;
-      notifyListeners();
-      rethrow;
     } catch (e) {
       debugPrint('CartState: loi clearCart - $e');
       _items = savedItems;

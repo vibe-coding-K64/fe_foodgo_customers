@@ -6,6 +6,9 @@ class CheckoutCartItem {
   final String storeId;
   final String name;
   final String imageUrl;
+  /// Gia goc cua mon (chua tinh topping).
+  final double basePrice;
+  /// Tong gia cua 1 don vi = basePrice + topping per item.
   final double unitPrice;
   final int quantity;
   final List<CheckoutTopping> toppings;
@@ -17,6 +20,7 @@ class CheckoutCartItem {
     this.storeId = '',
     required this.name,
     required this.imageUrl,
+    required this.basePrice,
     required this.unitPrice,
     required this.quantity,
     this.toppings = const [],
@@ -29,6 +33,7 @@ class CheckoutCartItem {
     String? storeId,
     String? name,
     String? imageUrl,
+    double? basePrice,
     double? unitPrice,
     int? quantity,
     List<CheckoutTopping>? toppings,
@@ -40,6 +45,7 @@ class CheckoutCartItem {
       storeId: storeId ?? this.storeId,
       name: name ?? this.name,
       imageUrl: imageUrl ?? this.imageUrl,
+      basePrice: basePrice ?? this.basePrice,
       unitPrice: unitPrice ?? this.unitPrice,
       quantity: quantity ?? this.quantity,
       toppings: toppings ?? this.toppings,
@@ -47,11 +53,10 @@ class CheckoutCartItem {
     );
   }
 
-  double get totalPrice {
-    final toppingTotal =
-        toppings.fold<double>(0, (sum, t) => sum + (t.price * quantity));
-    return unitPrice * quantity + toppingTotal;
-  }
+  double get toppingsTotal =>
+      toppings.fold<double>(0, (sum, t) => sum + (t.price * quantity));
+
+  double get totalPrice => unitPrice * quantity;
 
   String get toppingsLabel {
     if (toppings.isEmpty) return '';
