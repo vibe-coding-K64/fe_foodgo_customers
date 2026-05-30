@@ -23,7 +23,6 @@ Tài liệu này ghi lại tất cả các Firebase Firestore Collections đư�
    - [2.13. driver_profiles](#213-driver_profiles)
    - [2.14. merchant_profiles](#214-merchant_profiles)
    - [2.15. admin_profiles](#215-admin_profiles)
-   - [2.16. system_vouchers](#216-system_vouchers)
 3. [Bảng nhánh hoặc Sub-collections](#3-bảng-nhánh-hoặc-sub-collections)
    - [3.1. customer_profiles/{userId}/addresses](#31-customer_profilesuseridaddresses)
    - [3.2. customer_profiles/{userId}/payment_methods](#32-customer_profilesuseridpayment_methods)
@@ -63,12 +62,11 @@ Firestore Root
 │   └── {userId}
 │       └── notifications        (Sub-collection)
 ├── admin_profiles                 (Root Collection)
-├── categories                       (Root Collection)
+├── categories                    (Root Collection)
 ├── stores                        (Root Collection)
 ├── products                      (Root Collection)
 ├── banners                       (Root Collection)
 ├── vouchers                      (Root Collection)
-├── system_vouchers               (Root Collection)
 ├── reviews                       (Root Collection)
 └── orders                        (Root Collection)
 ```
@@ -254,57 +252,39 @@ Firestore Root
 
 ### 2.5. `categories`
 
-**Mục đích sử dụng:** Lưu trữ danh sách danh mục món ăn/loại cửa hàng hiển thị trên trang chủ (Cơm, Phở/Bún, Trà sữa, Ăn vặt...) và danh mục riêng của từng cửa hàng.
+**Mục đích sử dụng:** Lưu trữ danh sách danh mục món ăn/loại cửa hàng. Phân biệt theo `storeId`: `null` = danh mục hệ thống (do admin quản lý), giá trị khác = danh mục cửa hàng (do chủ cửa hàng tạo).
 
 **Đường dẫn:** `/categories/{categoryId}`
 
 **Các trường (Fields):**
 
-| STT | Tên trường  | Kiểu dữ liệu          | Bắt buộc | Mô tả                                                           |
-| --- | ----------- | --------------------- | -------- | --------------------------------------------------------------- |
-| 1   | `id`        | String               | Có       | ID document từ Firestore                                        |
-| 2   | `name`      | String               | Có       | Tên danh mục (VD: "Cơm", "Trà sữa")                          |
-| 3   | `icon`      | String               | Có       | Tên icon (VD: "restaurant", "local_cafe")                      |
-| 4   | `order`     | Number               | Có       | Thứ tự sắp xếp hiển thị                                       |
-| 5   | `imageUrl`  | String               | Có       | Đường dẫn ảnh danh mục                                        |
-| 6   | `storeId`   | String (nullable)    | Không    | ID cửa hàng sở hữu. `null` = danh mục hệ thống (dùng chung). Có giá trị = danh mục riêng của cửa hàng đó. |
-| 7   | `createdAt` | Timestamp            | Có       | Thời điểm tạo                                                 |
-| 8   | `updatedAt` | Timestamp            | Có       | Thời điểm cập nhật                                            |
-| 9   | `deletedAt` | Timestamp (nullable)  | Không    | Thời điểm xóa (nếu có soft delete)                            |
+| STT | Tên trường  | Kiểu dữ liệu | Bắt buộc | Mô tả                                                           |
+| --- | ----------- | ------------- | -------- | --------------------------------------------------------------- |
+| 1   | `id`        | String        | Có       | ID document từ Firestore                                        |
+| 2   | `storeId`   | String        | Không    | `null` = danh mục hệ thống, giá trị khác = cửa hàng         |
+| 3   | `name`      | String        | Có       | Tên danh mục (VD: "Cơm", "Trà sữa")                           |
+| 4   | `icon`      | String        | Có       | Tên icon (VD: "restaurant", "local_cafe")                       |
+| 5   | `order`     | Number        | Có       | Thứ tự sắp xếp hiển thị                                        |
+| 6   | `imageUrl`  | String        | Có       | Đường dẫn ảnh danh mục                                         |
+| 7   | `createdAt` | Timestamp     | Có       | Thời điểm tạo                                                  |
+| 8   | `updatedAt` | Timestamp     | Có       | Thời điểm cập nhật                                             |
 
-**Dữ liệu mẫu (Mock Data) - Danh mục hệ thống:**
+**Dữ liệu mẫu (Mock Data):**
 
 ```json
 {
-  "id": "cate_001",
-  "name": "Cơm",
+  "id": "syscate_001",
+  "storeId": null,
+  "name": "Com",
   "icon": "restaurant",
   "order": 1,
   "imageUrl": "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&q=80",
-  "storeId": null,
   "createdAt": "2026-01-01T00:00:00Z",
-  "updatedAt": "2026-01-01T00:00:00Z",
-  "deletedAt": null
+  "updatedAt": "2026-01-01T00:00:00Z"
 }
 ```
 
-**Dữ liệu mẫu (Mock Data) - Danh mục riêng của cửa hàng:**
-
-```json
-{
-  "id": "rest_cate_001",
-  "name": "Món chính",
-  "icon": "restaurant_menu",
-  "order": 1,
-  "imageUrl": "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&q=80",
-  "storeId": "store_001",
-  "createdAt": "2026-01-01T00:00:00Z",
-  "updatedAt": "2026-01-01T00:00:00Z",
-  "deletedAt": null
-}
-```
-
-**Các mục hiện có (hệ thống):** Cơm (cate_001), Phở/Bún (cate_002), Trà sữa (cate_003), Ăn vặt (cate_004), Gà rán (cate_005), Món Hàn (cate_006), Món Nhật (cate_007), Bánh mì (cate_008), Lẩu/Buffet (cate_009), Trà trái cây (cate_010).
+**Các mục hiện có:** Com (syscate_001), Pho/Bun (syscate_002), Tra sua (syscate_003), An vat (syscate_004), Ga ran (syscate_005), Mon Han (syscate_006), Mon Nhat (syscate_007), Banh mi (syscate_008), Lau/Buffet (syscate_009), Tra cay (syscate_010).
 
 ---
 
@@ -514,7 +494,10 @@ Firestore Root
 
 ### 2.9. `vouchers` (Voucher hệ thống / Public)
 
-**Mục đích sử dụng:** Lưu trữ thông tin voucher có sẵn trong hệ thống, hiển thị tại trang Ưu đãi để khách hàng xem. (Lưu ý: đây là collection `vouchers`, phân biệt với `system_vouchers` bên dưới.)
+**Mục đích sử dụng:** Lưu trữ thông tin voucher có sẵn trong hệ thống, hiển thị tại trang Ưu đãi để khách hàng xem.
+
+- **Voucher cửa hàng:** `storeId` = ID cửa hàng cụ thể.
+- **Voucher hệ thống (đổi điểm):** `storeId` = `null` và `pointsRequired` > 0. Khách hàng đổi bằng điểm loyalty.
 
 **Đường dẫn:** `/vouchers/{voucherId}`
 
@@ -549,6 +532,7 @@ Firestore Root
   "pointsRequired": 200,
   "imageUrl": "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&q=80",
   "remaining": 100,
+  "isActive": true,
   "terms": "Áp dụng cho tất cả quán ăn.",
   "minOrderValue": 100000.0,
   "createdAt": "2026-04-07T00:00:00Z",
@@ -831,52 +815,6 @@ Firestore Root
 
 ---
 
-### 2.16. `system_vouchers`
-
-**Mục đích sử dụng:** Lưu trữ voucher hệ thống mà khách hàng có thể đổi điểm (phân biệt với `vouchers`). Chứa thông tin điểm cần thiết, số lượng còn lại, và điều khoản.
-
-**Đường dẫn:** `/system_vouchers/{systemVoucherId}`
-
-**Các trường (Fields):**
-
-| STT | Tên trường       | Kiểu dữ liệu | Bắt buộc | Mô tả                                              |
-| --- | ---------------- | ------------ | -------- | -------------------------------------------------- |
-| 1   | `id`             | String       | Có       | ID document từ Firestore                            |
-| 2   | `title`          | String       | Có       | Tiêu đề voucher                                    |
-| 3   | `subtitle`       | String       | Có       | Mô tả ngắn gọn                                     |
-| 4   | `type`           | Number       | Có       | Loại giảm giá: 1=%, 2=giảm theo tiền (VND)        |
-| 5   | `value`          | Number       | Có       | Giá trị giảm (type=1: %; type=2: VND)             |
-| 6   | `pointsRequired` | Number       | Có       | Số điểm cần để đổi                                 |
-| 7   | `imageUrl`       | String       | Có       | Đường dẫn ảnh voucher                             |
-| 8   | `remaining`      | Number       | Có       | Số lượng voucher còn lại                           |
-| 9   | `terms`          | String       | Có       | Điều khoản sử dụng                                 |
-| 10  | `minOrderValue`  | Number       | Có       | Đơn hàng tối thiểu để sử dụng (VND)               |
-| 11  | `createdAt`      | Timestamp    | Có       | Thời điểm tạo                                      |
-| 12  | `updatedAt`      | Timestamp    | Có       | Thời điểm cập nhật                                 |
-
-**Dữ liệu mẫu (Mock Data):**
-
-```json
-{
-  "id": "sys_voucher_001",
-  "title": "Giảm 20K cho đơn từ 100K",
-  "subtitle": "Dành cho khách hàng mới",
-  "type": 2,
-  "value": 20000.0,
-  "pointsRequired": 200,
-  "imageUrl": "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&q=80",
-  "remaining": 100,
-  "terms": "Áp dụng cho tất cả quán ăn.",
-  "minOrderValue": 100000.0,
-  "createdAt": "2026-04-07T00:00:00Z",
-  "updatedAt": "2026-04-07T00:00:00Z"
-}
-```
-
-**Ghi chú:** Nếu người dùng muốn sử dụng `system_vouchers`, cần bổ sung seed trong `DataSeeder`.
-
----
-
 ## 3. Bảng nhánh hoặc Sub-collections
 
 ### 3.1. `customer_profiles/{userId}/addresses`
@@ -1105,7 +1043,7 @@ Firestore Root
   "name": "Giảm 20K phí giao hàng",
   "code": "FREESHIP20",
   "description": "Áp dụng cho đơn từ 100K",
-  "expiryDate": "2026-04-30T23:59:59Z",
+  "expiryDate": "2026-05-07T00:00:00Z",
   "type": 2,
   "value": 20000.0,
   "minOrderValue": 100000.0,
@@ -1114,7 +1052,7 @@ Firestore Root
 }
 ```
 
-**Ghi chú:** Có 2 voucher mẫu: mv_001 (FREESHIP20 - giảm 20K phí giao hàng) và mv_002 (SAVE10 - giảm 10%).
+**Ghi chú:** `expiryDate` được tự động tính khi user đổi voucher = ngày đổi + `validityDays` của voucher trong `vouchers` tương ứng. Mặc định 30 ngày nếu không có `validityDays`.
 
 ---
 
@@ -1217,7 +1155,6 @@ Dưới đây là bảng tổng hợp các kiểu dữ liệu được sử dụ
 
 ## Lịch sử cập nhật
 
-| Ngày       | Mô tả                                                        |
-| ---------- | ------------------------------------------------------------ |
-| 2026-05-29 | Đổi tên system_categories → categories; thêm trường storeId (nullable) để phân biệt danh mục hệ thống (null) và danh mục riêng của cửa hàng (có giá trị). |
+| Ngày       | Mô tả                                                |
+| ---------- | ---------------------------------------------------- |
 | 2026-05-22 | Phiên bản đầu tiên - tài liệu đầy đủ các collections |
