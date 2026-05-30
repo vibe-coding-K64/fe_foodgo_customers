@@ -229,9 +229,9 @@ class PaymentMethodModel {
     }
   }
 
-  /// Tra ve chuoi the hien thi (VD: "**** 1234").
+  /// Tra ve chuoi the hien thi (VD: "1234").
   String get maskedNumber {
     if (last4Digits == null) return details;
-    return '**** $last4Digits';
+    return last4Digits!;
   }
 }

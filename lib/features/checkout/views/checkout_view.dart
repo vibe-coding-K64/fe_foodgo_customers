@@ -6,6 +6,8 @@ import 'package:fe_foodgo_customers/features/address/models/address_model.dart';
 import 'package:fe_foodgo_customers/features/cart/models/cart_item_model.dart';
 import 'package:fe_foodgo_customers/features/home/models/product_model.dart';
 import 'package:fe_foodgo_customers/features/address/services/address_service.dart';
+import 'package:fe_foodgo_customers/features/payment/models/payment_method_model.dart';
+import 'package:fe_foodgo_customers/features/payment/services/payment_method_firestore_service.dart';
 import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_delivery_info.dart';
 import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_cart_item.dart';
 import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_cart_items.dart';
@@ -13,7 +15,9 @@ import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_pro
 import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_summary.dart';
 import 'package:fe_foodgo_customers/features/address/views/address_management_view.dart';
 import 'package:fe_foodgo_customers/features/checkout/services/checkout_service.dart';
+import 'package:fe_foodgo_customers/features/checkout/services/voucher_service.dart';
 import 'package:fe_foodgo_customers/features/checkout/models/checkout_models.dart';
+import 'package:fe_foodgo_customers/features/checkout/models/voucher_model.dart';
 
 /// Trang checkout (Thanh toan) - buoc cuoi cung cua luong mua hang.
 /// Giao dien gom: thong tin giao hang, danh sach mon, uu dai,
@@ -54,87 +58,36 @@ class _CheckoutViewState extends State<CheckoutView> {
 
   // Phuong thuc thanh toan.
   String _selectedVoucher = '';
+  String _selectedVoucherName = '';
   String _selectedPaymentMethod = 'cash';
   String _orderNote = '';
 
-  // Model mock voucher.
-  static final List<_VoucherModel> _freeshipVouchers = [
-    _VoucherModel(
-      id: 'sys_voucher_001',
-      name: 'Mien phi giao hang - Thai Hoa',
-      discount: 0,
-      type: _VoucherType.freeship,
-      minOrder: 50000,
-      expireDate: DateTime.now().add(const Duration(days: 7)),
-    ),
-    _VoucherModel(
-      id: 'sys_voucher_002',
-      name: 'Freeship cho don tu 30K',
-      discount: 0,
-      type: _VoucherType.freeship,
-      minOrder: 30000,
-      expireDate: DateTime.now().add(const Duration(days: 14)),
-    ),
-    _VoucherModel(
-      id: 'sys_voucher_003',
-      name: 'Mien phi giao hang cho quy khach than thiet',
-      discount: 0,
-      type: _VoucherType.freeship,
-      minOrder: 100000,
-      expireDate: DateTime.now().add(const Duration(days: 30)),
-    ),
-  ];
+  // Voucher tu API backend.
+  List<VoucherModel>? _freeshipVouchers;
+  List<VoucherModel>? _discountVouchers;
+  List<VoucherModel>? _shopVouchers;
+  bool _isLoadingVouchers = false;
 
-  static final List<_VoucherModel> _discountVouchers = [
-    _VoucherModel(
-      id: 'sys_voucher_010',
-      name: 'Giam 10K cho don tu 80K',
-      discount: 10000,
-      type: _VoucherType.discount,
-      minOrder: 80000,
-      expireDate: DateTime.now().add(const Duration(days: 5)),
-    ),
-    _VoucherModel(
-      id: 'sys_voucher_011',
-      name: 'Giam 20% (toi da 30K)',
-      discount: 30,
-      type: _VoucherType.percent,
-      minOrder: 100000,
-      expireDate: DateTime.now().add(const Duration(days: 10)),
-    ),
-    _VoucherModel(
-      id: 'sys_voucher_012',
-      name: 'Giam 15K - Khach hang moi',
-      discount: 15000,
-      type: _VoucherType.discount,
-      minOrder: 50000,
-      expireDate: DateTime.now().add(const Duration(days: 3)),
-    ),
-  ];
+  // Phuong thuc thanh toan tu Firestore.
+  List<PaymentMethodModel> _paymentMethods = [];
+  final PaymentMethodFirestoreService _paymentFirestoreService =
+      const PaymentMethodFirestoreService();
 
-  // Phuong thuc thanh toan.
-  static final List<_PaymentMethodModel> _paymentMethods = [
-    _PaymentMethodModel(
-      id: 'cash',
-      name: 'checkout_payment_cash',
-      icon: Icons.money_outlined,
-    ),
-    _PaymentMethodModel(
-      id: 'momo',
-      name: 'checkout_payment_momo',
-      icon: Icons.wallet_outlined,
-    ),
-    _PaymentMethodModel(
-      id: 'zalo',
-      name: 'checkout_payment_zalo',
-      icon: Icons.account_balance_wallet_outlined,
-    ),
-    _PaymentMethodModel(
-      id: 'card',
-      name: 'checkout_payment_card',
-      icon: Icons.credit_card_outlined,
-    ),
-  ];
+  Future<void> _loadPaymentMethods() async {
+    debugPrint('Checkout: Dang tai phuong thuc thanh toan tu Firestore');
+    final methods = await _paymentFirestoreService.getPaymentMethods();
+    if (mounted) {
+      setState(() {
+        _paymentMethods = methods;
+        if (_paymentMethods.isNotEmpty) {
+          final defaultMethod = _paymentMethods.first;
+          _selectedPaymentMethod = defaultMethod.id;
+          debugPrint(
+              'Checkout: Da load ${_paymentMethods.length} phuong thuc, mac dinh: ${defaultMethod.name}');
+        }
+      });
+    }
+  }
 
   List<_ToppingOption> _getToppingOptions(String foodId) {
     switch (foodId) {
@@ -176,11 +129,23 @@ class _CheckoutViewState extends State<CheckoutView> {
   }
 
   double get _discount {
-    double voucherDiscount = 0;
-    if (_selectedVoucher.isNotEmpty) {
-      voucherDiscount = 5000;
+    if (_selectedVoucher.isEmpty) return 0;
+    final voucher = _findSelectedVoucher();
+    return _getVoucherDiscount(voucher);
+  }
+
+  VoucherModel? _findSelectedVoucher() {
+    if (_selectedVoucher.isEmpty) return null;
+    for (final v in (_freeshipVouchers ?? [])) {
+      if (v.id == _selectedVoucher) return v;
     }
-    return voucherDiscount;
+    for (final v in (_discountVouchers ?? [])) {
+      if (v.id == _selectedVoucher) return v;
+    }
+    for (final v in (_shopVouchers ?? [])) {
+      if (v.id == _selectedVoucher) return v;
+    }
+    return null;
   }
 
   double get _totalPayment {
@@ -250,6 +215,8 @@ class _CheckoutViewState extends State<CheckoutView> {
     }
     _selectedPaymentMethod = 'cash';
     _loadDefaultAddress();
+    _loadVouchers();
+    _loadPaymentMethods();
   }
 
   Future<void> _loadDefaultAddress() async {
@@ -259,6 +226,75 @@ class _CheckoutViewState extends State<CheckoutView> {
         _deliveryAddress = address;
       });
     }
+  }
+
+  Future<void> _loadVouchers() async {
+    if (_cartItems.isEmpty) return;
+
+    setState(() {
+      _isLoadingVouchers = true;
+    });
+
+    try {
+      final storeId = _cartItems.first.storeId;
+      final voucherData = await VoucherService.getVouchers(
+        userId: 'user_001',
+        storeId: storeId,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _freeshipVouchers = voucherData.freeshipVouchers;
+        _discountVouchers = voucherData.discountVouchers;
+        _shopVouchers = voucherData.shopVouchers;
+        _isLoadingVouchers = false;
+      });
+    } on VoucherException catch (e) {
+      if (!mounted) return;
+      debugPrint('[Checkout] Loi load voucher: ${e.message}');
+      setState(() {
+        _freeshipVouchers = [];
+        _discountVouchers = [];
+        _shopVouchers = [];
+        _isLoadingVouchers = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      debugPrint('[Checkout] Loi load voucher: $e');
+      setState(() {
+        _freeshipVouchers = [];
+        _discountVouchers = [];
+        _shopVouchers = [];
+        _isLoadingVouchers = false;
+      });
+    }
+  }
+
+  /// Lay voucher name tu id duoc chon.
+  String _getSelectedVoucherName() {
+    if (_selectedVoucher.isEmpty) return '';
+    for (final v in (_freeshipVouchers ?? [])) {
+      if (v.id == _selectedVoucher) return v.name;
+    }
+    for (final v in (_discountVouchers ?? [])) {
+      if (v.id == _selectedVoucher) return v.name;
+    }
+    for (final v in (_shopVouchers ?? [])) {
+      if (v.id == _selectedVoucher) return v.name;
+    }
+    return _selectedVoucherName;
+  }
+
+  /// Lay giam gia tu voucher duoc chon.
+  double _getVoucherDiscount(VoucherModel? voucher) {
+    if (voucher == null) return 0;
+    if (voucher.isFreeship) {
+      return _deliveryFee.clamp(0, voucher.value);
+    }
+    if (voucher.type == 1) {
+      return (_subtotal * voucher.value / 100).clamp(0, double.infinity);
+    }
+    return voucher.value.clamp(0, double.infinity);
   }
 
   /// Chuyen doi danh sach mon cua don hang cu sang dinh dang gio hang checkout.
@@ -570,7 +606,14 @@ class _CheckoutViewState extends State<CheckoutView> {
                     selectedVoucher: _selectedVoucher.isEmpty
                         ? null
                         : _selectedVoucher,
+                    selectedVoucherName: _getSelectedVoucherName(),
                     selectedPaymentMethod: _selectedPaymentMethod,
+                    selectedPaymentMethodInfo: _paymentMethods.isEmpty
+                        ? null
+                        : _paymentMethods.firstWhere(
+                            (m) => m.id == _selectedPaymentMethod,
+                            orElse: () => _paymentMethods.first,
+                          ),
                     onNoteChanged: (note) {
                       setState(() {
                         _orderNote = note;
@@ -677,7 +720,7 @@ class _CheckoutViewState extends State<CheckoutView> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
+      builder: (sheetContext) => Container(
         decoration: const BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -685,14 +728,14 @@ class _CheckoutViewState extends State<CheckoutView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Vach ngan dau va nut dong.
-            Container(
+            // Header: tieu de + nut dong.
+            Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
-                      context.t('checkout_select_payment_method'),
+                      sheetContext.t('checkout_select_payment_method'),
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
@@ -705,7 +748,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                       debugPrint(
                         'Checkout: Dong BottomSheet phuong thuc thanh toan',
                       );
-                      Navigator.pop(context);
+                      Navigator.pop(sheetContext);
                     },
                     icon: const Icon(
                       Icons.close,
@@ -725,16 +768,17 @@ class _CheckoutViewState extends State<CheckoutView> {
               itemBuilder: (ctx, index) {
                 final method = _paymentMethods[index];
                 final isSelected = _selectedPaymentMethod == method.id;
+                final icon = _getPaymentIcon(method);
                 return ListTile(
                   leading: Icon(
-                    method.icon,
+                    icon,
                     color: isSelected
                         ? AppColors.primary
                         : AppColors.textSecondary,
                     size: 24,
                   ),
                   title: Text(
-                    context.t(method.name),
+                    method.name,
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: isSelected
@@ -745,41 +789,67 @@ class _CheckoutViewState extends State<CheckoutView> {
                           : AppColors.textPrimary,
                     ),
                   ),
+                  subtitle: method.details.isNotEmpty
+                      ? Text(
+                          method.details,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        )
+                      : null,
                   trailing: isSelected
                       ? const Icon(
                           Icons.check_circle,
                           color: AppColors.primary,
                           size: 22,
                         )
-                      : Icon(
+                      : const Icon(
                           Icons.radio_button_off,
                           color: AppColors.textHint,
                           size: 22,
                         ),
                   onTap: () {
                     debugPrint(
-                      'Checkout: Chon phuong thuc thanh toan [${method.id}] - ${context.t(method.name)}',
+                      'Checkout: Chon phuong thuc thanh toan [${method.id}] - ${method.name}',
                     );
                     setState(() {
                       _selectedPaymentMethod = method.id;
                     });
-                    Navigator.pop(context);
+                    Navigator.pop(sheetContext);
                   },
                 );
               },
             ),
-            SizedBox(height: MediaQuery.of(context).padding.bottom),
+            SizedBox(height: MediaQuery.of(sheetContext).padding.bottom),
           ],
         ),
       ),
     );
   }
 
+  /// Tra ve IconData tu PaymentMethodModel.
+  IconData _getPaymentIcon(PaymentMethodModel method) {
+    switch (method.type) {
+      case PaymentMethodType.cash:
+        return Icons.money_outlined;
+      case PaymentMethodType.wallet:
+        final brand = method.walletBrand?.toLowerCase();
+        if (brand == 'momo') return Icons.wallet_outlined;
+        if (brand == 'zalopay' || brand == 'zalo') {
+          return Icons.account_balance_wallet_outlined;
+        }
+        return Icons.account_balance_wallet_outlined;
+      case PaymentMethodType.card:
+        return Icons.credit_card_outlined;
+    }
+  }
+
   ///=============================================================================
   /// BOTTOM SHEET: VOUCHER
   ///=============================================================================
 
-  /// Hien thi BottomSheet chon voucher voi 2 tab.
+  /// Hien thi BottomSheet chon voucher voi 3 tab.
   void _showVoucherBottomSheet() {
     debugPrint('Checkout: Mo BottomSheet chon voucher');
 
@@ -787,107 +857,101 @@ class _CheckoutViewState extends State<CheckoutView> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.70,
-        minChildSize: 0.50,
-        maxChildSize: 0.90,
-        builder: (ctx, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              // Vach ngan dau va tieu de.
-              Container(
-                padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        context.t('checkout_select_voucher'),
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        debugPrint('Checkout: Dong BottomSheet voucher');
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(
-                        Icons.close,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
+      builder: (sheetContext) => DefaultTabController(
+        length: 3,
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.70,
+          minChildSize: 0.50,
+          maxChildSize: 0.90,
+          builder: (sheetCtx, sheetScrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
-              // Tab Bar.
-              DefaultTabController(
-                length: 2,
-                child: Column(
-                  children: [
-                    TabBar(
-                      labelColor: AppColors.primary,
-                      unselectedLabelColor: AppColors.textSecondary,
-                      indicatorColor: AppColors.primary,
-                      indicatorWeight: 3,
-                      labelStyle: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      unselectedLabelStyle: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
-                      tabs: [
-                        Tab(text: context.t('checkout_voucher_freeship')),
-                        Tab(text: context.t('checkout_voucher_discount')),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              // Tab View.
-              Expanded(
-                child: DefaultTabController(
-                  length: 2,
-                  child: TabBarView(
-                    children: [
-                      // Tab 1: Mien phi giao hang.
-                      _buildVoucherList(
-                        vouchers: _freeshipVouchers,
-                        scrollController: scrollController,
-                        emptyLabel: context.t('checkout_voucher_empty'),
-                      ),
-                      // Tab 2: Ma giam gia.
-                      _buildVoucherList(
-                        vouchers: _discountVouchers,
-                        scrollController: scrollController,
-                        emptyLabel: context.t('checkout_voucher_empty'),
-                      ),
+              child: Column(
+                children: [
+                  // Header: tieu de + nut dong.
+                  _buildVoucherSheetHeader(),
+                  // Tab Bar.
+                  TabBar(
+                    labelColor: AppColors.primary,
+                    unselectedLabelColor: AppColors.textSecondary,
+                    indicatorColor: AppColors.primary,
+                    indicatorWeight: 3,
+                    labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    unselectedLabelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+                    tabs: [
+                      Tab(text: sheetContext.t('checkout_voucher_discount')),
+                      Tab(text: sheetContext.t('checkout_voucher_shop')),
+                      Tab(text: sheetContext.t('checkout_voucher_freeship')),
                     ],
                   ),
-                ),
+                  // Tab View.
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        _buildVoucherList(
+                          vouchers: _discountVouchers,
+                          emptyLabel: sheetContext.t('checkout_voucher_empty'),
+                        ),
+                        _buildVoucherList(
+                          vouchers: _shopVouchers,
+                          emptyLabel: sheetContext.t('checkout_voucher_empty'),
+                        ),
+                        _buildVoucherList(
+                          vouchers: _freeshipVouchers,
+                          emptyLabel: sheetContext.t('checkout_voucher_empty'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         ),
+      ),
+    );
+  }
+
+  Widget _buildVoucherSheetHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              context.t('checkout_select_voucher'),
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: () {
+              debugPrint('Checkout: Dong BottomSheet voucher');
+              Navigator.pop(context);
+            },
+            icon: const Icon(Icons.close, color: AppColors.textSecondary),
+          ),
+        ],
       ),
     );
   }
 
   /// Build danh sach voucher cho mot tab.
   Widget _buildVoucherList({
-    required List<_VoucherModel> vouchers,
-    required ScrollController scrollController,
+    required List<VoucherModel>? vouchers,
     required String emptyLabel,
   }) {
-    if (vouchers.isEmpty) {
+    if (_isLoadingVouchers) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final list = vouchers ?? [];
+    if (list.isEmpty) {
       return Center(
         child: Text(
           emptyLabel,
@@ -896,12 +960,11 @@ class _CheckoutViewState extends State<CheckoutView> {
       );
     }
     return ListView.separated(
-      controller: scrollController,
       padding: const EdgeInsets.all(16),
-      itemCount: vouchers.length,
+      itemCount: list.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (ctx, index) {
-        final voucher = vouchers[index];
+        final voucher = list[index];
         return _VoucherCard(
           voucher: voucher,
           isSelected: _selectedVoucher == voucher.id,
@@ -911,6 +974,7 @@ class _CheckoutViewState extends State<CheckoutView> {
             );
             setState(() {
               _selectedVoucher = voucher.id;
+              _selectedVoucherName = voucher.name;
             });
             Navigator.pop(context);
           },
@@ -1283,34 +1347,12 @@ class _CheckoutViewState extends State<CheckoutView> {
 }
 
 ///=============================================================================
-/// MODEL: VOUCHER
+/// CARD: VOUCHER (su dung VoucherModel tu API)
 ///=============================================================================
-
-/// Loai voucher.
-enum _VoucherType { freeship, discount, percent }
-
-/// Model mock voucher.
-class _VoucherModel {
-  final String id;
-  final String name;
-  final double discount;
-  final _VoucherType type;
-  final double minOrder;
-  final DateTime expireDate;
-
-  const _VoucherModel({
-    required this.id,
-    required this.name,
-    required this.discount,
-    required this.type,
-    required this.minOrder,
-    required this.expireDate,
-  });
-}
 
 /// Card hien thi mot voucher trong danh sach.
 class _VoucherCard extends StatelessWidget {
-  final _VoucherModel voucher;
+  final VoucherModel voucher;
   final bool isSelected;
   final VoidCallback onApply;
 
@@ -1339,7 +1381,6 @@ class _VoucherCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              // Icon dau.
               Container(
                 width: 40,
                 height: 40,
@@ -1348,7 +1389,7 @@ class _VoucherCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
-                  voucher.type == _VoucherType.freeship
+                  voucher.isFreeship
                       ? Icons.local_shipping_outlined
                       : Icons.discount_outlined,
                   color: AppColors.primary,
@@ -1356,7 +1397,6 @@ class _VoucherCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Thong tin voucher.
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1373,7 +1413,7 @@ class _VoucherCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Toi thieu ${_formatPrice(voucher.minOrder)} ${context.t('unit_currency')}',
+                      'Toi thieu ${_formatPrice(voucher.minOrderValue)} ${context.t('unit_currency')}',
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -1385,13 +1425,12 @@ class _VoucherCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          // Hang duoi: han su dung + nut ap dung.
           Row(
             children: [
               Icon(Icons.schedule, size: 13, color: AppColors.textHint),
               const SizedBox(width: 4),
               Text(
-                'Het han: ${voucher.expireDate.day}/${voucher.expireDate.month}/${voucher.expireDate.year}',
+                'Het han: ${voucher.expiryDate.day}/${voucher.expiryDate.month}/${voucher.expiryDate.year}',
                 style: const TextStyle(fontSize: 12, color: AppColors.textHint),
               ),
               const Spacer(),
@@ -1439,21 +1478,8 @@ class _VoucherCard extends StatelessWidget {
 }
 
 ///=============================================================================
-/// MODEL: PHUONG THUC THANH TOAN
+/// MODEL: TUY CHON TOPPING
 ///=============================================================================
-
-/// Model phuong thuc thanh toan.
-class _PaymentMethodModel {
-  final String id;
-  final String name;
-  final IconData icon;
-
-  const _PaymentMethodModel({
-    required this.id,
-    required this.name,
-    required this.icon,
-  });
-}
 
 /// Model tuy chon topping.
 class _ToppingOption {

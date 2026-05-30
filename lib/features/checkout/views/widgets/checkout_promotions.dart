@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
+import '../../../../features/payment/models/payment_method_model.dart';
 
 /// Widget hien thi phan uu dai va phuong thuc thanh toan o buoc checkout.
 /// Bao gom: Voucher, Ghi chu don hang, Phuong thuc thanh toan.
@@ -10,6 +11,7 @@ class CheckoutPromotions extends StatelessWidget {
   final String? selectedVoucher;
   final String? selectedVoucherName;
   final String selectedPaymentMethod;
+  final PaymentMethodModel? selectedPaymentMethodInfo;
   final String orderNote;
   final ValueChanged<String>? onNoteChanged;
 
@@ -20,6 +22,7 @@ class CheckoutPromotions extends StatelessWidget {
     this.selectedVoucher,
     this.selectedVoucherName,
     this.selectedPaymentMethod = 'cash',
+    this.selectedPaymentMethodInfo,
     this.orderNote = '',
     this.onNoteChanged,
   });
@@ -75,7 +78,8 @@ class CheckoutPromotions extends StatelessWidget {
           icon: Icons.payment_outlined,
           label: context.t('checkout_payment_method'),
           iconColor: AppColors.primary,
-          value: _getPaymentLabel(context, selectedPaymentMethod),
+          value: selectedPaymentMethodInfo?.name ??
+              _getPaymentLabel(context, selectedPaymentMethod),
           valueColor: AppColors.textPrimary,
           onTap: onPaymentMethodTap,
           trailing: Row(
@@ -90,13 +94,15 @@ class CheckoutPromotions extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(
-                      _getPaymentIcon(selectedPaymentMethod),
+                      _getPaymentIconForWidget(
+                          selectedPaymentMethodInfo, selectedPaymentMethod),
                       size: 16,
                       color: AppColors.textSecondary,
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      _getPaymentLabel(context, selectedPaymentMethod),
+                      selectedPaymentMethodInfo?.name ??
+                          _getPaymentLabel(context, selectedPaymentMethod),
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -147,6 +153,23 @@ class CheckoutPromotions extends StatelessWidget {
       default:
         return Icons.payment_outlined;
     }
+  }
+
+  IconData _getPaymentIconForWidget(
+      PaymentMethodModel? methodInfo, String fallbackMethod) {
+    if (methodInfo != null) {
+      switch (methodInfo.type) {
+        case PaymentMethodType.cash:
+          return Icons.money_outlined;
+        case PaymentMethodType.wallet:
+          final brand = methodInfo.walletBrand?.toLowerCase();
+          if (brand == 'momo') return Icons.wallet_outlined;
+          return Icons.account_balance_wallet_outlined;
+        case PaymentMethodType.card:
+          return Icons.credit_card_outlined;
+      }
+    }
+    return _getPaymentIcon(fallbackMethod);
   }
 }
 
