@@ -4,6 +4,7 @@ import 'package:fe_foodgo_customers/core/localization/language_service.dart';
 import 'package:fe_foodgo_customers/features/order/models/order_model.dart';
 import 'package:fe_foodgo_customers/features/address/models/address_model.dart';
 import 'package:fe_foodgo_customers/features/cart/models/cart_item_model.dart';
+import 'package:fe_foodgo_customers/features/home/models/product_model.dart';
 import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_delivery_info.dart';
 import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_cart_item.dart';
 import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_cart_items.dart';
@@ -314,12 +315,12 @@ class _CheckoutViewState extends State<CheckoutView> {
     }).toList();
   }
 
-  _ToppingOption? _findToppingOption(dynamic product, String toppingName) {
+  OptionModel? _findToppingOption(dynamic product, String toppingName) {
     if (product == null) return null;
     for (final group in (product.optionGroups as List)) {
       if (group.name.toLowerCase().contains('topping')) {
         for (final opt in (group.options as List)) {
-          if (opt.name == toppingName) return opt;
+          if (opt.name == toppingName) return opt as OptionModel;
         }
       }
     }
