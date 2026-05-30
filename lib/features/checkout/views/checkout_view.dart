@@ -16,7 +16,7 @@ import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_sum
 import 'package:fe_foodgo_customers/features/checkout/views/widgets/voucher_selection_sheet.dart';
 import 'package:fe_foodgo_customers/features/address/views/address_management_view.dart';
 import 'package:fe_foodgo_customers/features/checkout/services/checkout_service.dart';
-import 'package:fe_foodgo_customers/features/checkout/services/voucher_service.dart';
+import 'package:fe_foodgo_customers/features/checkout/services/my_voucher_firestore_service.dart';
 import 'package:fe_foodgo_customers/features/checkout/models/checkout_models.dart';
 import 'package:fe_foodgo_customers/features/checkout/models/voucher_model.dart';
 
@@ -256,8 +256,9 @@ class _CheckoutViewState extends State<CheckoutView> {
     });
 
     try {
-      final storeId = _cartItems.first.storeId;
-      final voucherData = await VoucherService.getVouchers(
+      final storeId = _cartItems.isNotEmpty ? _cartItems.first.storeId : null;
+      // Doc truc tiep tu Firestore thay vi goi API
+      final voucherData = await MyVoucherFirestoreService.getVouchersForCheckout(
         userId: 'user_001',
         storeId: storeId,
       );
@@ -265,20 +266,11 @@ class _CheckoutViewState extends State<CheckoutView> {
       if (!mounted) return;
       setState(() {
         _freeshipVouchers = voucherData.freeshipVouchers;
-        _discountVouchers = voucherData.discountVouchers;
-        _shopVouchers = voucherData.shopVouchers;
+        _discountVouchers = voucherData.myVouchers; // my_vouchers
+        _shopVouchers = voucherData.vouchers;      // vouchers (shop)
         _isLoadingVouchers = false;
       });
-    } on VoucherException catch (e) {
-      if (!mounted) return;
-      debugPrint('[Checkout] Loi load voucher: ${e.message}');
-      setState(() {
-        _freeshipVouchers = [];
-        _discountVouchers = [];
-        _shopVouchers = [];
-        _isLoadingVouchers = false;
-      });
-    } catch (e) {
+    } on Exception catch (e) {
       if (!mounted) return;
       debugPrint('[Checkout] Loi load voucher: $e');
       setState(() {

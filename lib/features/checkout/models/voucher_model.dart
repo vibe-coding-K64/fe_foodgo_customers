@@ -20,6 +20,7 @@ class VoucherModel {
   final String? imageUrl;
   final int? remaining;
   final String? terms;
+  final int pointsRequired; // So diem can de doi voucher (0 = mien phi / co san)
 
   const VoucherModel({
     required this.id,
@@ -35,24 +36,28 @@ class VoucherModel {
     this.imageUrl,
     this.remaining,
     this.terms,
+    this.pointsRequired = 0,
   });
 
-  /// Tuong thich voi myVouchers (khong co isFreeship, storeId).
+  /// Tuong thich voi myVouchers (khong co pointsRequired, storeId).
   factory VoucherModel.fromMyVoucher(Map<String, dynamic> json) {
     return VoucherModel(
       id: (json['id'] as String?) ?? '',
-      name: (json['name'] as String?) ?? '',
+      name: (json['name'] as String?) ?? (json['title'] as String?) ?? '',
       code: (json['code'] as String?) ?? '',
-      description: json['description'] as String?,
+      description: json['description'] as String? ?? json['terms'] as String?,
       expiryDate: _parseDate(json['expiryDate']),
       type: (json['type'] as num?)?.toInt() ?? 2,
       value: (json['value'] as num?)?.toDouble() ?? 0.0,
       minOrderValue: (json['minOrderValue'] as num?)?.toDouble() ?? 0.0,
-      isFreeship: false,
+      isFreeship: (json['isFreeship'] as bool?) ?? false,
+      imageUrl: json['imageUrl'] as String?,
+      terms: json['terms'] as String?,
+      pointsRequired: 0, // my_vouchers: voucher da doi, khong can diem
     );
   }
 
-  /// Tuong thich voi vouchers / freeshipVouchers (co isFreeship, storeId).
+  /// Tuong thich voi vouchers / freeshipVouchers (co isFreeship, storeId, pointsRequired).
   factory VoucherModel.fromPublicVoucher(Map<String, dynamic> json) {
     return VoucherModel(
       id: (json['id'] as String?) ?? '',
@@ -68,6 +73,7 @@ class VoucherModel {
       imageUrl: json['imageUrl'] as String?,
       remaining: (json['remaining'] as num?)?.toInt(),
       terms: json['terms'] as String?,
+      pointsRequired: (json['pointsRequired'] as num?)?.toInt() ?? 0,
     );
   }
 
