@@ -187,6 +187,8 @@
   "checkout_subtotal": "Subtotal",
   "checkout_delivery_fee": "Delivery fee",
   "checkout_discount": "Discount",
+  "checkout_shop_discount": "Shop discount",
+  "checkout_freeship_discount": "Delivery discount",
   "checkout_total": "Total",
   "checkout_total_payment": "Total payment",
   "checkout_order_btn": "PLACE ORDER",

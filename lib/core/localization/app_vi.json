@@ -183,6 +183,8 @@
   "checkout_subtotal": "Tạm tính",
   "checkout_delivery_fee": "Phí giao hàng",
   "checkout_discount": "Giảm giá",
+  "checkout_shop_discount": "Giảm giá từ shop",
+  "checkout_freeship_discount": "Giảm phí vận chuyển",
   "checkout_total": "Tổng",
   "checkout_total_payment": "Tổng thanh toán",
   "checkout_order_btn": "ĐẶT HÀNG",

@@ -9,6 +9,7 @@ class VoucherSelectionSheet extends StatefulWidget {
   final List<VoucherModel>? discountVouchers;
   final List<VoucherModel>? shopVouchers;
   final List<VoucherModel>? freeshipVouchers;
+  final double subtotal;
   final String selectedDiscount;
   final String selectedShop;
   final String selectedFreeship;
@@ -19,6 +20,7 @@ class VoucherSelectionSheet extends StatefulWidget {
     required this.discountVouchers,
     required this.shopVouchers,
     required this.freeshipVouchers,
+    required this.subtotal,
     required this.selectedDiscount,
     required this.selectedShop,
     required this.selectedFreeship,
@@ -130,18 +132,31 @@ class _VoucherSelectionSheetState extends State<VoucherSelectionSheet> {
         ),
       );
     }
+
+    final now = DateTime.now();
+    final validList = list.where((v) => v.expiryDate.isAfter(now)).toList();
+    if (validList.isEmpty) {
+      return Center(
+        child: Text(
+          context.t('checkout_voucher_empty'),
+          style: const TextStyle(fontSize: 14, color: AppColors.textHint),
+        ),
+      );
+    }
+
     return ListView.separated(
       padding: const EdgeInsets.all(16),
-      itemCount: list.length,
+      itemCount: validList.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (ctx, index) {
-        final v = list[index];
+        final v = validList[index];
         final isSelected = (field == 'discount' && _discount == v.id) ||
             (field == 'shop' && _shop == v.id) ||
             (field == 'freeship' && _freeship == v.id);
         return VoucherCard(
           voucher: v,
           isSelected: isSelected,
+          isDisabled: v.minOrderValue > widget.subtotal,
           onApply: () => _toggle(v.id, field),
         );
       },

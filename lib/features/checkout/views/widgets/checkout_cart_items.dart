@@ -9,14 +9,12 @@ class CheckoutCartItems extends StatelessWidget {
   final List<CheckoutCartItem> items;
   final void Function(int index, int newQuantity) onQuantityChanged;
   final void Function(int index) onItemRemoved;
-  final void Function(int index)? onEditTap;
 
   const CheckoutCartItems({
     super.key,
     required this.items,
     required this.onQuantityChanged,
     required this.onItemRemoved,
-    this.onEditTap,
   });
 
   @override
@@ -66,9 +64,6 @@ class CheckoutCartItems extends StatelessWidget {
                 debugPrint('Xoa mon: ${items[index].name}');
                 onItemRemoved(index);
               },
-              onEditTap: onEditTap != null
-                  ? () => onEditTap!(index)
-                  : null,
             );
           },
         ),
@@ -83,14 +78,12 @@ class _CartItemCard extends StatelessWidget {
   final VoidCallback onDecrease;
   final VoidCallback onIncrease;
   final VoidCallback onDismiss;
-  final VoidCallback? onEditTap;
 
   const _CartItemCard({
     required this.item,
     required this.onDecrease,
     required this.onIncrease,
     required this.onDismiss,
-    this.onEditTap,
   });
 
   String _formatPrice(double price) {
@@ -233,70 +226,38 @@ class _CartItemCard extends StatelessWidget {
             ),
             // Khoang trong giua ten mon va bo dem so luong.
             const SizedBox(width: 8),
-            // Cot chua nut Sửa va bo dem so luong.
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                // Nut Sửa.
-                if (onEditTap != null)
-                  GestureDetector(
-                    onTap: onEditTap,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.edit_outlined,
-                          size: 14,
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          context.t('common_edit'),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w500,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                      ],
+            // Bo dem so luong.
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  _buildCounterButton(
+                    icon: Icons.remove,
+                    onTap: item.quantity > 1 ? onDecrease : null,
+                    enabled: item.quantity > 1,
+                  ),
+                  SizedBox(
+                    width: 32,
+                    child: Text(
+                      '${item.quantity}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                   ),
-                const SizedBox(height: 4),
-                // Bo dem so luong.
-                Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(8),
+                  _buildCounterButton(
+                    icon: Icons.add,
+                    onTap: onIncrease,
+                    enabled: true,
                   ),
-                  child: Row(
-                    children: [
-                      _buildCounterButton(
-                        icon: Icons.remove,
-                        onTap: item.quantity > 1 ? onDecrease : null,
-                        enabled: item.quantity > 1,
-                      ),
-                      SizedBox(
-                        width: 32,
-                        child: Text(
-                          '${item.quantity}',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                      _buildCounterButton(
-                        icon: Icons.add,
-                        onTap: onIncrease,
-                        enabled: true,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),

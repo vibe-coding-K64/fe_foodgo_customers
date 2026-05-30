@@ -68,7 +68,6 @@ class _CheckoutViewState extends State<CheckoutView> {
   List<VoucherModel>? _freeshipVouchers;
   List<VoucherModel>? _discountVouchers;
   List<VoucherModel>? _shopVouchers;
-  bool _isLoadingVouchers = false;
 
   // Phuong thuc thanh toan tu Firestore.
   List<PaymentMethodModel> _paymentMethods = [];
@@ -91,36 +90,6 @@ class _CheckoutViewState extends State<CheckoutView> {
     }
   }
 
-  List<_ToppingOption> _getToppingOptions(String foodId) {
-    switch (foodId) {
-      case 'prod_001':
-        return [
-          _ToppingOption(name: 'Tran chau', price: 5000),
-          _ToppingOption(name: 'Thach ca phe', price: 8000),
-          _ToppingOption(name: 'Them bo', price: 12000),
-          _ToppingOption(name: 'Them sua', price: 5000),
-        ];
-      case 'prod_002':
-        return [
-          _ToppingOption(name: 'Da', price: 0),
-          _ToppingOption(name: 'Them duong', price: 3000),
-          _ToppingOption(name: 'Them ca phe', price: 5000),
-        ];
-      case 'prod_003':
-        return [
-          _ToppingOption(name: 'Trai cay', price: 12000),
-          _ToppingOption(name: 'Pudding', price: 6000),
-          _ToppingOption(name: 'Thach', price: 4000),
-          _ToppingOption(name: 'Them rau mach', price: 5000),
-        ];
-      default:
-        return [
-          _ToppingOption(name: 'Topping 1', price: 5000),
-          _ToppingOption(name: 'Topping 2', price: 5000),
-        ];
-    }
-  }
-
   // Thong tin tinh toan.
   double get _subtotal {
     return _cartItems.fold(0, (sum, item) => sum + item.totalPrice);
@@ -130,9 +99,14 @@ class _CheckoutViewState extends State<CheckoutView> {
     return 15000;
   }
 
+  double get _shopDiscount {
+    final voucher = _findSelectedShopVoucher();
+    return _getVoucherDiscount(voucher);
+  }
+
   double get _discount {
-    final discount = _findSelectedDiscountVoucher();
-    return _getVoucherDiscount(discount);
+    final voucher = _findSelectedDiscountVoucher();
+    return _getVoucherDiscount(voucher);
   }
 
   double get _freeshipDiscount {
@@ -169,7 +143,7 @@ class _CheckoutViewState extends State<CheckoutView> {
   }
 
   double get _totalPayment {
-    return _subtotal + _deliveryFee - _discount - _freeshipDiscount;
+    return _subtotal + _deliveryFee - _discount - _shopDiscount - _freeshipDiscount;
   }
 
   /// Khoi tao du lieu.
@@ -202,7 +176,7 @@ class _CheckoutViewState extends State<CheckoutView> {
           unitPrice: 48000,
           quantity: 2,
           toppings: [
-            CheckoutTopping(name: 'Tran chau', price: 5000),
+            CheckoutTopping(name: 'Tran Chau', price: 5000),
             CheckoutTopping(name: 'Thach ca phe', price: 8000),
           ],
         ),
@@ -221,7 +195,7 @@ class _CheckoutViewState extends State<CheckoutView> {
           id: 'item_003',
           foodId: 'prod_003',
           storeId: 'store_001',
-          name: 'Tra vai Thach Vuive',
+          name: 'Tra Vai Thach Vuive',
           imageUrl: 'https://picsum.photos/seed/greentea3/200',
           basePrice: 24000,
           unitPrice: 42000,
@@ -251,13 +225,8 @@ class _CheckoutViewState extends State<CheckoutView> {
   Future<void> _loadVouchers() async {
     if (_cartItems.isEmpty) return;
 
-    setState(() {
-      _isLoadingVouchers = true;
-    });
-
     try {
       final storeId = _cartItems.isNotEmpty ? _cartItems.first.storeId : null;
-      // Doc truc tiep tu Firestore thay vi goi API
       final voucherData = await MyVoucherFirestoreService.getVouchersForCheckout(
         userId: 'user_001',
         storeId: storeId,
@@ -266,9 +235,8 @@ class _CheckoutViewState extends State<CheckoutView> {
       if (!mounted) return;
       setState(() {
         _freeshipVouchers = voucherData.freeshipVouchers;
-        _discountVouchers = voucherData.myVouchers; // my_vouchers
-        _shopVouchers = voucherData.vouchers;      // vouchers (shop)
-        _isLoadingVouchers = false;
+        _discountVouchers = voucherData.myVouchers;
+        _shopVouchers = voucherData.vouchers;
       });
     } on Exception catch (e) {
       if (!mounted) return;
@@ -277,7 +245,6 @@ class _CheckoutViewState extends State<CheckoutView> {
         _freeshipVouchers = [];
         _discountVouchers = [];
         _shopVouchers = [];
-        _isLoadingVouchers = false;
       });
     }
   }
@@ -421,6 +388,7 @@ class _CheckoutViewState extends State<CheckoutView> {
     debugPrint(
       'Checkout: Cap nhat so luong mon [${_cartItems[index].name}] = $newQuantity',
     );
+    _loadVouchers().then((_) => _validateSelectedVouchers());
   }
 
   void _onItemRemoved(int index) {
@@ -429,13 +397,37 @@ class _CheckoutViewState extends State<CheckoutView> {
       _cartItems.removeAt(index);
     });
     debugPrint('Checkout: Da xoa mon [${removedItem.name}] khoi gio hang');
+    _validateSelectedVouchers();
   }
 
-  /// Xu ly bam nut Sua mot mon an.
-  void _onEditItemTap(int index) {
-    final item = _cartItems[index];
-    debugPrint('Checkout: Nguoi dung bam Sua mon [$index] - ${item.name}');
-    _showEditItemBottomSheet(index);
+  void _validateSelectedVouchers() {
+    if (!mounted) return;
+    final newSubtotal = _subtotal;
+
+    final removedDiscount = _selectedDiscountVoucher.isNotEmpty &&
+        (_findSelectedDiscountVoucher()?.minOrderValue ?? 0) > newSubtotal;
+    final removedShop = _selectedShopVoucher.isNotEmpty &&
+        (_findSelectedShopVoucher()?.minOrderValue ?? 0) > newSubtotal;
+    final removedFreeship = _selectedFreeshipVoucher.isNotEmpty &&
+        (_findSelectedFreeshipVoucher()?.minOrderValue ?? 0) > newSubtotal;
+
+    if (removedDiscount || removedShop || removedFreeship) {
+      setState(() {
+        if (removedDiscount) _selectedDiscountVoucher = '';
+        if (removedShop) _selectedShopVoucher = '';
+        if (removedFreeship) _selectedFreeshipVoucher = '';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Voucher khong con ap dung do gia tri don hang giam',
+            style: const TextStyle(color: Colors.white),
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   /// Xu ly bam nut Voucher.
@@ -448,6 +440,7 @@ class _CheckoutViewState extends State<CheckoutView> {
               discountVouchers: _discountVouchers,
               shopVouchers: _shopVouchers,
               freeshipVouchers: _freeshipVouchers,
+              subtotal: _subtotal,
               selectedDiscount: _selectedDiscountVoucher,
               selectedShop: _selectedShopVoucher,
               selectedFreeship: _selectedFreeshipVoucher,
@@ -475,6 +468,7 @@ class _CheckoutViewState extends State<CheckoutView> {
         .then((_) {
       // Force rebuild sau khi sheet dong.
       setState(() {});
+      _validateSelectedVouchers();
     });
   }
 
@@ -501,6 +495,7 @@ class _CheckoutViewState extends State<CheckoutView> {
     debugPrint('Tam tinh: ${_formatPrice(_subtotal)} VND');
     debugPrint('Phi giao hang: ${_formatPrice(_deliveryFee)} VND');
     debugPrint('Giam gia voucher: -${_formatPrice(_discount)} VND');
+    debugPrint('Giam gia shop: -${_formatPrice(_shopDiscount)} VND');
     debugPrint('Giam gia freeship: -${_formatPrice(_freeshipDiscount)} VND');
     debugPrint('Tong thanh toan: ${_formatPrice(_totalPayment)} VND');
     debugPrint('Phuong thuc thanh toan: $_selectedPaymentMethod');
@@ -672,7 +667,6 @@ class _CheckoutViewState extends State<CheckoutView> {
                     items: _cartItems,
                     onQuantityChanged: _onQuantityChanged,
                     onItemRemoved: _onItemRemoved,
-                    onEditTap: _onEditItemTap,
                   ),
                   const SizedBox(height: 20),
                   // PHAN 3: Uu dai va phuong thuc thanh toan.
@@ -700,6 +694,8 @@ class _CheckoutViewState extends State<CheckoutView> {
                     subtotal: _subtotal,
                     deliveryFee: _deliveryFee,
                     discount: _discount,
+                    shopDiscount: _shopDiscount,
+                    freeshipDiscount: _freeshipDiscount,
                   ),
                   const SizedBox(height: 100),
                 ],
@@ -917,378 +913,4 @@ class _CheckoutViewState extends State<CheckoutView> {
         return Icons.credit_card_outlined;
     }
   }
-
-  ///=============================================================================
-  /// BOTTOM SHEET: SUA MON AN
-  ///=============================================================================
-
-  /// Hien thi BottomSheet sua chi tiet mot mon (topping + ghi chu).
-  void _showEditItemBottomSheet(int itemIndex) {
-    final originalItem = _cartItems[itemIndex];
-    debugPrint(
-      'Checkout: Mo BottomSheet sua mon [$itemIndex] - ${originalItem.name}',
-    );
-
-    // Tao danh sach topping tuy chon cho mon nay.
-    final availableToppings = _getToppingOptions(originalItem.id);
-
-    // Tao danh sach topping dang chon (bat dau tu topping cua mon).
-    final selectedToppings = List<CheckoutTopping>.from(originalItem.toppings);
-
-    // Tao bien cuc bo cho ghi chu.
-    final noteController = TextEditingController(text: originalItem.note);
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return Container(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.80,
-            ),
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Tieu de va nut dong.
-                Container(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          context.t('checkout_edit_item'),
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          debugPrint('Checkout: Dong BottomSheet sua mon');
-                          Navigator.pop(context);
-                        },
-                        icon: const Icon(
-                          Icons.close,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1, color: AppColors.divider),
-                // Noi dung cuon.
-                Flexible(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Hinh anh va ten mon.
-                        Row(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: Image.network(
-                                originalItem.imageUrl,
-                                width: 72,
-                                height: 72,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
-                                  width: 72,
-                                  height: 72,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.surfaceVariant,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: const Icon(
-                                    Icons.fastfood,
-                                    color: AppColors.textHint,
-                                    size: 32,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    originalItem.name,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${_formatPrice(originalItem.unitPrice)} ${context.t('unit_currency')}',
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        // Phan topping.
-                        Text(
-                          context.t('checkout_topping_options'),
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        // Danh sach topping checkbox.
-                        ...availableToppings.map((option) {
-                          final isSelected = selectedToppings.any(
-                            (t) => t.name == option.name,
-                          );
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? AppColors.primary.withAlpha(15)
-                                  : AppColors.background,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : AppColors.border,
-                                width: isSelected ? 1.5 : 1,
-                              ),
-                            ),
-                            child: CheckboxListTile(
-                              value: isSelected,
-                              onChanged: (checked) {
-                                setModalState(() {
-                                  if (checked == true) {
-                                    selectedToppings.add(
-                                      CheckoutTopping(
-                                        name: option.name,
-                                        price: option.price,
-                                      ),
-                                    );
-                                  } else {
-                                    selectedToppings.removeWhere(
-                                      (t) => t.name == option.name,
-                                    );
-                                  }
-                                });
-                                debugPrint(
-                                  'Checkout: Topping [${option.name}] ${checked == true ? "chon" : "bo chon"}',
-                                );
-                              },
-                              title: Text(
-                                option.name,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w500
-                                      : FontWeight.w400,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              subtitle: option.price > 0
-                                  ? Text(
-                                      '+ ${_formatPrice(option.price)} ${context.t('unit_currency')}',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    )
-                                  : null,
-                              activeColor: AppColors.primary,
-                              dense: true,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                              ),
-                              controlAffinity: ListTileControlAffinity.leading,
-                            ),
-                          );
-                        }),
-                        const SizedBox(height: 16),
-                        // Phan ghi chu.
-                        Text(
-                          context.t('checkout_item_note'),
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        TextFormField(
-                          controller: noteController,
-                          maxLines: 2,
-                          maxLength: 100,
-                          decoration: InputDecoration(
-                            hintText: context.t('checkout_note_hint'),
-                            hintStyle: const TextStyle(
-                              fontSize: 14,
-                              color: AppColors.textHint,
-                            ),
-                            filled: true,
-                            fillColor: AppColors.background,
-                            contentPadding: const EdgeInsets.all(12),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(
-                                color: AppColors.border,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(
-                                color: AppColors.border,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(
-                                color: AppColors.primary,
-                                width: 2,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Hien thi gia tri tam tinh.
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                context.t('checkout_temp_total'),
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                              Text(
-                                '${_formatPrice(_calcEditItemTotal(originalItem.unitPrice, originalItem.quantity, selectedToppings))} ${context.t('unit_currency')}',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(
-                          height: 16 + MediaQuery.of(context).padding.bottom,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                // Nut Cap nhat.
-                Container(
-                  padding: EdgeInsets.fromLTRB(
-                    16,
-                    12,
-                    16,
-                    12 + MediaQuery.of(ctx).padding.bottom,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(15),
-                        blurRadius: 8,
-                        offset: const Offset(0, -2),
-                      ),
-                    ],
-                  ),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        debugPrint(
-                          'Checkout: Cap nhat mon [$itemIndex] - ${originalItem.name}',
-                        );
-                        debugPrint(
-                          '  Topping moi: ${selectedToppings.map((t) => t.name).join(", ")}',
-                        );
-                        debugPrint('  Ghi chu: ${noteController.text}');
-                        setState(() {
-                          _cartItems[itemIndex] = originalItem.copyWith(
-                            toppings: List.from(selectedToppings),
-                            note: noteController.text.trim(),
-                          );
-                        });
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        context.t('common_update'),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  /// Tinh tong gia tam thoi cho BottomSheet sua mon.
-  double _calcEditItemTotal(
-    double unitPrice,
-    int quantity,
-    List<CheckoutTopping> selectedToppings,
-  ) {
-    final toppingTotal = selectedToppings.fold<double>(
-      0,
-      (sum, t) => sum + (t.price * quantity),
-    );
-    return unitPrice * quantity + toppingTotal;
-  }
-}
-
-///=============================================================================
-/// MODEL: TUY CHON TOPPING
-///=============================================================================
-
-/// Model tuy chon topping.
-class _ToppingOption {
-  final String name;
-  final double price;
-
-  const _ToppingOption({required this.name, required this.price});
 }
