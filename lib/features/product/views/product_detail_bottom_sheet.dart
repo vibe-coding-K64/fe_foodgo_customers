@@ -3,6 +3,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../../../core/state/cart_state.dart';
 import '../../../core/utils/auth_storage.dart';
+import '../../../core/utils/snackbar_helper.dart';
 import '../../cart/models/cart_item_model.dart';
 import '../../home/models/product_model.dart';
 
@@ -107,11 +108,10 @@ class _ProductDetailBottomSheetState
   Future<void> _onAddToCart() async {
     final userId = AuthStorage.getUserId();
     if (userId == null || userId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.t('auth_login')),
-          backgroundColor: AppColors.error,
-        ),
+      showTopSnackBar(
+        context,
+        message: context.t('auth_login'),
+        backgroundColor: AppColors.error,
       );
       return;
     }
@@ -143,42 +143,34 @@ class _ProductDetailBottomSheetState
     switch (result) {
       case CartAddResult.success:
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.t('success_add_to_cart')),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showTopSnackBar(
+          context,
+          message: context.t('success_add_to_cart'),
+          backgroundColor: AppColors.primary,
         );
         break;
       case CartAddResult.differentStore:
         _showDifferentStoreDialog(cartState);
         break;
       case CartAddResult.outOfStock:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(cartState.errorMessage ?? 'Mon an dang het hang.'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showTopSnackBar(
+          context,
+          message: cartState.errorMessage ?? 'Mon an dang het hang.',
+          backgroundColor: AppColors.error,
         );
         break;
       case CartAddResult.notFound:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(cartState.errorMessage ?? 'San pham khong ton tai.'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showTopSnackBar(
+          context,
+          message: cartState.errorMessage ?? 'San pham khong ton tai.',
+          backgroundColor: AppColors.error,
         );
         break;
       case CartAddResult.otherError:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(cartState.errorMessage ?? 'Loi them vao gio hang.'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showTopSnackBar(
+          context,
+          message: cartState.errorMessage ?? 'Loi them vao gio hang.',
+          backgroundColor: AppColors.error,
         );
         break;
     }
@@ -233,20 +225,16 @@ class _ProductDetailBottomSheetState
 
               if (result == CartAddResult.success) {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(context.t('success_add_to_cart')),
-                    backgroundColor: AppColors.primary,
-                    behavior: SnackBarBehavior.floating,
-                  ),
+                showTopSnackBar(
+                  context,
+                  message: context.t('success_add_to_cart'),
+                  backgroundColor: AppColors.primary,
                 );
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(cartState.errorMessage ?? 'Loi them vao gio hang.'),
-                    backgroundColor: AppColors.error,
-                    behavior: SnackBarBehavior.floating,
-                  ),
+                showTopSnackBar(
+                  context,
+                  message: cartState.errorMessage ?? 'Loi them vao gio hang.',
+                  backgroundColor: AppColors.error,
                 );
               }
             },

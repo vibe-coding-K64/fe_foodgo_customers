@@ -3,6 +3,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../../../core/state/cart_state.dart';
 import '../../../core/utils/auth_storage.dart';
+import '../../../core/utils/snackbar_helper.dart';
 import '../../cart/views/cart_view.dart';
 import '../../home/models/product_model.dart';
 import '../../product/views/product_detail_bottom_sheet.dart';
@@ -148,12 +149,10 @@ class _SearchResultViewState extends State<SearchResultView> {
   void _onAddToCart(SearchResultItem item) {
     final userId = AuthStorage.getUserId();
     if (userId == null || userId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.t('auth_login')),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
+      showTopSnackBar(
+        context,
+        message: context.t('auth_login'),
+        backgroundColor: AppColors.error,
       );
       return;
     }
@@ -188,44 +187,35 @@ class _SearchResultViewState extends State<SearchResultView> {
 
     switch (result) {
       case CartAddResult.success:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${item.productName} ${context.t('success_add_to_cart')}'),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 1),
-          ),
+        showTopSnackBar(
+          context,
+          message: '${item.productName} ${context.t('success_add_to_cart')}',
+          backgroundColor: AppColors.primary,
+          duration: const Duration(seconds: 1),
         );
         break;
       case CartAddResult.differentStore:
         _showDifferentStoreDialog(cartState, item, product);
         break;
       case CartAddResult.outOfStock:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(cartState.errorMessage ?? 'Mon an dang het hang.'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showTopSnackBar(
+          context,
+          message: cartState.errorMessage ?? 'Mon an dang het hang.',
+          backgroundColor: AppColors.error,
         );
         break;
       case CartAddResult.notFound:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(cartState.errorMessage ?? 'San pham khong ton tai.'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showTopSnackBar(
+          context,
+          message: cartState.errorMessage ?? 'San pham khong ton tai.',
+          backgroundColor: AppColors.error,
         );
         break;
       case CartAddResult.otherError:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text(cartState.errorMessage ?? 'Loi them vao gio hang.'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showTopSnackBar(
+          context,
+          message: cartState.errorMessage ?? 'Loi them vao gio hang.',
+          backgroundColor: AppColors.error,
         );
         break;
     }
@@ -265,23 +255,17 @@ class _SearchResultViewState extends State<SearchResultView> {
               if (!mounted) return;
 
               if (result == CartAddResult.success) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                        '${item.productName} ${context.t('success_add_to_cart')}'),
-                    backgroundColor: AppColors.primary,
-                    behavior: SnackBarBehavior.floating,
-                    duration: const Duration(seconds: 1),
-                  ),
+                showTopSnackBar(
+                  context,
+                  message: '${item.productName} ${context.t('success_add_to_cart')}',
+                  backgroundColor: AppColors.primary,
+                  duration: const Duration(seconds: 1),
                 );
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                        cartState.errorMessage ?? 'Loi them vao gio hang.'),
-                    backgroundColor: AppColors.error,
-                    behavior: SnackBarBehavior.floating,
-                  ),
+                showTopSnackBar(
+                  context,
+                  message: cartState.errorMessage ?? 'Loi them vao gio hang.',
+                  backgroundColor: AppColors.error,
                 );
               }
             },

@@ -3,6 +3,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../../../core/state/cart_state.dart';
 import '../../../core/utils/auth_storage.dart';
+import '../../../core/utils/snackbar_helper.dart';
 import '../../../features/home/models/product_model.dart';
 import '../../../features/home/services/home_service.dart';
 import '../../../features/product/views/product_detail_bottom_sheet.dart';
@@ -277,11 +278,10 @@ class _CartContentState extends State<_CartContent> {
     if (product != null && mounted) {
       showProductDetailSheet(context, product);
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Khong lay duoc thong tin san pham'),
-          backgroundColor: AppColors.error,
-        ),
+      showTopSnackBar(
+        context,
+        message: 'Khong lay duoc thong tin san pham',
+        backgroundColor: AppColors.error,
       );
     }
   }
@@ -353,14 +353,10 @@ class _CartContentState extends State<_CartContent> {
       }
     }
     widget.cartState.removeItem(userId, item.id);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content:
-            Text('${product?.name ?? 'Mon an'} ${context.t('cart_item_removed')}'),
-        backgroundColor: AppColors.textSecondary,
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
+    showTopSnackBar(
+      context,
+      message: '${product?.name ?? 'Mon an'} ${context.t('cart_item_removed')}',
+      backgroundColor: AppColors.textSecondary,
     );
   }
 
@@ -370,12 +366,10 @@ class _CartContentState extends State<_CartContent> {
         .toList();
 
     if (selectedItems.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.t('cart_checkout_no_selection')),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
+      showTopSnackBar(
+        context,
+        message: context.t('cart_checkout_no_selection'),
+        backgroundColor: AppColors.error,
       );
       return;
     }

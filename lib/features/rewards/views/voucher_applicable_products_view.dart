@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/utils/snackbar_helper.dart';
 import '../models/product_item_model.dart';
 import '../models/rewards_model.dart';
 
@@ -132,14 +133,11 @@ class _VoucherApplicableProductsViewState
       _cartItemCount++;
     });
     debugPrint('VoucherApplicableProductsView: Da them san pham [${product.name}] vao gio hang');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          context.t('success_add_to_cart'),
-        ),
-        duration: const Duration(seconds: 1),
-        backgroundColor: AppColors.primary,
-      ),
+    showTopSnackBar(
+      context,
+      message: context.t('success_add_to_cart'),
+      backgroundColor: AppColors.primary,
+      duration: const Duration(seconds: 1),
     );
   }
 

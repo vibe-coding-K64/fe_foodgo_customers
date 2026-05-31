@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fe_foodgo_customers/core/constants/app_colors.dart';
 import 'package:fe_foodgo_customers/core/localization/language_service.dart';
+import 'package:fe_foodgo_customers/core/utils/snackbar_helper.dart';
 import 'package:fe_foodgo_customers/features/order/models/order_model.dart';
 import 'package:fe_foodgo_customers/features/order/services/order_service.dart';
 
@@ -95,12 +96,10 @@ class _CancelOrderDialogState extends State<CancelOrderDialog> {
     } else {
       _isSubmitting = false;
       setState(() {});
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(response.message),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
+      showTopSnackBar(
+        context,
+        message: response.message,
+        backgroundColor: AppColors.error,
       );
     }
   }
