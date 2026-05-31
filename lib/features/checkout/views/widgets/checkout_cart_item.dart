@@ -1,17 +1,30 @@
+/// Mot option da chon trong gio hang checkout.
+class CheckoutOption {
+  final String name;
+  final double price;
+  final String groupName;
+
+  const CheckoutOption({
+    required this.name,
+    required this.price,
+    this.groupName = '',
+  });
+}
+
 /// Model item trong gio hang o buoc checkout.
-/// Co them truong toppings de hien thi lua chon them.
 class CheckoutCartItem {
   final String id;
   final String foodId;
   final String storeId;
   final String name;
   final String imageUrl;
-  /// Gia goc cua mon (chua tinh topping).
+  /// Gia goc cua mon (chua tinh options).
   final double basePrice;
-  /// Tong gia cua 1 don vi = basePrice + topping per item.
+  /// Tong gia cua 1 don vi = basePrice + options per item.
   final double unitPrice;
   final int quantity;
-  final List<CheckoutTopping> toppings;
+  /// Cac options da chon (kem gia).
+  final List<CheckoutOption> selectedOptions;
   final String note;
 
   CheckoutCartItem({
@@ -23,7 +36,7 @@ class CheckoutCartItem {
     required this.basePrice,
     required this.unitPrice,
     required this.quantity,
-    this.toppings = const [],
+    this.selectedOptions = const [],
     this.note = '',
   });
 
@@ -36,7 +49,7 @@ class CheckoutCartItem {
     double? basePrice,
     double? unitPrice,
     int? quantity,
-    List<CheckoutTopping>? toppings,
+    List<CheckoutOption>? selectedOptions,
     String? note,
   }) {
     return CheckoutCartItem(
@@ -48,25 +61,32 @@ class CheckoutCartItem {
       basePrice: basePrice ?? this.basePrice,
       unitPrice: unitPrice ?? this.unitPrice,
       quantity: quantity ?? this.quantity,
-      toppings: toppings ?? this.toppings,
+      selectedOptions: selectedOptions ?? this.selectedOptions,
       note: note ?? this.note,
     );
   }
 
-  double get toppingsTotal =>
-      toppings.fold<double>(0, (sum, t) => sum + (t.price * quantity));
-
   double get totalPrice => unitPrice * quantity;
 
-  String get toppingsLabel {
-    if (toppings.isEmpty) return '';
-    return toppings.map((t) => t.name).join(', ');
+  /// Tra ve danh sach cac option lines de hien thi.
+  /// Cac option cung nhom duoc gop vao 1 dong: "Topping: Tran chau, Pudding".
+  List<String> get optionLines {
+    // Voi CheckoutOption da phang (khong co group name), moi option la 1 dong.
+    // Neu muon gop theo nhom thi can truyen them group info.
+    return selectedOptions.map((o) => o.name).toList();
   }
-}
 
-class CheckoutTopping {
-  final String name;
-  final double price;
-
-  CheckoutTopping({required this.name, required this.price});
+  /// Tra ve danh sach cac dong option, nhom cac option cung loai lai.
+  /// VD: "Topping: Tran chau, Pudding", "Kich thuoc: Lon".
+  List<String> get groupedOptionLines {
+    final lines = <String>[];
+    final grouped = <String, List<String>>{};
+    for (final opt in selectedOptions) {
+      grouped.putIfAbsent(opt.groupName, () => []).add(opt.name);
+    }
+    for (final entry in grouped.entries) {
+      lines.add('${entry.key}: ${entry.value.join(', ')}');
+    }
+    return lines;
+  }
 }

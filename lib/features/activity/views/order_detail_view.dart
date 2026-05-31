@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:fe_foodgo_customers/core/constants/app_colors.dart';
 import 'package:fe_foodgo_customers/core/localization/language_service.dart';
@@ -7,6 +9,7 @@ import 'package:fe_foodgo_customers/features/checkout/views/checkout_view.dart';
 import 'package:fe_foodgo_customers/features/support/views/support_view.dart';
 import 'package:fe_foodgo_customers/features/activity/views/driver_chat_view.dart';
 import 'package:fe_foodgo_customers/features/activity/views/order_tracking_map_view.dart';
+import 'package:fe_foodgo_customers/features/activity/views/widgets/cancel_order_dialog.dart';
 
 ///=============================================================================
 /// SECTION: VIEW
@@ -15,14 +18,88 @@ import 'package:fe_foodgo_customers/features/activity/views/order_tracking_map_v
 /// Man hinh chi tiet don hang.
 ///
 /// Hien thi day du thong tin don hang tu Firebase Firestore.
+/// Doc real-time tu Firestore, dong thoi join du lieu tu address va stores.
 /// Cac hanh dong thay doi theo trang thai don hang.
-class OrderDetailView extends StatelessWidget {
-  final OrderModel order;
+class OrderDetailView extends StatefulWidget {
+  final String orderId;
 
-  const OrderDetailView({super.key, required this.order});
+  const OrderDetailView({super.key, required this.orderId});
+
+  @override
+  State<OrderDetailView> createState() => _OrderDetailViewState();
+}
+
+class _OrderDetailViewState extends State<OrderDetailView> {
+  OrderModel? _order;
+  bool _loading = true;
+  StreamSubscription<OrderModel?>? _orderSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _orderSubscription = OrderService.getOrderByIdStream(widget.orderId)
+        .listen((order) {
+      if (mounted) {
+        setState(() {
+          _order = order;
+          _loading = false;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _orderSubscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          title: Text(
+            context.t('order_detail_title'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
+          ),
+          centerTitle: true,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_order == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          title: Text(
+            context.t('order_detail_title'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
+          ),
+          centerTitle: true,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: AppColors.textSecondary),
+              const SizedBox(height: 16),
+              Text(context.t('order_not_found'), style: const TextStyle(fontSize: 16)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final order = _order!;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -31,7 +108,7 @@ class OrderDetailView extends StatelessWidget {
         elevation: 0,
         title: Text(
           context.t('order_detail_title'),
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
         ),
         centerTitle: true,
       ),
@@ -39,32 +116,26 @@ class OrderDetailView extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 12),
-            // Phan co dinh: ma don hang.
-            _buildOrderIdSection(context),
+            _buildOrderIdSection(context, order),
             const SizedBox(height: 12),
-            // Phan co dinh: dia chi (Tu -> Den).
-            _buildAddressSection(context),
+            _buildAddressSection(context, order),
             const SizedBox(height: 12),
-            // Phan co dinh: danh sach mon.
-            _buildProductListSection(context),
+            _buildOrderNoteSection(context, order),
             const SizedBox(height: 12),
-            // Phan co dinh: chi tiet thanh toan.
-            _buildPaymentDetailSection(context),
+            _buildProductListSection(context, order),
             const SizedBox(height: 12),
-            // Phan co dinh: phuong thuc thanh toan.
-            _buildPaymentMethodSection(context),
+            _buildPaymentDetailSection(context, order),
             const SizedBox(height: 12),
-            // Phan co dinh: nut Tro giup.
-            _buildHelpSection(context),
+            _buildPaymentMethodSection(context, order),
             const SizedBox(height: 12),
-            // Phan giao dien dong theo trang thai.
-            _buildDynamicSection(context),
-            // Khoang trong cuoi de tranh bi遮 boi bottom bar.
+            _buildHelpSection(context, order),
+            const SizedBox(height: 12),
+            _buildDynamicSection(context, order),
             const SizedBox(height: 80),
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomBar(context),
+      bottomNavigationBar: _buildBottomBar(context, order),
     );
   }
 
@@ -72,7 +143,7 @@ class OrderDetailView extends StatelessWidget {
   /// PHAN CO DINH
   ///=============================================================================
 
-  Widget _buildOrderIdSection(BuildContext context) {
+  Widget _buildOrderIdSection(BuildContext context, OrderModel order) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -124,7 +195,7 @@ class OrderDetailView extends StatelessWidget {
     );
   }
 
-  Widget _buildAddressSection(BuildContext ctx) {
+  Widget _buildAddressSection(BuildContext ctx, OrderModel order) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -136,18 +207,17 @@ class OrderDetailView extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Tu: Thong tin cua hang.
           _buildAddressItem(
             ctx: ctx,
             icon: Icons.store_outlined,
             iconColor: AppColors.primary,
             label: ctx.t('order_from'),
             name: order.storeName,
-            detail: order.deliveryAddress,
+            detail: order.storeAddress ?? order.deliveryAddress,
             phone: '',
+            imageUrl: order.storeAvatar,
           ),
           const SizedBox(height: 12),
-          // Duong noi.
           Container(
             margin: const EdgeInsets.only(left: 22),
             child: Row(
@@ -156,24 +226,57 @@ class OrderDetailView extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(child: Container(height: 1, color: AppColors.divider)),
                 const SizedBox(width: 8),
-                Icon(
-                  Icons.local_shipping_outlined,
-                  size: 18,
-                  color: AppColors.textSecondary,
-                ),
+                const Icon(Icons.local_shipping_outlined, size: 18, color: AppColors.textSecondary),
               ],
             ),
           ),
           const SizedBox(height: 12),
-          // Den: Dia chi giao hang cua khach.
           _buildAddressItem(
             ctx: ctx,
             icon: Icons.location_on_outlined,
             iconColor: AppColors.error,
             label: ctx.t('order_to'),
-            name: 'Khach hang',
+            name: order.receiverName ?? order.addressName ?? 'Khach hang',
             detail: order.deliveryAddress,
-            phone: '',
+            phone: order.receiverPhone ?? '',
+            imageUrl: order.userAvatar,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrderNoteSection(BuildContext ctx, OrderModel order) {
+    final note = order.note;
+    if (note == null || note.trim().isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.note_outlined, size: 20, color: AppColors.textSecondary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  ctx.t('checkout_order_note'),
+                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 4),
+                Text(note, style: const TextStyle(fontSize: 14, color: AppColors.textPrimary)),
+              ],
+            ),
           ),
         ],
       ),
@@ -188,19 +291,58 @@ class OrderDetailView extends StatelessWidget {
     required String name,
     required String detail,
     required String phone,
+    String? imageUrl,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.1),
+        if (imageUrl != null && imageUrl.isNotEmpty)
+          ClipRRect(
             borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              imageUrl,
+              width: 44,
+              height: 44,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 22, color: iconColor),
+              ),
+              loadingBuilder: (_, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Center(
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                );
+              },
+            ),
+          )
+        else
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 22, color: iconColor),
           ),
-          child: Icon(icon, size: 20, color: iconColor),
-        ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -242,7 +384,7 @@ class OrderDetailView extends StatelessWidget {
     );
   }
 
-  Widget _buildProductListSection(BuildContext ctx) {
+  Widget _buildProductListSection(BuildContext ctx, OrderModel order) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -255,13 +397,18 @@ class OrderDetailView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            ctx.t('order_items'),
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
+          Row(
+            children: [
+              Text(
+                ctx.t('order_items'),
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+              ),
+              const Spacer(),
+              Text(
+                '${order.itemCount} ${ctx.t('unit_items')}',
+                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           const Divider(height: 1, color: AppColors.divider),
@@ -277,60 +424,142 @@ class OrderDetailView extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // So luong.
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Center(
-              child: Text(
-                item.quantity.toString(),
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
+          // Hinh anh mon an.
+          if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                item.imageUrl!,
+                width: 52,
+                height: 52,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.restaurant_outlined,
+                    size: 22,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
+                loadingBuilder: (_, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Center(
+                      child: SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            )
+          else
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.restaurant_outlined,
+                size: 22,
+                color: AppColors.textSecondary,
               ),
             ),
-          ),
           const SizedBox(width: 12),
-          // Ten mon va topping.
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item.name,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
-                  ),
+                // Ten mon + so luong tren cung mot hang.
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.name,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Center(
+                        child: Text(
+                          item.quantity.toString(),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+                // Topping.
                 if (item.options != null && item.options!.isNotEmpty) ...[
-                  const SizedBox(height: 2),
                   ...item.options!.map(
-                    (option) => Text(
-                      '+ ${option.name}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
+                    (option) => Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 4,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: AppColors.textSecondary,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            option.name,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ],
+                // Don gia (tong tien cua mon, da bao gom topping).
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    _formatPrice(item.price, ctx),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
               ],
-            ),
-          ),
-          // Don gia.
-          Text(
-            _formatPrice(item.price, ctx),
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
             ),
           ),
         ],
@@ -338,8 +567,19 @@ class OrderDetailView extends StatelessWidget {
     );
   }
 
-  Widget _buildPaymentDetailSection(BuildContext ctx) {
-    final subtotal = order.totalAmount - order.deliveryFee;
+  Widget _buildPaymentDetailSection(BuildContext ctx, OrderModel order) {
+    // Tinh subtotal: tong tien chua tinh topping (basePrice * quantity).
+    double subtotal = 0.0;
+    for (final item in order.items) {
+      double itemBasePrice = item.price;
+      if (item.options != null) {
+        for (final opt in item.options!) {
+          itemBasePrice -= opt.price;
+        }
+      }
+      subtotal += itemBasePrice * item.quantity;
+    }
+    final discount = order.discountAmount;
 
     return Container(
       width: double.infinity,
@@ -352,6 +592,7 @@ class OrderDetailView extends StatelessWidget {
       ),
       child: Column(
         children: [
+          // Tam tinh.
           _buildPaymentRow(
             ctx: ctx,
             label: ctx.t('order_subtotal'),
@@ -359,6 +600,18 @@ class OrderDetailView extends StatelessWidget {
             valueColor: AppColors.textPrimary,
           ),
           const SizedBox(height: 8),
+          // Giam gia (tu voucher).
+          if (discount > 0) ...[
+            _buildPaymentRow(
+              ctx: ctx,
+              label: ctx.t('order_voucher_discount'),
+              value: '-${_formatPrice(discount, ctx)}',
+              valueColor: AppColors.primary,
+              isDiscount: true,
+            ),
+            const SizedBox(height: 8),
+          ],
+          // Phi van chuyen.
           _buildPaymentRow(
             ctx: ctx,
             label: ctx.t('order_delivery_fee'),
@@ -369,25 +622,12 @@ class OrderDetailView extends StatelessWidget {
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Divider(height: 1, color: AppColors.divider),
           ),
+          // Tong cong.
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                ctx.t('order_total'),
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              Text(
-                _formatPrice(order.totalAmount, ctx),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
+              Text(ctx.t('order_total'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+              Text(_formatPrice(order.finalAmount, ctx), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
             ],
           ),
         ],
@@ -426,16 +666,34 @@ class OrderDetailView extends StatelessWidget {
     );
   }
 
-  Widget _buildPaymentMethodSection(BuildContext ctx) {
+  Widget _buildPaymentMethodSection(BuildContext ctx, OrderModel order) {
     String methodText;
     IconData methodIcon;
 
-    if (order.paymentMethod == 'cash') {
-      methodText = ctx.t('order_cash_on_delivery');
-      methodIcon = Icons.payments_outlined;
-    } else {
-      methodText = ctx.t('order_wallet');
-      methodIcon = Icons.account_balance_wallet_outlined;
+    switch (order.paymentMethod) {
+      case 'cash':
+        methodText = ctx.t('order_cash_on_delivery');
+        methodIcon = Icons.payments_outlined;
+        break;
+      case 'momo':
+        methodText = ctx.t('order_payment_momo');
+        methodIcon = Icons.account_balance_wallet_outlined;
+        break;
+      case 'zalo':
+        methodText = ctx.t('order_payment_zalopay');
+        methodIcon = Icons.account_balance_wallet_outlined;
+        break;
+      case 'vnpay':
+        methodText = ctx.t('order_payment_vnpay');
+        methodIcon = Icons.account_balance_wallet_outlined;
+        break;
+      case 'card':
+        methodText = ctx.t('payment_card');
+        methodIcon = Icons.credit_card_outlined;
+        break;
+      default:
+        methodText = ctx.t('order_wallet');
+        methodIcon = Icons.account_balance_wallet_outlined;
     }
 
     return Container(
@@ -479,21 +737,14 @@ class OrderDetailView extends StatelessWidget {
     );
   }
 
-  Widget _buildHelpSection(BuildContext context) {
+  Widget _buildHelpSection(BuildContext context, OrderModel order) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: OutlinedButton.icon(
         onPressed: () {
-          debugPrint(
-            'OrderDetailView: Nguoi dung bam Tro giup, chuyen sang trang Tro giop voi ma don [${order.id}]',
-          );
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => SupportView(orderId: order.id),
-            ),
-          );
+          debugPrint('OrderDetailView: Nguoi dung bam Tro giup, chuyen sang trang Tro giop voi ma don [${order.id}]');
+          Navigator.push(context, MaterialPageRoute(builder: (context) => SupportView(orderId: order.id)));
         },
         icon: const Icon(Icons.support_agent_outlined, size: 20),
         label: Text(context.t('order_need_help')),
@@ -501,9 +752,7 @@ class OrderDetailView extends StatelessWidget {
           foregroundColor: AppColors.textSecondary,
           side: const BorderSide(color: AppColors.divider),
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
     );
@@ -513,32 +762,26 @@ class OrderDetailView extends StatelessWidget {
   /// PHAN GIAO DIEN DONG
   ///=============================================================================
 
-  Widget _buildDynamicSection(BuildContext context) {
-    // Phan loai theo trang thai tu OrderModel
+  Widget _buildDynamicSection(BuildContext context, OrderModel order) {
     switch (order.status) {
       case 0:
       case 1:
       case 2:
-        // Don hang dang xu ly: hien thi phan tai xe + nut huy
-        return _buildDeliveringSection(context);
+        return _buildDeliveringSection(context, order);
       case 3:
-        // Don hang da hoan thanh: hien thi phan danh gia
-        return _buildReceivedSection(context);
+        return _buildReceivedSection(context, order);
       case 4:
-        // Don hang da huy: hien thi thong tin huy
-        return _buildCancelledSection(context);
+        return _buildCancelledSection(context, order);
       default:
         return const SizedBox.shrink();
     }
   }
 
-  /// Giao dien khi don hang dang xu ly: hien thi thong tin tai xe (neu co) + nut huy.
-  Widget _buildDeliveringSection(BuildContext context) {
+  Widget _buildDeliveringSection(BuildContext context, OrderModel order) {
     final hasDriver = order.hasDriverInfo;
 
     return Column(
       children: [
-        // Khoi thong tin tai xe.
         Container(
           width: double.infinity,
           margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -561,7 +804,6 @@ class OrderDetailView extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               if (!hasDriver) ...[
-                // Khong co thong tin tai xe: hien thi loading
                 Row(
                   children: [
                     const SizedBox(
@@ -583,10 +825,8 @@ class OrderDetailView extends StatelessWidget {
                   ],
                 ),
               ] else ...[
-                // Co thong tin tai xe: hien thi day du
                 Row(
                   children: [
-                    // Avatar tai xe.
                     CircleAvatar(
                       radius: 26,
                       backgroundColor: AppColors.surfaceVariant,
@@ -651,7 +891,6 @@ class OrderDetailView extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 14),
-                // Nut Mo ban do va Chat voi tai xe.
                 Row(
                   children: [
                     Expanded(
@@ -726,100 +965,41 @@ class OrderDetailView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        // Nut Huy don.
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          child: OutlinedButton(
-            onPressed: () {
-              debugPrint(
-                'OrderDetailView: Nguoi dung bam Huy don [${order.id}]',
-              );
-              _showCancelDialog(context);
-            },
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.error,
-              side: const BorderSide(color: AppColors.error),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+        if (order.status == 0) ...[
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            child: OutlinedButton(
+              onPressed: () {
+                debugPrint(
+                  'OrderDetailView: Nguoi dung bam Huy don [${order.id}]',
+                );
+                _showCancelDialog(context, order);
+              },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.error,
+                side: const BorderSide(color: AppColors.error),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                context.t('order_cancel_order'),
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
               ),
             ),
-            child: Text(
-              context.t('order_cancel_order'),
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
           ),
-        ),
+        ],
       ],
     );
   }
 
-  /// Hien thi dialog xac nhan huy don hang.
-  Future<void> _showCancelDialog(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Xac nhan huy don'),
-        content: Text('Ban co chac chan muon huy don hang ${order.id}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Khong'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Co, huy don'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    if (!context.mounted) return;
-
-    // Hien thi loading.
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-
-    // Goi service huy don.
-    final success = await OrderService.cancelOrder(order.id);
-
-    // Dong loading.
-    if (context.mounted) {
-      Navigator.pop(context);
-
-      // Hien thi snackbar thong bao.
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Huy don hang thanh cong'),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        // Dong man hinh chi tiet sau khi huy thanh cong.
-        Navigator.pop(context);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Huy don hang that bai, vui long thu lai'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
+  Future<void> _showCancelDialog(BuildContext context, OrderModel order) async {
+    await CancelOrderDialog.show(context, order);
   }
 
-  /// Giao dien khi don hang da hoan thanh: hien thi phan danh gia + nut dat lai.
-  Widget _buildReceivedSection(BuildContext context) {
+  Widget _buildReceivedSection(BuildContext context, OrderModel order) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -841,7 +1021,6 @@ class OrderDetailView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          // Nut danh gia mon an.
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
@@ -863,7 +1042,6 @@ class OrderDetailView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          // Nut danh gia tai xe (neu co thong tin tai xe).
           if (order.hasDriverInfo) ...[
             SizedBox(
               width: double.infinity,
@@ -888,7 +1066,6 @@ class OrderDetailView extends StatelessWidget {
             ),
             const SizedBox(height: 10),
           ],
-          // Nut Dat lai don hang.
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -921,8 +1098,7 @@ class OrderDetailView extends StatelessWidget {
     );
   }
 
-  /// Giao dien khi don hang da huy: hien thi thong tin huy + nut dat lai.
-  Widget _buildCancelledSection(BuildContext context) {
+  Widget _buildCancelledSection(BuildContext context, OrderModel order) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -945,7 +1121,6 @@ class OrderDetailView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          // Nut Dat lai don hang.
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -982,7 +1157,7 @@ class OrderDetailView extends StatelessWidget {
   /// THANH DAM DAY
   ///=============================================================================
 
-  Widget _buildBottomBar(BuildContext context) {
+  Widget _buildBottomBar(BuildContext context, OrderModel order) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       decoration: BoxDecoration(
@@ -1024,7 +1199,6 @@ class OrderDetailView extends StatelessWidget {
   /// UTILITIES
   ///=============================================================================
 
-  /// Format gia thanh chuoi VND (VD: "85.000 VND").
   String _formatPrice(double price, BuildContext ctx) {
     if (price >= 1000) {
       final formatted = price

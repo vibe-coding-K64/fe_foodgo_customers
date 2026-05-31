@@ -32,7 +32,7 @@ class AuthInterceptor extends Interceptor {
     }
 
     if (_isRefreshing) {
-      _enqueue(err, handler);
+      _enqueue(err.requestOptions, handler);
       return;
     }
 
@@ -41,16 +41,12 @@ class AuthInterceptor extends Interceptor {
     try {
       final refreshed = await _refreshToken();
       if (refreshed) {
-        _retryPendingRequests();
-        handler.next(err);
-      } else {
-        await AuthStorage.clearAuth();
-        _rejectPendingRequests(err);
-        handler.next(err);
+        await _retryPendingRequests();
       }
+      handler.next(err);
     } catch (e) {
       await AuthStorage.clearAuth();
-      _rejectPendingRequests(err);
+      _rejectPendingRequests();
       handler.next(err);
     } finally {
       _isRefreshing = false;
@@ -104,28 +100,49 @@ class AuthInterceptor extends Interceptor {
     }
   }
 
-  void _enqueue(DioException err, ErrorInterceptorHandler handler) {
-    _pendingRequests.add(_QueuedRequest(err, handler));
+  void _enqueue(RequestOptions requestOptions, ErrorInterceptorHandler handler) {
+    _pendingRequests.add(_QueuedRequest(requestOptions, handler));
   }
 
-  void _retryPendingRequests() {
+  Future<void> _retryPendingRequests() async {
     for (final req in _pendingRequests) {
-      req.handler.next(req.error);
+      final token = AuthStorage.getToken();
+      if (token != null && token.isNotEmpty) {
+        req.requestOptions.headers['Authorization'] =
+            '${AuthStorage.getTokenType() ?? 'Bearer'} $token';
+      }
+      try {
+        req.handler.resolve(
+          await Dio().fetch(req.requestOptions),
+        );
+      } catch (e) {
+        req.handler.next(e as DioException);
+      }
     }
   }
 
-  void _rejectPendingRequests(DioException err) {
+  void _rejectPendingRequests() {
     for (final req in _pendingRequests) {
-      req.handler.next(err);
+      req.handler.next(
+        DioException(
+          requestOptions: req.requestOptions,
+          error: 'Token da het han',
+          type: DioExceptionType.badResponse,
+          response: Response(
+            requestOptions: req.requestOptions,
+            statusCode: 401,
+          ),
+        ),
+      );
     }
   }
 }
 
 class _QueuedRequest {
-  final DioException error;
+  final RequestOptions requestOptions;
   final ErrorInterceptorHandler handler;
 
-  _QueuedRequest(this.error, this.handler);
+  _QueuedRequest(this.requestOptions, this.handler);
 }
 
 /// Client HTTP su dung Dio de goi cac API tu my-json-server.
@@ -161,8 +178,12 @@ class ApiClient {
     if (kDebugMode) {
       _dio!.interceptors.add(
         LogInterceptor(
-          requestBody: true,
-          responseBody: true,
+          request: true,
+          requestHeader: true,
+          requestBody: false,
+          responseHeader: true,
+          responseBody: false,
+          error: true,
           logPrint: (obj) => debugPrint('[ApiClient] $obj'),
         ),
       );
@@ -188,7 +209,6 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
-    debugPrint('[ApiClient] GET $path | params: $queryParameters');
     return instance.get<T>(
       path,
       queryParameters: queryParameters,
@@ -203,7 +223,6 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
-    debugPrint('[ApiClient] POST $path | data: $data');
     return instance.post<T>(
       path,
       data: data,
@@ -219,7 +238,6 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
-    debugPrint('[ApiClient] PUT $path | data: $data');
     return instance.put<T>(
       path,
       data: data,
@@ -235,7 +253,6 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
-    debugPrint('[ApiClient] DELETE $path');
     return instance.delete<T>(
       path,
       data: data,

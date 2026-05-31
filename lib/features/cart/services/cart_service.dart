@@ -61,34 +61,27 @@ class CartService {
   /// Them mon vao gio hang qua API.
   ///
   /// POST /cart/add
-  /// Body: { userId, storeId, foodId, size, toppings[], note, quantity }
+  /// Body: { userId, storeId, foodId, selectedOptions[], note, quantity }
   Future<void> addToCart({
     required String userId,
     required String storeId,
     required String foodId,
-    required String? selectedSize,
-    required List<CartTopping>? selectedToppings,
+    required List<SelectedOptionGroup>? selectedOptions,
     required String? note,
     required int quantity,
   }) async {
     try {
-      final toppings = selectedToppings
-          ?.map((t) => {
-                'name': t.name,
-                'price': t.price,
-              })
-          .toList();
-
       await ApiClient.post(
         '/cart/add',
         data: {
           'userId': userId,
           'storeId': storeId,
           'foodId': foodId,
-          'size': selectedSize,
-          'toppings': toppings,
-          'note': note,
           'quantity': quantity,
+          if (selectedOptions != null && selectedOptions.isNotEmpty)
+            'selectedOptions':
+                selectedOptions.map((g) => g.toJson()).toList(),
+          if (note != null && note.isNotEmpty) 'note': note,
         },
       );
       debugPrint('CartService: Them mon [$foodId] vao gio hang qua API');
@@ -101,23 +94,17 @@ class CartService {
   /// Them mon vao gio hang (dang CartItemModel) qua API.
   Future<void> addToCartFromItem(String userId, CartItemModel item) async {
     try {
-      final toppings = item.selectedToppings
-          .map((t) => {
-                'name': t.name,
-                'price': t.price,
-              })
-          .toList();
-
       await ApiClient.post(
         '/cart/add',
         data: {
           'userId': userId,
           'storeId': item.storeId,
           'foodId': item.foodId,
-          'size': item.selectedSize,
-          'toppings': toppings,
-          'note': item.note,
           'quantity': item.quantity,
+          if (item.selectedOptions.isNotEmpty)
+            'selectedOptions':
+                item.selectedOptions.map((g) => g.toJson()).toList(),
+          if (item.note != null && item.note!.isNotEmpty) 'note': item.note,
         },
       );
       debugPrint('CartService: Them mon [${item.foodId}] vao gio hang qua API');

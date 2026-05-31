@@ -99,10 +99,7 @@ class CartState extends ChangeNotifier {
           if (!productDoc.exists) return item;
 
           final product = ProductModel.fromFirestore(productDoc);
-          return item.copyWith(
-            imageUrl: product.imageUrl.isNotEmpty ? product.imageUrl : null,
-            product: product,
-          );
+          return item.copyWith(product: product);
         } catch (e) {
           debugPrint('CartState: Loi enrich item [${item.foodId}] - $e');
           return item;
@@ -138,10 +135,7 @@ class CartState extends ChangeNotifier {
           if (idx < 0) return;
 
           final product = ProductModel.fromFirestore(doc);
-          _items[idx] = _items[idx].copyWith(
-            imageUrl: product.imageUrl.isNotEmpty ? product.imageUrl : null,
-            product: product,
-          );
+          _items[idx] = _items[idx].copyWith(product: product);
           notifyListeners();
         },
         onError: (e) {
@@ -230,25 +224,13 @@ class CartState extends ChangeNotifier {
     return id;
   }
 
-  String _extractName(dynamic product) {
-    final name = product.name as String?;
-    if (name != null && name.isNotEmpty) return name;
-    throw ArgumentError('Khong the lay name tu product');
-  }
-
-  String? _extractImageUrl(dynamic product) {
-    final url = product.imageUrl as String?;
-    return (url != null && url.isNotEmpty) ? url : null;
-  }
-
   /// Them mot san pham vao gio hang (goi API).
   ///
   /// Sau khi API tra ve, fetch lai cart de enrich gia.
   Future<CartAddResult> addItem(
     String userId,
     dynamic product, {
-    String? selectedSize,
-    List<Map<String, dynamic>> selectedToppings = const [],
+    List<SelectedOptionGroup>? selectedOptions,
     String? note,
     int quantity = 1,
   }) async {
@@ -265,12 +247,7 @@ class CartState extends ChangeNotifier {
         storeId: storeId,
         foodId: foodId,
         quantity: quantity,
-        selectedSize: selectedSize,
-        selectedToppings: selectedToppings.isNotEmpty
-            ? selectedToppings
-                .map((t) => CartTopping(name: t['name'] as String))
-                .toList()
-            : null,
+        selectedOptions: selectedOptions,
         note: note,
       );
 
@@ -290,8 +267,7 @@ class CartState extends ChangeNotifier {
   Future<CartAddResult> replaceCartAndAddItem(
     String userId,
     dynamic product, {
-    String? selectedSize,
-    List<Map<String, dynamic>> selectedToppings = const [],
+    List<SelectedOptionGroup>? selectedOptions,
     String? note,
     int quantity = 1,
   }) async {
@@ -308,8 +284,7 @@ class CartState extends ChangeNotifier {
     return addItem(
       userId,
       product,
-      selectedSize: selectedSize,
-      selectedToppings: selectedToppings,
+      selectedOptions: selectedOptions,
       note: note,
       quantity: quantity,
     );

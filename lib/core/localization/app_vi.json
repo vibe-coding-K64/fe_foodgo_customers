@@ -751,5 +751,16 @@
   "checkout_success_total": "Tổng thanh toán",
   "checkout_success_note": "Vui lòng chờ cửa hàng xác nhận đơn hàng.",
   "checkout_success_view_order": "Xem đơn hàng",
-  "checkout_success_ok": "OK"
+  "checkout_success_ok": "OK",
+  "cancel_order_title": "Huỷ đơn từ $1",
+  "cancel_order_body": "Bạn có chắc chắn muốn huỷ đơn hàng từ $1?",
+  "cancel_order_reason_label": "Lý do huỷ (bắt buộc)",
+  "cancel_order_reason_change_mind": "Đổi ý",
+  "cancel_order_reason_long_wait": "Chờ quá lâu",
+  "cancel_order_reason_wrong_item": "Sai món / thiếu món",
+  "cancel_order_reason_duplicate": "Đặt trùng đơn",
+  "cancel_order_reason_other": "Lý do khác",
+  "cancel_order_reason_hint": "Nhập lý do của bạn...",
+  "cancel_order_btn": "Huỷ đơn",
+  "error_cancel_order": "Huỷ đơn thất bại. Vui lòng thử lại."
 }

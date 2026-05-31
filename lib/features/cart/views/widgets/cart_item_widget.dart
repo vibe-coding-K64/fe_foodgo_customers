@@ -47,7 +47,7 @@ class CartItemWidget extends StatelessWidget {
       key: Key(item.id),
       direction: DismissDirection.endToStart,
       onDismissed: (_) {
-        debugPrint('CartView: Vuot xoa mon [${item.name}]');
+        debugPrint('CartView: Vuot xoa mon [${product?.name ?? item.foodId}]');
         onDismiss();
       },
       background: Container(
@@ -72,7 +72,7 @@ class CartItemWidget extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.06),
+                color: Colors.black.withValues(alpha: 0.06),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -90,7 +90,7 @@ class CartItemWidget extends StatelessWidget {
                       ? null
                       : (value) {
                           debugPrint(
-                              'CartView: Checkbox mon [${item.name}] = ${value ?? false}');
+                              'CartView: Checkbox mon [${product?.name ?? item.foodId}] = ${value ?? false}');
                           onSelectionChanged(value ?? false);
                         },
                   activeColor: AppColors.primary,
@@ -116,7 +116,7 @@ class CartItemWidget extends StatelessWidget {
                 fit: BoxFit.cover,
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
-                  debugPrint('CartItemImage: [${item.name}] Dang tai anh: ${item.imageUrlOrDefault}');
+                  debugPrint('CartItemImage: [${product?.name ?? item.foodId}] Dang tai anh: ${item.imageUrlOrDefault}');
                   return Container(
                     width: 72,
                     height: 72,
@@ -141,7 +141,7 @@ class CartItemWidget extends StatelessWidget {
                   );
                 },
                 errorBuilder: (context, error, stackTrace) {
-                  debugPrint('CartItemImage: [${item.name}] Loi tai anh: ${item.imageUrlOrDefault}');
+                  debugPrint('CartItemImage: [${product?.name ?? item.foodId}] Loi tai anh: ${item.imageUrlOrDefault}');
                   debugPrint('CartItemImage: Error = $error, stack = $stackTrace');
                   return Container(
                     width: 72,
@@ -169,7 +169,7 @@ class CartItemWidget extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item.name,
+                    product?.name ?? '...',
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -178,32 +178,8 @@ class CartItemWidget extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (item.selectedSize != null && item.selectedSize!.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      context
-                          .t('cart_item_size')
-                          .replaceFirst('\$1', item.selectedSize!),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                  if (item.selectedToppings.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      context
-                          .t('cart_item_topping')
-                          .replaceFirst('\$1', item.toppingsLabel),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                  // Hien thi tung option da chon, bo qua neu khong tim thay trong product.
+                  ..._buildOptionLines(),
                   if (item.note != null && item.note!.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(
@@ -223,7 +199,7 @@ class CartItemWidget extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        '${_formatPrice(product != null ? item.totalPriceOf(product) : 0.0)} ${context.t('unit_currency')}',
+                        '${_formatPrice(product != null ? item.unitPriceOf(product) : 0.0)} ${context.t('unit_currency')}',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -250,7 +226,7 @@ class CartItemWidget extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: AppColors.error.withOpacity(0.1),
+                        color: AppColors.error.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -274,6 +250,50 @@ class CartItemWidget extends StatelessWidget {
     );
   }
 
+  /// Build cac dong hien thi options da chon, gop theo nhom.
+  /// VD: "Topping: Tran chau, Pudding", "Kich thuoc: Lon".
+  List<Widget> _buildOptionLines() {
+    if (product == null || item.selectedOptions.isEmpty) return [];
+
+    final lines = <String>[];
+    for (final group in item.selectedOptions) {
+      // Tim group tuong ung trong product.
+      final productGroup = product!.optionGroups
+          .where((g) => g.name == group.name)
+          .firstOrNull;
+      if (productGroup == null) continue;
+
+      // Lay cac option ton tai trong product.
+      final validNames = <String>[];
+      for (final opt in group.options) {
+        final productOption = productGroup.options
+            .where((o) => o.name == opt.name)
+            .firstOrNull;
+        if (productOption != null) {
+          validNames.add(opt.name);
+        }
+      }
+      if (validNames.isEmpty) continue;
+
+      lines.add('${group.name}: ${validNames.join(', ')}');
+    }
+
+    return lines
+        .map((line) => Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                line,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ))
+        .toList();
+  }
+
   Widget _buildQuantityControl() {
     return Container(
       decoration: BoxDecoration(
@@ -288,7 +308,7 @@ class CartItemWidget extends StatelessWidget {
             onTap: !isOutOfStock && item.quantity > 1
                 ? () {
                     debugPrint(
-                        'CartView: Giam so luong mon [${item.name}] = ${item.quantity - 1}');
+                        'CartView: Giam so luong mon [${product?.name ?? item.foodId}] = ${item.quantity - 1}');
                     onDecrease();
                   }
                 : null,
@@ -323,7 +343,7 @@ class CartItemWidget extends StatelessWidget {
                 ? null
                 : () {
                     debugPrint(
-                        'CartView: Tang so luong mon [${item.name}] = ${item.quantity + 1}');
+                        'CartView: Tang so luong mon [${product?.name ?? item.foodId}] = ${item.quantity + 1}');
                     onIncrease();
                   },
             child: Container(

@@ -120,7 +120,7 @@ class _CartItemCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -160,17 +160,20 @@ class _CartItemCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (item.toppings.isNotEmpty) ...[
+                  if (item.selectedOptions.isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    Text(
-                      item.toppingsLabel,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textHint,
+                    ...item.groupedOptionLines.map((line) => Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        line,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textHint,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    )),
                   ],
                   // Hien thi ghi chu neu co.
                   if (item.note.isNotEmpty) ...[
@@ -202,19 +205,19 @@ class _CartItemCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        '${_formatPrice(item.totalPrice)} ${context.t('unit_currency')}',
+                        '${_formatPrice(item.unitPrice)} ${context.t('unit_currency')}',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: AppColors.primary,
                         ),
                       ),
-                      if (item.basePrice != item.unitPrice) ...[
-                        const SizedBox(width: 4),
+                      if (item.quantity > 1) ...[
+                        const SizedBox(width: 6),
                         Text(
-                          '(${_formatPrice(item.basePrice)} + topping)',
+                          'x${item.quantity}',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 13,
                             color: Colors.grey.shade600,
                           ),
                         ),

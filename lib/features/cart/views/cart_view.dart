@@ -341,6 +341,7 @@ class _CartContentState extends State<_CartContent> {
   void _onDismissItem(CartItemModel item) {
     final userId = AuthStorage.getUserId();
     if (userId == null) return;
+    final product = _products[item.foodId];
     _selectedIds.remove(item.id);
     // Neu xoa item cua cua hang dang active va khong con item nao cung cua hang -> reset
     if (_activeStoreId == item.storeId) {
@@ -355,7 +356,7 @@ class _CartContentState extends State<_CartContent> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content:
-            Text('${item.name} ${context.t('cart_item_removed')}'),
+            Text('${product?.name ?? 'Mon an'} ${context.t('cart_item_removed')}'),
         backgroundColor: AppColors.textSecondary,
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,

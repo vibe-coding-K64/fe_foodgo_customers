@@ -745,5 +745,16 @@
   "checkout_success_total": "Total Payment",
   "checkout_success_note": "Please wait for the store to confirm your order.",
   "checkout_success_view_order": "View Order",
-  "checkout_success_ok": "OK"
+  "checkout_success_ok": "OK",
+  "cancel_order_title": "Cancel order from $1",
+  "cancel_order_body": "Are you sure you want to cancel your order from $1?",
+  "cancel_order_reason_label": "Cancellation reason (required)",
+  "cancel_order_reason_change_mind": "Changed my mind",
+  "cancel_order_reason_long_wait": "Waiting too long",
+  "cancel_order_reason_wrong_item": "Wrong / missing items",
+  "cancel_order_reason_duplicate": "Duplicate order",
+  "cancel_order_reason_other": "Other reason",
+  "cancel_order_reason_hint": "Enter your reason...",
+  "cancel_order_btn": "Cancel order",
+  "error_cancel_order": "Failed to cancel order. Please try again."
 }

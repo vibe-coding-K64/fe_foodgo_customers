@@ -55,14 +55,13 @@ class CartApiService {
 
   /// Them mot mon vao gio hang.
   ///
-  /// [userId]      : ID nguoi dung.
-  /// [storeId]     : ID cua hang chua mon an.
-  /// [foodId]      : ID san pham/mon an.
-  /// [quantity]    : So luong them vao (>= 1).
-  /// [size]        : Kich thuoc da chon (VD: "M", "L"). Co the null.
-  /// [toppings]    : Danh sach topping da chon. Moi topping la map
-  ///                 { "name": "...", "price": ... }.
-  /// [note]        : Ghi chu cho cua hang. Co the null.
+  /// [userId]        : ID nguoi dung.
+  /// [storeId]       : ID cua hang chua mon an.
+  /// [foodId]        : ID san pham/mon an.
+  /// [quantity]      : So luong them vao (>= 1).
+  /// [selectedOptions]: Danh sach nhom options da chon. Moi nhom gom
+  ///                   { "name": "Kich thuoc", "options": [{ "name": "Lon" }] }.
+  /// [note]          : Ghi chu cho cua hang. Co the null.
   ///
   /// Tra ve response data (data.data cua API response).
   /// throws [DioException] neu co loi.
@@ -71,8 +70,7 @@ class CartApiService {
     required String storeId,
     required String foodId,
     required int quantity,
-    String? size,
-    List<Map<String, dynamic>>? toppings,
+    List<Map<String, dynamic>>? selectedOptions,
     String? note,
   }) async {
     final body = <String, dynamic>{
@@ -82,12 +80,8 @@ class CartApiService {
       'quantity': quantity,
     };
 
-    if (size != null && size.isNotEmpty) {
-      body['size'] = size;
-    }
-
-    if (toppings != null && toppings.isNotEmpty) {
-      body['toppings'] = toppings;
+    if (selectedOptions != null && selectedOptions.isNotEmpty) {
+      body['selectedOptions'] = selectedOptions;
     }
 
     if (note != null && note.isNotEmpty) {

@@ -3,6 +3,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../../../core/state/cart_state.dart';
 import '../../../core/utils/auth_storage.dart';
+import '../../cart/models/cart_item_model.dart';
 import '../../home/models/product_model.dart';
 
 /// Mo bottom sheet chi tiet mon an voi ProductModel.
@@ -115,38 +116,24 @@ class _ProductDetailBottomSheetState
       return;
     }
 
-    // Tong hop topping da chon.
-    final selectedToppings = <Map<String, dynamic>>[];
+    // Build selectedOptions tu _selectedOptions map.
+    final selectedOptions = <SelectedOptionGroup>[];
     for (final group in widget.product.optionGroups) {
-      if (!group.isSingleSelect) {
-        for (final option in group.options) {
-          if (_selectedOptions[group.name]?.contains(option.name) == true) {
-            selectedToppings.add({'name': option.name, 'price': option.price});
-          }
-        }
-      }
-    }
-
-    // Lay gia tri option single-select (VD: size).
-    String? selectedSize;
-    double sizeExtra = 0;
-    for (final group in widget.product.optionGroups) {
-      if (group.isSingleSelect) {
-        final selected = _selectedOptions[group.name]?.firstOrNull;
-        if (selected != null) {
-          selectedSize = selected;
-          final opt = group.options.where((o) => o.name == selected).firstOrNull;
-          sizeExtra = opt?.price ?? 0;
-        }
-      }
+      final selectedNames = _selectedOptions[group.name];
+      if (selectedNames == null || selectedNames.isEmpty) continue;
+      selectedOptions.add(SelectedOptionGroup(
+        name: group.name,
+        options: selectedNames
+            .map((name) => SelectedOption(name: name))
+            .toList(),
+      ));
     }
 
     final cartState = CartState.of(context);
     final result = await cartState.addItem(
       userId,
       widget.product,
-      selectedSize: selectedSize,
-      selectedToppings: selectedToppings,
+      selectedOptions: selectedOptions,
       note: _noteController.text.trim(),
       quantity: _quantity,
     );
@@ -224,17 +211,20 @@ class _ProductDetailBottomSheetState
               final result = await cartState.replaceCartAndAddItem(
                 userId,
                 widget.product,
-                selectedSize: _selectedOptions.entries
-                    .where((e) => widget.product.optionGroups.any(
-                        (g) => g.name == e.key && g.isSingleSelect))
-                    .expand((e) => e.value)
-                    .firstOrNull,
-                selectedToppings: widget.product.optionGroups
-                    .where((g) => !g.isSingleSelect)
-                    .expand((g) => g.options.where(
-                        (o) => _selectedOptions[g.name]?.contains(o.name) == true))
-                    .map((o) => {'name': o.name, 'price': o.price})
-                    .toList(),
+                selectedOptions: () {
+                  final groups = <SelectedOptionGroup>[];
+                  for (final group in widget.product.optionGroups) {
+                    final selectedNames = _selectedOptions[group.name];
+                    if (selectedNames == null || selectedNames.isEmpty) continue;
+                    groups.add(SelectedOptionGroup(
+                      name: group.name,
+                      options: selectedNames
+                          .map((name) => SelectedOption(name: name))
+                          .toList(),
+                    ));
+                  }
+                  return groups;
+                }(),
                 note: _noteController.text.trim(),
                 quantity: _quantity,
               );

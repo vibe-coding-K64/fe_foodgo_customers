@@ -3,7 +3,6 @@ import 'package:fe_foodgo_customers/core/constants/app_colors.dart';
 import 'package:fe_foodgo_customers/core/localization/language_service.dart';
 import 'package:fe_foodgo_customers/features/address/models/address_model.dart';
 import 'package:fe_foodgo_customers/features/cart/models/cart_item_model.dart';
-import 'package:fe_foodgo_customers/features/home/models/product_model.dart';
 import 'package:fe_foodgo_customers/features/address/services/address_service.dart';
 import 'package:fe_foodgo_customers/features/payment/models/payment_method_model.dart';
 import 'package:fe_foodgo_customers/features/payment/services/payment_method_firestore_service.dart';
@@ -17,7 +16,6 @@ import 'package:fe_foodgo_customers/features/address/views/address_management_vi
 import 'package:fe_foodgo_customers/features/checkout/services/checkout_service.dart';
 import 'package:fe_foodgo_customers/features/checkout/services/my_voucher_firestore_service.dart';
 import 'package:fe_foodgo_customers/features/order/models/order_model.dart' as om;
-import 'package:fe_foodgo_customers/features/order/views/order_detail_view.dart' as od_stub;
 import 'package:fe_foodgo_customers/features/activity/views/order_detail_view.dart';
 import 'package:fe_foodgo_customers/features/checkout/models/checkout_models.dart' as cm;
 import 'package:fe_foodgo_customers/features/checkout/models/voucher_model.dart';
@@ -177,9 +175,9 @@ class _CheckoutViewState extends State<CheckoutView> {
           basePrice: 35000,
           unitPrice: 48000,
           quantity: 2,
-          toppings: [
-            CheckoutTopping(name: 'Tran Chau', price: 5000),
-            CheckoutTopping(name: 'Thach ca phe', price: 8000),
+          selectedOptions: [
+            const CheckoutOption(name: 'Tran Chau', price: 5000, groupName: 'Topping'),
+            const CheckoutOption(name: 'Thach ca phe', price: 8000, groupName: 'Topping'),
           ],
         ),
         CheckoutCartItem(
@@ -191,7 +189,9 @@ class _CheckoutViewState extends State<CheckoutView> {
           basePrice: 29000,
           unitPrice: 29000,
           quantity: 1,
-          toppings: [CheckoutTopping(name: 'Da', price: 0)],
+          selectedOptions: [
+            const CheckoutOption(name: 'Da', price: 0, groupName: 'Do uong'),
+          ],
         ),
         CheckoutCartItem(
           id: 'item_003',
@@ -202,9 +202,9 @@ class _CheckoutViewState extends State<CheckoutView> {
           basePrice: 24000,
           unitPrice: 42000,
           quantity: 1,
-          toppings: [
-            CheckoutTopping(name: 'Trai cay', price: 12000),
-            CheckoutTopping(name: 'Pudding', price: 6000),
+          selectedOptions: [
+            const CheckoutOption(name: 'Trai cay', price: 12000, groupName: 'Topping'),
+            const CheckoutOption(name: 'Pudding', price: 6000, groupName: 'Topping'),
           ],
         ),
       ];
@@ -309,10 +309,15 @@ class _CheckoutViewState extends State<CheckoutView> {
   /// Chuyen doi danh sach mon cua don hang cu sang dinh dang gio hang checkout.
   List<CheckoutCartItem> _convertOrderToCartItems(om.OrderModel order) {
     return order.items.map((item) {
-      final toppingsTotal = (item.options ?? []).fold<double>(
+      final optionsTotal = (item.options ?? []).fold<double>(
         0, (sum, o) => sum + o.price,
       );
-      final basePrice = (item.price - toppingsTotal).clamp(0.0, double.infinity);
+      final basePrice = (item.price - optionsTotal).clamp(0.0, double.infinity);
+
+      final selectedOptions = (item.options ?? [])
+          .map((o) => CheckoutOption(name: o.name, price: o.price, groupName: 'Tuy chon'))
+          .toList();
+
       return CheckoutCartItem(
         id: 'reorder_${order.id}_${item.name.hashCode}',
         foodId: item.foodId,
@@ -322,54 +327,51 @@ class _CheckoutViewState extends State<CheckoutView> {
         basePrice: basePrice,
         unitPrice: item.price,
         quantity: item.quantity,
-        toppings: (item.options ?? [])
-            .map((o) => CheckoutTopping(
-                  name: o.name,
-                  price: o.price,
-                ))
-            .toList(),
+        selectedOptions: selectedOptions,
       );
     }).toList();
   }
 
   /// Chuyen doi danh sach CartItemModel tu CartView sang dinh dang checkout.
-  /// Bao gom topping, gia (da bao gom topping), size, ghi chu.
   List<CheckoutCartItem> _convertCartItemsToCheckoutItems(
       List<CartItemModel> cartItems) {
     return cartItems.map((cart) {
       final unitPrice = cart.unitPriceOf(cart.product);
       final basePrice = cart.product?.basePrice ?? 0.0;
 
+      // Chuyen doi selectedOptions thanh CheckoutOption (co gia).
+      final selectedOptions = cart.selectedOptions
+          .expand((g) {
+            final productGroup = cart.product?.optionGroups
+                .where((pg) => pg.name == g.name)
+                .firstOrNull;
+            if (productGroup == null) return <CheckoutOption>[];
+            return g.options.map((opt) {
+              final productOpt = productGroup.options
+                  .where((po) => po.name == opt.name)
+                  .firstOrNull;
+              return CheckoutOption(
+                name: opt.name,
+                price: productOpt?.price ?? 0.0,
+                groupName: g.name,
+              );
+            });
+          })
+          .toList();
+
       return CheckoutCartItem(
         id: cart.id,
         foodId: cart.foodId,
         storeId: cart.storeId,
-        name: cart.name,
+        name: cart.product?.name ?? '...',
         imageUrl: cart.imageUrlOrDefault,
         basePrice: basePrice,
         unitPrice: unitPrice,
         quantity: cart.quantity,
-        toppings: cart.selectedToppings
-            .map((t) {
-              final opt = _findToppingOption(cart.product, t.name);
-              return CheckoutTopping(name: t.name, price: opt?.price ?? 0.0);
-            })
-            .toList(),
+        selectedOptions: selectedOptions,
         note: cart.note ?? '',
       );
     }).toList();
-  }
-
-  OptionModel? _findToppingOption(dynamic product, String toppingName) {
-    if (product == null) return null;
-    for (final group in (product.optionGroups as List)) {
-      if (group.name.toLowerCase().contains('topping')) {
-        for (final opt in (group.options as List)) {
-          if (opt.name == toppingName) return opt as OptionModel;
-        }
-      }
-    }
-    return null;
   }
 
   String _formatPrice(double price) {
@@ -525,8 +527,8 @@ class _CheckoutViewState extends State<CheckoutView> {
           price: item.unitPrice,
           quantity: item.quantity,
           imageUrl: item.imageUrl,
-          options: item.toppings
-              .map((t) => cm.ToppingOption(name: t.name, price: t.price))
+          options: item.selectedOptions
+              .map((o) => cm.ToppingOption(name: o.name, price: o.price))
               .toList(),
           note: item.note.isEmpty ? null : item.note,
         )).toList(),
@@ -729,7 +731,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => OrderDetailView(order: order),
+                            builder: (_) => OrderDetailView(orderId: order.id),
                           ),
                         );
                       },

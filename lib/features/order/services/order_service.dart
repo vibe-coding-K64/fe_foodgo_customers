@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/utils/auth_storage.dart';
 import '../models/order_model.dart';
 
@@ -12,6 +13,7 @@ class OrderService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static const String _ordersCollection = 'orders';
   static const String _storesCollection = 'stores';
+  static const String _usersCollection = 'users';
 
   /// Lay danh sach don hang cua nguoi dung hien tai.
   /// Tra ve Stream de StreamBuilder co the lang nghe.
@@ -98,6 +100,8 @@ class OrderService {
   }
 
   /// Lay mot don hang cu the theo ID.
+  /// Ghi chu: Day la Future, chi goi 1 lan. Su dung getOrderByIdStream
+  /// neu can real-time cap nhat.
   static Future<OrderModel?> getOrderById(String orderId) async {
     try {
       debugPrint('OrderService: Lay don hang orderId = $orderId');
@@ -112,34 +116,157 @@ class OrderService {
         return null;
       }
 
-      return OrderModel.fromFirestore(docSnapshot);
+      var order = OrderModel.fromFirestore(docSnapshot);
+
+      String? storeAvatar;
+      String? userAvatar;
+
+      try {
+        final storeDoc = await _firestore
+            .collection(_storesCollection)
+            .doc(order.storeId)
+            .get();
+        storeAvatar = storeDoc.data()?['avtUrl'] as String?;
+      } catch (_) {}
+
+      try {
+        final userDoc = await _firestore
+            .collection(_usersCollection)
+            .doc(order.userId)
+            .get();
+        userAvatar = userDoc.data()?['photoUrl'] as String?;
+      } catch (_) {}
+
+      if (storeAvatar != null || userAvatar != null) {
+        order = order.copyWith(
+          storeAvatar: storeAvatar ?? order.storeAvatar,
+          userAvatar: userAvatar ?? order.userAvatar,
+        );
+      }
+
+      return order;
     } catch (e) {
       debugPrint('OrderService: Loi khi lay don hang $orderId: $e');
       return null;
     }
   }
 
-  /// Huy mot don hang.
+  /// Lay mot don hang cu the theo ID, real-time stream.
+  /// Lang nghe thay doi tu Firestore va tu dong cap nhat khi document thay doi.
+  /// Dong thoi join dữ liệu từ address sub-collection, stores, va users.
+  static Stream<OrderModel?> getOrderByIdStream(String orderId) {
+    return _firestore
+        .collection(_ordersCollection)
+        .doc(orderId)
+        .snapshots()
+        .asyncMap((docSnapshot) async {
+      if (!docSnapshot.exists) return null;
+
+      var order = OrderModel.fromFirestore(docSnapshot);
+
+      // Join address tu customer_profiles/{userId}/addresses/{addressId}.
+      final addressId = docSnapshot.data()?['addressId'] as String?;
+      if (addressId != null && addressId.isNotEmpty) {
+        try {
+          final addrDoc = await _firestore
+              .collection('customer_profiles')
+              .doc(order.userId)
+              .collection('addresses')
+              .doc(addressId)
+              .get();
+          if (addrDoc.exists) {
+            final addrData = addrDoc.data()!;
+            order = order.copyWith(
+              addressName: addrData['name'] as String?,
+              addressLat: (addrData['lat'] as num?)?.toDouble(),
+              addressLng: (addrData['lng'] as num?)?.toDouble(),
+              receiverName: addrData['receiverName'] as String?,
+              receiverPhone: addrData['receiverPhone'] as String?,
+            );
+          }
+        } catch (e) {
+          debugPrint('OrderService: Loi khi lay address: $e');
+        }
+      }
+
+      // Join store tu stores/{storeId}.
+      try {
+        final storeDoc = await _firestore
+            .collection(_storesCollection)
+            .doc(order.storeId)
+            .get();
+        if (storeDoc.exists) {
+          final storeData = storeDoc.data()!;
+          final storeAvatar = storeData['avtUrl'] as String?;
+          final storeAddress = storeData['address'] as String?;
+          if (storeAvatar != null || storeAddress != null) {
+            order = order.copyWith(
+              storeAvatar: storeAvatar ?? order.storeAvatar,
+              storeAddress: storeAddress ?? order.storeAddress,
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('OrderService: Loi khi lay store: $e');
+      }
+
+      // Join user avatar tu users/{userId}.
+      try {
+        final userDoc = await _firestore
+            .collection(_usersCollection)
+            .doc(order.userId)
+            .get();
+        if (userDoc.exists) {
+          final userAvatar = userDoc.data()?['photoUrl'] as String?;
+          if (userAvatar != null) {
+            order = order.copyWith(userAvatar: userAvatar);
+          }
+        }
+      } catch (e) {
+        debugPrint('OrderService: Loi khi lay user avatar: $e');
+      }
+
+      return order;
+    });
+  }
+
+  /// Huy mot don hang qua API.
   /// Dat status = 4 (Da huy).
   ///
-  /// Tra ve true neu thanh cong, false neu that bai.
-  static Future<bool> cancelOrder(String orderId) async {
+  /// [orderId] : ID don hang can huy.
+  /// [reason]  : Ly do huy (bat buoc).
+  ///
+  /// Tra ve CancelOrderResponse chua success, message, va data cua don hang da cap nhat.
+  static Future<CancelOrderResponse> cancelOrder(String orderId, String reason) async {
     try {
       debugPrint('OrderService: Bat dau huy don hang orderId = $orderId');
 
-      await _firestore.collection(_ordersCollection).doc(orderId).update({
-        'status': 4,
-        'updatedAt': Timestamp.now(),
-      });
+      final response = await ApiClient.post<Map<String, dynamic>>(
+        '/orders/$orderId/cancel',
+        data: {'reason': reason},
+      );
+
+      final cancelResponse = CancelOrderResponse.fromJson(response.data!);
 
       debugPrint('OrderService: Huy don hang $orderId thanh cong');
-      return true;
-    } on FirebaseException catch (e) {
-      debugPrint('OrderService: FirebaseException khi huy don $orderId: ${e.code}');
-      return false;
+
+      // Dong thoi cap nhat Firestore de dong bo local state.
+      try {
+        await _firestore.collection(_ordersCollection).doc(orderId).update({
+          'status': 4,
+          'updatedAt': Timestamp.now(),
+        });
+      } catch (_) {
+        // Firestore chi la backup, khong anh huong ket qua tra ve.
+      }
+
+      return cancelResponse;
     } catch (e) {
       debugPrint('OrderService: Loi khi huy don hang $orderId: $e');
-      return false;
+      return CancelOrderResponse(
+        success: false,
+        message: 'Huỷ đơn thất bại. Vui lòng thử lại.',
+      );
     }
   }
 

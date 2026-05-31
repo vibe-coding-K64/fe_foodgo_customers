@@ -175,16 +175,16 @@ class ActivityOrderCard extends StatelessWidget {
 
     switch (order.status) {
       case 0:
-        bgColor = Colors.blue.shade50;
-        textColor = Colors.blue.shade700;
+        bgColor = Colors.amber.shade50;
+        textColor = Colors.amber.shade800;
         break;
       case 1:
-        bgColor = Colors.blue.shade50;
-        textColor = Colors.blue.shade700;
+        bgColor = Colors.purple.shade50;
+        textColor = Colors.purple.shade700;
         break;
       case 2:
         bgColor = Colors.orange.shade50;
-        textColor = Colors.orange.shade700;
+        textColor = Colors.orange.shade800;
         break;
       case 3:
         bgColor = Colors.green.shade50;
@@ -217,25 +217,37 @@ class ActivityOrderCard extends StatelessWidget {
   }
 
   /// Nut hanh dong thu hai, thay doi theo trang thai don hang:
-  ///   - active (0, 1, 2): nut "Huy don" (OutlineButton, chu do).
-  ///   - completed/cancelled (3, 4): nut "Dat lai" (ElevatedButton, xanh la).
+  ///   - status 0 (cho xac nhan): hien thi nut Huy don.
+  ///   - status 1, 2 (dang chuan bi / dang giao): huy don bi disabled.
+  ///   - status 3, 4 (hoan thanh / da huy): hien thi nut Dat lai.
   Widget _buildActionButton(BuildContext context) {
     if (order.isActive) {
-      // Nut Huy don: OutlineButton voi chu mau do.
+      // Neu dang cho xac nhan (status 0) thi cho phep huy.
+      // Neu dang chuan bi (status 1) hoac dang giao (status 2) thi disable.
+      final canCancel = order.status == 0;
+
       return OutlinedButton(
-        onPressed: () {
-          debugPrint('ActivityOrderCard: Nguoi dung bam Huy don [${order.id}]');
-          onCancel?.call();
-        },
+        onPressed: canCancel
+            ? () {
+                debugPrint('ActivityOrderCard: Nguoi dung bam Huy don [${order.id}]');
+                onCancel?.call();
+              }
+            : null,
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.error,
-          side: const BorderSide(color: AppColors.error),
+          foregroundColor: canCancel ? AppColors.error : AppColors.textHint,
+          side: BorderSide(
+            color: canCancel ? AppColors.error : AppColors.border,
+          ),
           padding: const EdgeInsets.symmetric(vertical: 10),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: Text(
           context.t('activity_btn_cancel'),
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: canCancel ? AppColors.error : AppColors.textHint,
+          ),
         ),
       );
     }

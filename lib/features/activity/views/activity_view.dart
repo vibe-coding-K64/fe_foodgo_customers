@@ -6,13 +6,27 @@ import 'package:fe_foodgo_customers/features/order/services/order_service.dart';
 import 'package:fe_foodgo_customers/features/checkout/views/checkout_view.dart';
 import 'package:fe_foodgo_customers/features/activity/views/order_detail_view.dart';
 import 'package:fe_foodgo_customers/features/activity/views/widgets/activity_order_card.dart';
+import 'package:fe_foodgo_customers/features/activity/views/widgets/cancel_order_dialog.dart';
 
 /// Man hinh Hoat dong (Quan ly don hang).
 ///
 /// Hien thi danh sach don hang phan theo 3 trang thai: Da dat, Da nhan, Da huy.
 /// Su dung du lieu tu Firebase Firestore.
-class ActivityView extends StatelessWidget {
+class ActivityView extends StatefulWidget {
   const ActivityView({super.key});
+
+  @override
+  State<ActivityView> createState() => _ActivityViewState();
+}
+
+class _ActivityViewState extends State<ActivityView> {
+  int _reloadKey = 0;
+
+  void _triggerReload() {
+    setState(() {
+      _reloadKey++;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -132,12 +146,12 @@ class ActivityView extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            // Tab Da dat (status 0, 1, 2).
-            _OrderList(status: 0),
+            // Tab Da dat (active: status 0, 1, 2).
+            _ActiveOrdersList(reloadKey: _reloadKey, onReload: _triggerReload),
             // Tab Da nhan (status 3).
-            _OrderList(status: 1),
+            _CompletedOrdersList(reloadKey: _reloadKey, onReload: _triggerReload),
             // Tab Da huy (status 4).
-            _OrderList(status: 2),
+            _CancelledOrdersList(reloadKey: _reloadKey, onReload: _triggerReload),
           ],
         ),
       ),
@@ -145,18 +159,74 @@ class ActivityView extends StatelessWidget {
   }
 }
 
-/// Widget hien thi danh sach don hang theo trang thai.
-class _OrderList extends StatelessWidget {
-  final int status;
+/// Widget hien thi danh sach don hang dang xu ly (status 0, 1, 2).
+class _ActiveOrdersList extends StatelessWidget {
+  final int reloadKey;
+  final VoidCallback onReload;
 
-  const _OrderList({required this.status});
+  const _ActiveOrdersList({required this.reloadKey, required this.onReload});
+
+  @override
+  Widget build(BuildContext context) => _OrdersListView(
+        reloadKey: reloadKey,
+        onReload: onReload,
+        filter: (orders) => orders.where((o) => o.isActive).toList(),
+        emptyKey: 'activity_empty_ordered',
+      );
+}
+
+/// Widget hien thi danh sach don hang da nhan (status 3).
+class _CompletedOrdersList extends StatelessWidget {
+  final int reloadKey;
+  final VoidCallback onReload;
+
+  const _CompletedOrdersList({required this.reloadKey, required this.onReload});
+
+  @override
+  Widget build(BuildContext context) => _OrdersListView(
+        reloadKey: reloadKey,
+        onReload: onReload,
+        filter: (orders) => orders.where((o) => o.isCompleted).toList(),
+        emptyKey: 'activity_empty_received',
+      );
+}
+
+/// Widget hien thi danh sach don hang da huy (status 4).
+class _CancelledOrdersList extends StatelessWidget {
+  final int reloadKey;
+  final VoidCallback onReload;
+
+  const _CancelledOrdersList({required this.reloadKey, required this.onReload});
+
+  @override
+  Widget build(BuildContext context) => _OrdersListView(
+        reloadKey: reloadKey,
+        onReload: onReload,
+        filter: (orders) => orders.where((o) => o.isCancelled).toList(),
+        emptyKey: 'activity_empty_cancelled',
+      );
+}
+
+/// Widget chung hien thi danh sach don hang voi filter tu outside.
+class _OrdersListView extends StatelessWidget {
+  final List<OrderModel> Function(List<OrderModel>) filter;
+  final String emptyKey;
+  final int reloadKey;
+  final VoidCallback onReload;
+
+  const _OrdersListView({
+    required this.filter,
+    required this.emptyKey,
+    required this.reloadKey,
+    required this.onReload,
+  });
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<OrderModel>>(
+      key: ValueKey('orders-list-$reloadKey'),
       stream: OrderService.getMyOrdersStream(),
       builder: (context, snapshot) {
-        // Neu co loi thi hien thi loi.
         if (snapshot.hasError) {
           debugPrint('ActivityView: Loi khi lay don hang: ${snapshot.error}');
           return Center(
@@ -171,43 +241,17 @@ class _OrderList extends StatelessWidget {
           );
         }
 
-        // Neu dang loading thi hien thi vong xoay.
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const Center(child: CircularProgressIndicator());
         }
 
-        // Lay danh sach don hang.
         final allOrders = snapshot.data ?? [];
+        final orders = filter(allOrders);
 
-        // Phan loai don hang theo trang thai.
-        final activeOrders = allOrders.where((o) => o.isActive).toList();
-        final completedOrders = allOrders.where((o) => o.isCompleted).toList();
-        final cancelledOrders = allOrders.where((o) => o.isCancelled).toList();
-
-        // Chon danh sach phu hop voi tab.
-        List<OrderModel> orders;
-        switch (status) {
-          case 0:
-            orders = activeOrders;
-            break;
-          case 1:
-            orders = completedOrders;
-            break;
-          case 2:
-            orders = cancelledOrders;
-            break;
-          default:
-            orders = [];
-        }
-
-        // Neu khong co don hang thi hien thi trang thai rong.
         if (orders.isEmpty) {
           return _buildEmptyState(context);
         }
 
-        // Hien thi danh sach don hang.
         return ListView.builder(
           padding: const EdgeInsets.symmetric(vertical: 12),
           itemCount: orders.length,
@@ -220,7 +264,7 @@ class _OrderList extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => OrderDetailView(order: order),
+                    builder: (context) => OrderDetailView(orderId: order.id),
                   ),
                 );
               },
@@ -235,9 +279,12 @@ class _OrderList extends StatelessWidget {
                   ),
                 );
               },
-              onCancel: () {
+              onCancel: () async {
                 debugPrint('Huy don hang: ${order.id}');
-                _showCancelDialog(context, order);
+                final response = await CancelOrderDialog.show(context, order);
+                if (response != null && response.success) {
+                  onReload();
+                }
               },
             );
           },
@@ -246,83 +293,7 @@ class _OrderList extends StatelessWidget {
     );
   }
 
-  /// Hien thi dialog xac nhan huy don hang.
-  Future<void> _showCancelDialog(BuildContext context, OrderModel order) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Xac nhan huy don'),
-        content: Text('Ban co chac chan muon huy don hang ${order.id}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Khong'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Co, huy don'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    if (!context.mounted) return;
-
-    // Hien thi loading.
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-
-    // Goi service huy don.
-    final success = await OrderService.cancelOrder(order.id);
-
-    // Dong loading.
-    if (context.mounted) {
-      Navigator.pop(context);
-
-      // Hien thi snackbar thong bao.
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Huy don hang thanh cong'),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Huy don hang that bai, vui long thu lai'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
-  }
-
   Widget _buildEmptyState(BuildContext ctx) {
-    String emptyText;
-    switch (status) {
-      case 0:
-        emptyText = ctx.t('activity_empty_ordered');
-        break;
-      case 1:
-        emptyText = ctx.t('activity_empty_received');
-        break;
-      case 2:
-        emptyText = ctx.t('activity_empty_cancelled');
-        break;
-      default:
-        emptyText = 'Khong co don hang';
-    }
-
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -334,7 +305,7 @@ class _OrderList extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            emptyText,
+            ctx.t(emptyKey),
             style: TextStyle(fontSize: 15, color: Colors.grey.shade600),
             textAlign: TextAlign.center,
           ),

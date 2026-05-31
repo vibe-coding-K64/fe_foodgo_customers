@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 /// Model tuy chon topping (size, topping) cua mon an.
 ///
@@ -47,10 +48,12 @@ class OrderItemModel {
       price: (map['price'] as num?)?.toDouble() ?? 0.0,
       quantity: (map['quantity'] as num?)?.toInt() ?? 1,
       imageUrl: map['imageUrl'] as String?,
-      options: (map['options'] as List<dynamic>?)
-          ?.whereType<Map<String, dynamic>>()
-          .map((e) => ToppingOption.fromMap(e))
-          .toList(),
+      options: (map['options'] is List)
+          ? (map['options'] as List<dynamic>)
+              .whereType<Map<String, dynamic>>()
+              .map((e) => ToppingOption.fromMap(e))
+              .toList()
+          : null,
     );
   }
 }
@@ -76,6 +79,10 @@ class OrderItemModel {
 ///
 /// Cac truong driver (co the null):
 /// - driverId, driverName, driverPhone, vehiclePlate
+///
+/// Cac truong address (tu address sub-collection):
+/// - addressId, addressName, addressLat, addressLng
+/// - receiverName, receiverPhone
 class OrderModel {
   final String id;
   final String userId;
@@ -97,6 +104,15 @@ class OrderModel {
   final String? driverPhone;
   final String? vehiclePlate;
   final String? storeAvatar;
+  final String? storeAddress;
+  final String? userAvatar;
+  final String? addressId;
+  final String? addressName;
+  final double? addressLat;
+  final double? addressLng;
+  final String? receiverName;
+  final String? receiverPhone;
+  final DateTime? deletedAt;
 
   OrderModel({
     required this.id,
@@ -119,42 +135,103 @@ class OrderModel {
     this.driverPhone,
     this.vehiclePlate,
     this.storeAvatar,
+    this.storeAddress,
+    this.userAvatar,
+    this.addressId,
+    this.addressName,
+    this.addressLat,
+    this.addressLng,
+    this.receiverName,
+    this.receiverPhone,
+    this.deletedAt,
   });
 
   factory OrderModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>? ?? {};
+    try {
+      final data = doc.data() as Map<String, dynamic>? ?? {};
 
-    List<OrderItemModel> parsedItems = [];
-    final itemsData = data['items'];
-    if (itemsData is List) {
-      parsedItems = itemsData
-          .whereType<Map<String, dynamic>>()
-          .map((e) => OrderItemModel.fromMap(e))
-          .toList();
+      // Parse items — ho tro ca String (JSON) va List.
+      List<OrderItemModel> parsedItems = [];
+      try {
+        final itemsData = data['items'];
+        if (itemsData is List) {
+          parsedItems = itemsData
+              .whereType<Map<String, dynamic>>()
+              .map((e) => OrderItemModel.fromMap(e))
+              .toList();
+        }
+      } catch (e) {
+        debugPrint('OrderModel.fromFirestore: Loi parse items: $e');
+        parsedItems = [];
+      }
+
+      // Parse don gian cac truong con lai, bat buoc.
+      String userId = '';
+      String storeId = '';
+      String storeName = '';
+      try {
+        userId = (data['userId'] as String?) ?? '';
+        storeId = (data['storeId'] as String?) ?? '';
+        storeName = (data['storeName'] as String?) ?? '';
+      } catch (e) {
+        debugPrint('OrderModel.fromFirestore: Loi parse ids [$userId/$storeId]: $e');
+      }
+
+      double totalAmount = 0.0;
+      double deliveryFee = 0.0;
+      double discountAmount = 0.0;
+      double finalAmount = 0.0;
+      try {
+        totalAmount = (data['totalAmount'] as num?)?.toDouble() ?? 0.0;
+        deliveryFee = (data['deliveryFee'] as num?)?.toDouble() ?? 0.0;
+        discountAmount = (data['discountAmount'] as num?)?.toDouble() ?? 0.0;
+        finalAmount = (data['finalAmount'] as num?)?.toDouble() ?? 0.0;
+      } catch (e) {
+        debugPrint('OrderModel.fromFirestore: Loi parse amount [$totalAmount/$deliveryFee/$finalAmount]: $e');
+      }
+
+      int status = 0;
+      try {
+        status = (data['status'] as num?)?.toInt() ?? 0;
+      } catch (e) {
+        debugPrint('OrderModel.fromFirestore: Loi parse status: $e');
+      }
+
+      return OrderModel(
+        id: doc.id,
+        userId: userId,
+        storeId: storeId,
+        storeName: storeName,
+        items: parsedItems,
+        totalAmount: totalAmount,
+        deliveryFee: deliveryFee,
+        discountAmount: discountAmount,
+        finalAmount: finalAmount,
+        status: status,
+        deliveryAddress: (data['deliveryAddress'] as String?) ?? '',
+        paymentMethod: (data['paymentMethod'] as String?) ?? '',
+        createdAt: _parseDateTime(data['createdAt']),
+        note: data['note'] as String?,
+        orderCode: data['orderCode'] as String?,
+        driverId: data['driverId'] as String?,
+        driverName: data['driverName'] as String?,
+        driverPhone: data['driverPhone'] as String?,
+        vehiclePlate: data['vehiclePlate'] as String?,
+        storeAvatar: data['storeAvatar'] as String?,
+        storeAddress: data['storeAddress'] as String?,
+        userAvatar: data['userAvatar'] as String?,
+        addressId: data['addressId'] as String?,
+        addressName: data['addressName'] as String?,
+        addressLat: (data['addressLat'] as num?)?.toDouble(),
+        addressLng: (data['addressLng'] as num?)?.toDouble(),
+        receiverName: data['receiverName'] as String?,
+        receiverPhone: data['receiverPhone'] as String?,
+        deletedAt: _parseDateTime(data['deletedAt']),
+      );
+    } catch (e, stack) {
+      debugPrint('OrderModel.fromFirestore ERROR doc[${doc.id}]: $e\n$stack');
+      rethrow;
     }
-
-    return OrderModel(
-      id: doc.id,
-      userId: (data['userId'] as String?) ?? '',
-      storeId: (data['storeId'] as String?) ?? '',
-      storeName: (data['storeName'] as String?) ?? '',
-      items: parsedItems,
-      totalAmount: (data['totalAmount'] as num?)?.toDouble() ?? 0.0,
-      deliveryFee: (data['deliveryFee'] as num?)?.toDouble() ?? 0.0,
-      discountAmount: (data['discountAmount'] as num?)?.toDouble() ?? 0.0,
-      finalAmount: (data['finalAmount'] as num?)?.toDouble() ?? 0.0,
-      status: (data['status'] as num?)?.toInt() ?? 0,
-      deliveryAddress: (data['deliveryAddress'] as String?) ?? '',
-      paymentMethod: (data['paymentMethod'] as String?) ?? '',
-      createdAt: _parseDateTime(data['createdAt']),
-      note: data['note'] as String?,
-      orderCode: data['orderCode'] as String?,
-      driverId: data['driverId'] as String?,
-      driverName: data['driverName'] as String?,
-      driverPhone: data['driverPhone'] as String?,
-      vehiclePlate: data['vehiclePlate'] as String?,
-      storeAvatar: data['storeAvatar'] as String?,
-    );
   }
 
   static DateTime _parseDateTime(dynamic value) {
@@ -171,7 +248,18 @@ class OrderModel {
   bool get isCompleted => status == 3;
   bool get isCancelled => status == 4;
 
-  OrderModel copyWith({String? storeAvatar}) {
+  OrderModel copyWith({
+    String? storeAvatar,
+    String? storeAddress,
+    String? userAvatar,
+    String? addressId,
+    String? addressName,
+    double? addressLat,
+    double? addressLng,
+    String? receiverName,
+    String? receiverPhone,
+    DateTime? deletedAt,
+  }) {
     return OrderModel(
       id: id,
       userId: userId,
@@ -193,6 +281,15 @@ class OrderModel {
       driverPhone: driverPhone,
       vehiclePlate: vehiclePlate,
       storeAvatar: storeAvatar ?? this.storeAvatar,
+      storeAddress: storeAddress ?? this.storeAddress,
+      userAvatar: userAvatar ?? this.userAvatar,
+      addressId: addressId ?? this.addressId,
+      addressName: addressName ?? this.addressName,
+      addressLat: addressLat ?? this.addressLat,
+      addressLng: addressLng ?? this.addressLng,
+      receiverName: receiverName ?? this.receiverName,
+      receiverPhone: receiverPhone ?? this.receiverPhone,
+      deletedAt: deletedAt ?? this.deletedAt,
     );
   }
 
@@ -221,5 +318,42 @@ class OrderModel {
       default:
         return 'status_pending';
     }
+  }
+}
+
+/// Response tra ve tu API huy don hang.
+class CancelOrderResponse {
+  final bool success;
+  final String message;
+  final CancelOrderData? data;
+
+  CancelOrderResponse({required this.success, required this.message, this.data});
+
+  factory CancelOrderResponse.fromJson(Map<String, dynamic> json) {
+    return CancelOrderResponse(
+      success: json['success'] as bool? ?? false,
+      message: json['message'] as String? ?? '',
+      data: json['data'] != null
+          ? CancelOrderData.fromJson(json['data'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+}
+
+class CancelOrderData {
+  final String id;
+  final int status;
+  final DateTime updatedAt;
+
+  CancelOrderData({required this.id, required this.status, required this.updatedAt});
+
+  factory CancelOrderData.fromJson(Map<String, dynamic> json) {
+    return CancelOrderData(
+      id: json['id'] as String? ?? '',
+      status: (json['status'] as num?)?.toInt() ?? 4,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'] as String) ?? DateTime.now()
+          : DateTime.now(),
+    );
   }
 }
