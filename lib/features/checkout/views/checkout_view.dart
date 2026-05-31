@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:fe_foodgo_customers/core/constants/app_colors.dart';
 import 'package:fe_foodgo_customers/core/localization/language_service.dart';
@@ -527,9 +529,7 @@ class _CheckoutViewState extends State<CheckoutView> {
           price: item.unitPrice,
           quantity: item.quantity,
           imageUrl: item.imageUrl,
-          options: item.selectedOptions
-              .map((o) => cm.ToppingOption(name: o.name, price: o.price))
-              .toList(),
+          options: item.selectedOptions,
           note: item.note.isEmpty ? null : item.note,
         )).toList(),
         discountVoucherId: _selectedDiscountVoucher.isEmpty ? null : _selectedDiscountVoucher,
@@ -537,6 +537,30 @@ class _CheckoutViewState extends State<CheckoutView> {
         freeshipVoucherId: _selectedFreeshipVoucher.isEmpty ? null : _selectedFreeshipVoucher,
         note: _orderNote.isEmpty ? null : _orderNote,
       );
+
+      // Debug: in chi tiet request body gui di
+      debugPrint('========== CHECKOUT REQUEST BODY ==========');
+      debugPrint('userId: ${request.userId}');
+      debugPrint('addressId: ${request.addressId}');
+      debugPrint('storeId: ${request.storeId}');
+      debugPrint('paymentMethod: ${request.paymentMethod}');
+      debugPrint('items (${request.items.length}):');
+      for (var i = 0; i < request.items.length; i++) {
+        final item = request.items[i];
+        debugPrint('  [$i] foodId=${item.foodId}, name=${item.name}, price=${item.price}, qty=${item.quantity}');
+        if (item.options.isNotEmpty) {
+          debugPrint('      options: ${item.options.map((o) => '${o.name}(+${o.price})').join(', ')}');
+        }
+        if (item.note != null) {
+          debugPrint('      note: ${item.note}');
+        }
+      }
+      debugPrint('discountVoucherId: ${request.discountVoucherId ?? "null"}');
+      debugPrint('shopVoucherId: ${request.shopVoucherId ?? "null"}');
+      debugPrint('freeshipVoucherId: ${request.freeshipVoucherId ?? "null"}');
+      debugPrint('note: ${request.note ?? "null"}');
+      debugPrint('JSON body: ${JsonEncoder.withIndent('  ').convert(request.toJson())}');
+      debugPrint('============================================');
 
       final response = await CheckoutService.checkout(request);
 

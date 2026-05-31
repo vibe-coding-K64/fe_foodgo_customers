@@ -6,23 +6,30 @@ import 'package:flutter/foundation.dart';
 /// Model tuy chon topping (size, topping) cua mon an.
 ///
 /// Tuong thich voi Firestore va API checkout.
+///
+/// - [groupName] : Nhom tuy chon, VD: "Kich thuoc", "Topping"
+/// - [name]      : Gia tri tuy chon, VD: "M", "Trân châu"
+/// - [price]     : Gia tri them cua tuy chon
 class ToppingOption {
+  final String groupName;
   final String name;
   final double price;
 
   const ToppingOption({
+    this.groupName = '',
     required this.name,
     required this.price,
   });
 
   factory ToppingOption.fromMap(Map<String, dynamic> map) {
     return ToppingOption(
+      groupName: (map['groupName'] as String?) ?? '',
       name: (map['name'] as String?) ?? '',
       price: (map['price'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
-  Map<String, dynamic> toMap() => {'name': name, 'price': price};
+  Map<String, dynamic> toMap() => {'groupName': groupName, 'name': name, 'price': price};
 }
 
 /// Model mon an trong don hang.

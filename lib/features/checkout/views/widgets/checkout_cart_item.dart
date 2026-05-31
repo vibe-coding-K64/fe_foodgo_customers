@@ -9,6 +9,8 @@ class CheckoutOption {
     required this.price,
     this.groupName = '',
   });
+
+  Map<String, dynamic> toJson() => {'name': name};
 }
 
 /// Model item trong gio hang o buoc checkout.

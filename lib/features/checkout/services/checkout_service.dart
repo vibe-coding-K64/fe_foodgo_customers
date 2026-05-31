@@ -43,6 +43,7 @@ class CheckoutService {
         data['data'] as Map<String, dynamic>? ?? {},
       );
 
+      debugPrint('[CheckoutService] Response JSON: $data');
       debugPrint(
         '[CheckoutService] Checkout thanh cong: orderId=${checkoutResponse.orderId}, '
         'orderCode=${checkoutResponse.orderCode}, finalAmount=${checkoutResponse.finalAmount}',

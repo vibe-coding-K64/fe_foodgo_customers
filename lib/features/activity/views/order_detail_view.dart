@@ -419,152 +419,203 @@ class _OrderDetailViewState extends State<OrderDetailView> {
   }
 
   Widget _buildProductItem(BuildContext ctx, OrderItemModel item) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Hinh anh mon an.
-          if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                item.imageUrl!,
-                width: 52,
-                height: 52,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.restaurant_outlined,
-                    size: 22,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                loadingBuilder: (_, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Center(
-                      child: SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            )
-          else
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                Icons.restaurant_outlined,
-                size: 22,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Ten mon + so luong tren cung mot hang.
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        item.name,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Center(
-                        child: Text(
-                          item.quantity.toString(),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                // Topping.
-                if (item.options != null && item.options!.isNotEmpty) ...[
-                  ...item.options!.map(
-                    (option) => Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 4,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: AppColors.textSecondary,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            option.name,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-                // Don gia (tong tien cua mon, da bao gom topping).
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    _formatPrice(item.price, ctx),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Hinh anh mon an - trai.
+            _buildProductImage(item),
+            const SizedBox(width: 12),
+            // Noi dung trung tam.
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Ten mon + so luong.
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.name,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                            height: 1.3,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Quantity badge - phai.
+                      _buildQuantityBadge(item.quantity),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Variant + Toppings trong container xam nhat.
+                  if (item.options != null && item.options!.isNotEmpty) ...[
+                    _buildOptionsContainer(ctx, item),
+                    const SizedBox(height: 8),
+                  ],
+                  // Don gia.
+                  Text(
+                    _formatPrice(item.price, ctx),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
+  }
+
+  Widget _buildProductImage(OrderItemModel item) {
+    final Widget placeholder = Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Icon(Icons.restaurant_outlined, size: 28, color: AppColors.textSecondary),
+    );
+
+    if (item.imageUrl == null || item.imageUrl!.isEmpty) {
+      return placeholder;
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Image.network(
+        item.imageUrl!,
+        width: 80,
+        height: 80,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => placeholder,
+        loadingBuilder: (_, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildQuantityBadge(int quantity) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        'x$quantity',
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: AppColors.primary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOptionsContainer(BuildContext ctx, OrderItemModel item) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: _buildGroupedToppings(ctx, item.options ?? []),
+      ),
+    );
+  }
+
+  /// Tao danh sach topping, cung groupName thi xuat hien tren 1 dong.
+  /// VD: "Lựa chọn: Trà sữa Size L" | "Lựa chọn: Pudding, Trân châu"
+  List<Widget> _buildGroupedToppings(BuildContext ctx, List<ToppingOption> options) {
+    if (options.isEmpty) return [];
+
+    // Group theo groupName.
+    final Map<String, List<ToppingOption>> grouped = {};
+    for (final opt in options) {
+      final key = opt.groupName.isEmpty ? ctx.t('order_options') : opt.groupName;
+      grouped.putIfAbsent(key, () => []).add(opt);
+    }
+
+    return grouped.entries.map((entry) {
+      final toppingNames = entry.value.map((o) => o.name).join(' · ');
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 2),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 4,
+              height: 4,
+              margin: const EdgeInsets.only(top: 6),
+              decoration: BoxDecoration(
+                color: AppColors.textSecondary,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: RichText(
+                text: TextSpan(
+                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+                  children: [
+                    TextSpan(
+                      text: '${entry.key}: ',
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    TextSpan(text: toppingNames),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }).toList();
   }
 
   Widget _buildPaymentDetailSection(BuildContext ctx, OrderModel order) {

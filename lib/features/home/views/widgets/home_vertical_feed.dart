@@ -3,6 +3,7 @@ import '../../models/store_model.dart';
 import '../../models/product_model.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
+import '../../../../core/utils/format_currency.dart';
 
 /// Widget feed danh sach san pham/quan an cuon doc.
 /// Nhan Stream thay vi List, tu dong xu ly 3 trang thai:
@@ -405,7 +406,7 @@ class _VerticalProductItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${product.basePrice.toStringAsFixed(0)} ${context.t('unit_currency')}',
+                    formatCurrency(product.basePrice, context),
                     style: TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,

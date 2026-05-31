@@ -178,12 +178,12 @@ class ApiClient {
     if (kDebugMode) {
       _dio!.interceptors.add(
         LogInterceptor(
-          request: true,
-          requestHeader: true,
+          request: false,
+          requestHeader: false,
           requestBody: false,
-          responseHeader: true,
+          responseHeader: false,
           responseBody: false,
-          error: true,
+          error: false,
           logPrint: (obj) => debugPrint('[ApiClient] $obj'),
         ),
       );

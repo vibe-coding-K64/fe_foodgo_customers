@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/utils/format_currency.dart';
 import '../../search/views/search_view.dart';
 import '../../search/views/search_result_view.dart';
 import '../../product/views/product_detail_bottom_sheet.dart';
@@ -760,7 +761,7 @@ class _ProductCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${product.basePrice.toStringAsFixed(0)} ${context.t('unit_currency')}',
+                    formatCurrency(product.basePrice, context),
                     style: TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,

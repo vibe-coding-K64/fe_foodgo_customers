@@ -1,3 +1,5 @@
+import 'package:fe_foodgo_customers/features/checkout/views/widgets/checkout_cart_item.dart';
+
 /// Model tuy chon topping (size, topping) cua mon an trong don hang.
 ///
 /// Tuong thich voi response cua API checkout:
@@ -28,7 +30,8 @@ class CheckoutOrderItem {
   final double price;
   final int quantity;
   final String? imageUrl;
-  final List<ToppingOption> options;
+  /// Cac options da chon, su dung CheckoutOption (co groupName).
+  final List<CheckoutOption> options;
   final String? note;
 
   const CheckoutOrderItem({
@@ -48,9 +51,21 @@ class CheckoutOrderItem {
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       quantity: (json['quantity'] as num?)?.toInt() ?? 1,
       imageUrl: json['imageUrl'] as String?,
-      options: (json['options'] as List<dynamic>?)
+      options: (json['selectedOptions'] as List<dynamic>?)
               ?.whereType<Map<String, dynamic>>()
-              .map((e) => ToppingOption.fromJson(e))
+              .expand((group) {
+                final groupName = (group['name'] as String?) ?? '';
+                final opts = (group['options'] as List<dynamic>?)
+                        ?.whereType<Map<String, dynamic>>()
+                        .map((o) => CheckoutOption(
+                              name: (o['name'] as String?) ?? '',
+                              price: (o['price'] as num?)?.toDouble() ?? 0.0,
+                              groupName: groupName,
+                            ))
+                        .toList() ??
+                    [];
+                return opts;
+              })
               .toList() ??
           [],
       note: json['note'] as String?,
@@ -94,13 +109,25 @@ class CheckoutRequest {
       'addressId': addressId,
       'paymentMethod': paymentMethod,
       'storeId': storeId,
-      'items': items.map((item) => {
-        'foodId': item.foodId,
-        'name': item.name,
-        'quantity': item.quantity,
-        'imageUrl': item.imageUrl,
-        'options': item.options.map((o) => o.toJson()).toList(),
-        if (item.note != null && item.note!.isNotEmpty) 'note': item.note,
+      'items': items.map((item) {
+        // Group options theo groupName de gui len backend
+        final grouped = <String, List<Map<String, dynamic>>>{};
+        for (final opt in item.options) {
+          grouped.putIfAbsent(opt.groupName, () => []).add(opt.toJson());
+        }
+        final selectedOptions = grouped.entries.map((e) => {
+          'name': e.key,
+          'options': e.value,
+        }).toList();
+
+        return {
+          'foodId': item.foodId,
+          'name': item.name,
+          'quantity': item.quantity,
+          'imageUrl': item.imageUrl,
+          'selectedOptions': selectedOptions,
+          if (item.note != null && item.note!.isNotEmpty) 'note': item.note,
+        };
       }).toList(),
       if (discountVoucherId != null && discountVoucherId!.isNotEmpty)
         'discountVoucherId': discountVoucherId,
