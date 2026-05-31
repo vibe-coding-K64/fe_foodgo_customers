@@ -52,10 +52,20 @@ class ActivityOrderCard extends StatelessWidget {
                     color: AppColors.surfaceVariant,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
-                    Icons.restaurant,
-                    color: AppColors.textSecondary,
-                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: order.storeAvatar != null && order.storeAvatar!.isNotEmpty
+                      ? Image.network(
+                          order.storeAvatar!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.restaurant,
+                            color: AppColors.textSecondary,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.restaurant,
+                          color: AppColors.textSecondary,
+                        ),
                 ),
                 const SizedBox(width: 12),
                 // Thong tin don hang.
@@ -71,11 +81,6 @@ class ActivityOrderCard extends StatelessWidget {
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      // Hien thi sub-status neu co (chi cho don dang xu ly).
-                      if (order.isActive) ...[
-                        const SizedBox(height: 2),
-                        _buildSubStatusRow(context),
-                      ],
                       Text(
                         _formatItemCountText(context),
                         style: const TextStyle(
@@ -87,7 +92,7 @@ class ActivityOrderCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _formatPrice(order.totalAmount, context),
+                        _formatPrice(order.finalAmount, context),
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
@@ -211,40 +216,6 @@ class ActivityOrderCard extends StatelessWidget {
     );
   }
 
-  /// Dong sub-status hien thi trang thai chi tiet cua don dang xu ly.
-  Widget _buildSubStatusRow(BuildContext context) {
-    Color textColor;
-
-    switch (order.status) {
-      case 0:
-        textColor = Colors.blue.shade700;
-        break;
-      case 1:
-        textColor = Colors.blue.shade700;
-        break;
-      case 2:
-        textColor = Colors.orange.shade700;
-        break;
-      default:
-        return const SizedBox.shrink();
-    }
-
-    return Row(
-      children: [
-        Icon(Icons.arrow_forward_ios, size: 10, color: textColor),
-        const SizedBox(width: 4),
-        Text(
-          context.t(order.statusTextKey),
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: textColor,
-          ),
-        ),
-      ],
-    );
-  }
-
   /// Nut hanh dong thu hai, thay doi theo trang thai don hang:
   ///   - active (0, 1, 2): nut "Huy don" (OutlineButton, chu do).
   ///   - completed/cancelled (3, 4): nut "Dat lai" (ElevatedButton, xanh la).
@@ -307,12 +278,14 @@ class ActivityOrderCard extends StatelessWidget {
 
   /// Format text so luong mon an them (VD: "+ 2 mon" hoac "+ 2 items").
   String _formatItemCountText(BuildContext context) {
-    if (order.itemCount <= 1) {
-      return order.mainItemName ?? 'Mon an';
-    }
+    if (order.items.isEmpty) return 'Mon an';
+    if (order.items.length == 1) return order.items.first.name;
+    final firstName = order.items.first.name;
+    final remaining = order.itemCount - order.items.first.quantity;
+    if (remaining <= 0) return firstName;
     final suffix = context
         .t('order_item_count_suffix')
-        .replaceAll('\$1', (order.itemCount - 1).toString());
-    return '${order.mainItemName ?? 'Mon an'} + $suffix';
+        .replaceAll('\$1', remaining.toString());
+    return '$firstName + $suffix';
   }
 }

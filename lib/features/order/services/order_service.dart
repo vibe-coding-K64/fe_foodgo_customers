@@ -11,6 +11,7 @@ class OrderService {
 
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static const String _ordersCollection = 'orders';
+  static const String _storesCollection = 'stores';
 
   /// Lay danh sach don hang cua nguoi dung hien tai.
   /// Tra ve Stream de StreamBuilder co the lang nghe.
@@ -38,8 +39,38 @@ class OrderService {
           .map((doc) => OrderModel.fromFirestore(doc))
           .toList();
 
-      debugPrint('OrderService: Da lay ${orders.length} don hang');
-      return orders;
+      // Lay danh sach storeId duy nhat de fetch avatar.
+      final storeIds = orders
+          .map((o) => o.storeId)
+          .where((id) => id.isNotEmpty)
+          .toSet()
+          .toList();
+
+      // Fetch avatar tu Firestore stores collection.
+      final Map<String, String> avatarMap = {};
+      for (final storeId in storeIds) {
+        try {
+          final storeDoc = await _firestore
+              .collection(_storesCollection)
+              .doc(storeId)
+              .get();
+          final avtUrl = storeDoc.data()?['avtUrl'] as String?;
+          if (avtUrl != null && avtUrl.isNotEmpty) {
+            avatarMap[storeId] = avtUrl;
+          }
+        } catch (e) {
+          debugPrint('OrderService: Loi khi lay avatar storeId=$storeId: $e');
+        }
+      }
+
+      // Gan avatar vao moi order.
+      final ordersWithAvatar = orders.map((order) {
+        final avatar = avatarMap[order.storeId];
+        return avatar != null ? order.copyWith(storeAvatar: avatar) : order;
+      }).toList();
+
+      debugPrint('OrderService: Da lay ${ordersWithAvatar.length} don hang');
+      return ordersWithAvatar;
     });
   }
 

@@ -96,6 +96,7 @@ class OrderModel {
   final String? driverName;
   final String? driverPhone;
   final String? vehiclePlate;
+  final String? storeAvatar;
 
   OrderModel({
     required this.id,
@@ -117,6 +118,7 @@ class OrderModel {
     this.driverName,
     this.driverPhone,
     this.vehiclePlate,
+    this.storeAvatar,
   });
 
   factory OrderModel.fromFirestore(DocumentSnapshot doc) {
@@ -151,6 +153,7 @@ class OrderModel {
       driverName: data['driverName'] as String?,
       driverPhone: data['driverPhone'] as String?,
       vehiclePlate: data['vehiclePlate'] as String?,
+      storeAvatar: data['storeAvatar'] as String?,
     );
   }
 
@@ -167,6 +170,31 @@ class OrderModel {
   bool get isActive => status == 0 || status == 1 || status == 2;
   bool get isCompleted => status == 3;
   bool get isCancelled => status == 4;
+
+  OrderModel copyWith({String? storeAvatar}) {
+    return OrderModel(
+      id: id,
+      userId: userId,
+      storeId: storeId,
+      storeName: storeName,
+      items: items,
+      totalAmount: totalAmount,
+      deliveryFee: deliveryFee,
+      discountAmount: discountAmount,
+      finalAmount: finalAmount,
+      status: status,
+      deliveryAddress: deliveryAddress,
+      paymentMethod: paymentMethod,
+      createdAt: createdAt,
+      note: note,
+      orderCode: orderCode,
+      driverId: driverId,
+      driverName: driverName,
+      driverPhone: driverPhone,
+      vehiclePlate: vehiclePlate,
+      storeAvatar: storeAvatar ?? this.storeAvatar,
+    );
+  }
 
   int get itemCount => items.fold(0, (sum, item) => sum + item.quantity);
 
