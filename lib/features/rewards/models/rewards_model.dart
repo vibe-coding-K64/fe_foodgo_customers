@@ -73,7 +73,13 @@ class MyVoucherModel {
   }
 
   /// Kiem tra voucher con han su dung hay khong.
-  bool get isValid => expiryDate.toUtc().isAfter(DateTime.now().toUtc());
+  bool get isValid {
+    final now = DateTime.now();
+    final expiry = expiryDate;
+    final today = DateTime(now.year, now.month, now.day);
+    final expiryDay = DateTime(expiry.year, expiry.month, expiry.day);
+    return !expiryDay.isBefore(today);
+  }
 
   /// So ngay con lai truoc khi het han.
   int get daysRemaining {
@@ -86,79 +92,8 @@ class MyVoucherModel {
     if (type == 1) {
       return '${value.toInt()}%';
     } else {
-      return '${value.toInt()}K';
-    }
-  }
-}
-
-/// Model voucher co the doi diem tu he thong.
-///
-/// Su dung cho collection `system_vouchers`.
-class SystemVoucherModel {
-  final String id;
-  final String title;
-  final String subtitle;
-  /// Loai giam gia: 1=%, 2=gia (VND).
-  final int type;
-  /// Gia tri giam (type=1: %; type=2: VND).
-  final double value;
-  final int pointsRequired;
-  final String imageUrl;
-  final int remaining;
-  final String terms;
-  final double minOrderValue;
-
-  const SystemVoucherModel({
-    required this.id,
-    required this.title,
-    required this.subtitle,
-    required this.type,
-    required this.value,
-    required this.pointsRequired,
-    required this.imageUrl,
-    required this.remaining,
-    this.terms = '',
-    this.minOrderValue = 0,
-  });
-
-  /// Khoi tao tu Firestore document.
-  factory SystemVoucherModel.fromFirestore(DocumentSnapshot doc) {
-    final raw = doc.data();
-    if (raw == null) {
-      debugPrint('SystemVoucherModel.fromFirestore: doc.data() is null for ${doc.id}');
-      return SystemVoucherModel(
-        id: doc.id,
-        title: '',
-        subtitle: '',
-        type: 1,
-        value: 0,
-        pointsRequired: 0,
-        imageUrl: '',
-        remaining: 0,
-      );
-    }
-    final data = raw as Map<String, dynamic>;
-
-    return SystemVoucherModel(
-      id: doc.id,
-      title: data['title'] as String? ?? '',
-      subtitle: data['subtitle'] as String? ?? '',
-      type: (data['type'] as num?)?.toInt() ?? 1,
-      value: (data['value'] as num?)?.toDouble() ?? 0.0,
-      pointsRequired: (data['pointsRequired'] as num?)?.toInt() ?? 0,
-      imageUrl: data['imageUrl'] as String? ?? '',
-      remaining: (data['remaining'] as num?)?.toInt() ?? 0,
-      terms: data['terms'] as String? ?? '',
-      minOrderValue: (data['minOrderValue'] as num?)?.toDouble() ?? 0.0,
-    );
-  }
-
-  /// Tra ve text hien thi gia tri giam.
-  String get discountText {
-    if (type == 1) {
-      return '${value.toInt()}%';
-    } else {
-      return '${value.toInt()}K';
+      final k = (value / 1000).round();
+      return '${k}K';
     }
   }
 }
@@ -193,18 +128,20 @@ class ExchangeVoucherModel {
     this.minOrderValue = 0,
   });
 
-  factory ExchangeVoucherModel.fromSystemVoucher(SystemVoucherModel model) {
+/// Khoi tao tu Firestore document cua collection `vouchers`.
+  factory ExchangeVoucherModel.fromVoucher(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
     return ExchangeVoucherModel(
-      id: model.id,
-      title: model.title,
-      subtitle: model.subtitle,
-      type: model.type,
-      value: model.value,
-      pointsRequired: model.pointsRequired,
-      imageUrl: model.imageUrl,
-      remaining: model.remaining,
-      terms: model.terms,
-      minOrderValue: model.minOrderValue,
+      id: doc.id,
+      title: data['title'] as String? ?? '',
+      subtitle: data['subtitle'] as String? ?? '',
+      type: (data['type'] as num?)?.toInt() ?? 1,
+      value: (data['value'] as num?)?.toDouble() ?? 0.0,
+      pointsRequired: (data['pointsRequired'] as num?)?.toInt() ?? 0,
+      imageUrl: data['imageUrl'] as String? ?? '',
+      remaining: (data['remaining'] as num?)?.toInt() ?? 0,
+      terms: data['terms'] as String? ?? '',
+      minOrderValue: (data['minOrderValue'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -213,7 +150,8 @@ class ExchangeVoucherModel {
     if (type == 1) {
       return '${value.toInt()}%';
     } else {
-      return '${value.toInt()}K';
+      final k = (value / 1000).round();
+      return '${k}K';
     }
   }
 }
@@ -363,7 +301,8 @@ class ExchangedVoucherData {
     if (type == 1) {
       return '${value.toInt()}%';
     } else {
-      return '${value.toInt()}K';
+      final k = (value / 1000).round();
+      return '${k}K';
     }
   }
 }

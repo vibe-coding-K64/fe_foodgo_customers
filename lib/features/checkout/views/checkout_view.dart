@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fe_foodgo_customers/core/constants/app_colors.dart';
 import 'package:fe_foodgo_customers/core/localization/language_service.dart';
-import 'package:fe_foodgo_customers/features/order/models/order_model.dart';
 import 'package:fe_foodgo_customers/features/address/models/address_model.dart';
 import 'package:fe_foodgo_customers/features/cart/models/cart_item_model.dart';
 import 'package:fe_foodgo_customers/features/home/models/product_model.dart';
@@ -17,7 +16,10 @@ import 'package:fe_foodgo_customers/features/checkout/views/widgets/voucher_sele
 import 'package:fe_foodgo_customers/features/address/views/address_management_view.dart';
 import 'package:fe_foodgo_customers/features/checkout/services/checkout_service.dart';
 import 'package:fe_foodgo_customers/features/checkout/services/my_voucher_firestore_service.dart';
-import 'package:fe_foodgo_customers/features/checkout/models/checkout_models.dart';
+import 'package:fe_foodgo_customers/features/order/models/order_model.dart' as om;
+import 'package:fe_foodgo_customers/features/order/views/order_detail_view.dart' as od_stub;
+import 'package:fe_foodgo_customers/features/activity/views/order_detail_view.dart';
+import 'package:fe_foodgo_customers/features/checkout/models/checkout_models.dart' as cm;
 import 'package:fe_foodgo_customers/features/checkout/models/voucher_model.dart';
 
 /// Trang checkout (Thanh toan) - buoc cuoi cung cua luong mua hang.
@@ -33,7 +35,7 @@ import 'package:fe_foodgo_customers/features/checkout/models/voucher_model.dart'
 /// cung topping va gia da bao gom topping.
 class CheckoutView extends StatefulWidget {
   /// Don hang cu de dat lai. Neu null, su dung gio hang mac dinh.
-  final OrderModel? initialOrder;
+  final om.OrderModel? initialOrder;
 
   /// Cac mon da chon tu trang gio hang (CartView).
   /// Neu duoc truyen, cac mon nay se duoc hien thi thay vi mock data.
@@ -305,7 +307,7 @@ class _CheckoutViewState extends State<CheckoutView> {
   }
 
   /// Chuyen doi danh sach mon cua don hang cu sang dinh dang gio hang checkout.
-  List<CheckoutCartItem> _convertOrderToCartItems(OrderModel order) {
+  List<CheckoutCartItem> _convertOrderToCartItems(om.OrderModel order) {
     return order.items.map((item) {
       final toppingsTotal = (item.options ?? []).fold<double>(
         0, (sum, o) => sum + o.price,
@@ -512,10 +514,22 @@ class _CheckoutViewState extends State<CheckoutView> {
     );
 
     try {
-      final request = CheckoutRequest(
+      final request = cm.CheckoutRequest(
         userId: 'user_001',
         addressId: _deliveryAddress!.id,
         paymentMethod: _selectedPaymentMethod,
+        storeId: _cartItems.first.storeId,
+        items: _cartItems.map((item) => cm.CheckoutOrderItem(
+          foodId: item.foodId,
+          name: item.name,
+          price: item.unitPrice,
+          quantity: item.quantity,
+          imageUrl: item.imageUrl,
+          options: item.toppings
+              .map((t) => cm.ToppingOption(name: t.name, price: t.price))
+              .toList(),
+          note: item.note.isEmpty ? null : item.note,
+        )).toList(),
         discountVoucherId: _selectedDiscountVoucher.isEmpty ? null : _selectedDiscountVoucher,
         shopVoucherId: _selectedShopVoucher.isEmpty ? null : _selectedShopVoucher,
         freeshipVoucherId: _selectedFreeshipVoucher.isEmpty ? null : _selectedFreeshipVoucher,
@@ -544,55 +558,230 @@ class _CheckoutViewState extends State<CheckoutView> {
     }
   }
 
-  void _showOrderSuccessDialog(BuildContext context, CheckoutResponse response) {
+  void _showOrderSuccessDialog(BuildContext context, cm.CheckoutResponse response) {
+    // Convert CheckoutResponse sang OrderModel de hien thi trang chi tiet.
+    final order = om.OrderModel(
+      id: response.orderId,
+      userId: response.userId,
+      storeId: response.storeId,
+      storeName: response.storeName,
+      items: response.items.map((item) => om.OrderItemModel(
+        foodId: item.foodId,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        imageUrl: item.imageUrl,
+        options: item.options.map((o) => om.ToppingOption(name: o.name, price: o.price)).toList(),
+      )).toList(),
+      totalAmount: response.totalAmount,
+      deliveryFee: response.deliveryFee,
+      discountAmount: response.discountAmount,
+      finalAmount: response.finalAmount,
+      status: response.status,
+      deliveryAddress: response.deliveryAddress,
+      paymentMethod: response.paymentMethod,
+      createdAt: DateTime.now(),
+      orderCode: response.orderCode,
+    );
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.check_circle, color: AppColors.primary, size: 28),
-            SizedBox(width: 10),
-            Text('Dat hang thanh cong!'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Ma don hang: ${response.orderCode}',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            Text('Ten cua hang: ${response.storeName}'),
-            Text('Dia chi giao: ${response.deliveryAddress}'),
-            const SizedBox(height: 8),
-            Text(
-              'Tong thanh toan: ${_formatPrice(response.finalAmount)} VND',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icon checkmark xoay.
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_circle,
+                  color: AppColors.primary,
+                  size: 48,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Vui long cho cua hang xac nhan don hang.',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pop(context, response);
-            },
-            child: const Text('OK'),
+              const SizedBox(height: 20),
+
+              // Tieu de.
+              Text(
+                context.t('checkout_success_title'),
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 6),
+
+              // Ma don hang.
+              Text(
+                '${context.t('checkout_success_order_code')}: ${response.orderCode}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Card thong tin thanh toan.
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.07),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.15),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    _infoRow(
+                      context.t('checkout_success_store'),
+                      response.storeName,
+                    ),
+                    const SizedBox(height: 8),
+                    _infoRow(
+                      context.t('checkout_success_delivery_address'),
+                      response.deliveryAddress,
+                    ),
+                    const SizedBox(height: 12),
+                    const Divider(height: 1),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          context.t('checkout_success_total'),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          _formatPrice(response.finalAmount),
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Ghi chu.
+              Text(
+                context.t('checkout_success_note'),
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 28),
+
+              // 2 nut hanh dong.
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        Navigator.pop(context, response);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: AppColors.primary, width: 1.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        context.t('checkout_success_ok'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        Navigator.pop(context); // Dong checkout
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => OrderDetailView(order: order),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        context.t('checkout_success_view_order'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _infoRow(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$label: ',
+          style: const TextStyle(
+            fontSize: 14,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

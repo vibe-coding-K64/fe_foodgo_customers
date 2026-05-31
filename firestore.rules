@@ -83,12 +83,6 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // System vouchers (voucher doi diem).
-    match /system_vouchers/{docId} {
-      allow read: if true;
-      allow write: if false;
-    }
-
     // System categories (danh muc).
     match /categories/{docId} {
       allow read: if true;

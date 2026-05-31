@@ -150,14 +150,17 @@ class OfferService {
 
   /// Fallback: doc tu Firestore `system_vouchers`.
   static Future<List<ExchangeVoucherModel>> _fallbackGetSystemVouchers() async {
-    debugPrint('OfferService: Fallback - doc system_vouchers tu Firestore');
+    debugPrint('OfferService: Fallback - doc vouchers tu Firestore');
     try {
-      final snapshot = await _firestore.collection('system_vouchers').get();
+      final snapshot = await _firestore
+          .collection('vouchers')
+          .where('pointsRequired', isGreaterThan: 0)
+          .where('remaining', isGreaterThan: 0)
+          .get();
       final vouchers = snapshot.docs
-          .map((doc) => ExchangeVoucherModel.fromSystemVoucher(
-              SystemVoucherModel.fromFirestore(doc)))
+          .map((doc) => ExchangeVoucherModel.fromVoucher(doc))
           .toList();
-      debugPrint('OfferService: Fallback lay duoc ${vouchers.length} system voucher');
+      debugPrint('OfferService: Fallback lay duoc ${vouchers.length} voucher');
       return vouchers;
     } catch (e) {
       debugPrint('OfferService: Fallback that bai = $e');

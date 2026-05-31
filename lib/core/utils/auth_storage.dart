@@ -14,6 +14,9 @@ class AuthStorage {
   static const String _tokenKey = 'auth_token';
   static const String _userKey = 'auth_user';
   static const String _tokenTypeKey = 'auth_token_type';
+  static const String _expiresInKey = 'auth_expires_in';
+  static const String _refreshTokenKey = 'auth_refresh_token';
+  static const String _refreshExpiresInKey = 'auth_refresh_expires_in';
 
   /// Khoi tao SharedPreferences (goi 1 lan).
   static Future<void> init() async {
@@ -31,6 +34,21 @@ class AuthStorage {
   /// Lay token type (thuong la "Bearer").
   static String? getTokenType() {
     return _prefs?.getString(_tokenTypeKey);
+  }
+
+  /// Lay expiresIn (milliseconds).
+  static int? getExpiresIn() {
+    return _prefs?.getInt(_expiresInKey);
+  }
+
+  /// Lay refreshToken.
+  static String? getRefreshToken() {
+    return _prefs?.getString(_refreshTokenKey);
+  }
+
+  /// Lay refreshExpiresIn (milliseconds).
+  static int? getRefreshExpiresIn() {
+    return _prefs?.getInt(_refreshExpiresInKey);
   }
 
   /// Lay thong tin nguoi dung da luu.
@@ -56,10 +74,16 @@ class AuthStorage {
     required String token,
     required String tokenType,
     required Map<String, dynamic> user,
+    required int expiresIn,
+    required String refreshToken,
+    required int refreshExpiresIn,
   }) async {
     await _prefs?.setString(_tokenKey, token);
     await _prefs?.setString(_tokenTypeKey, tokenType);
     await _prefs?.setString(_userKey, jsonEncode(user));
+    await _prefs?.setInt(_expiresInKey, expiresIn);
+    await _prefs?.setString(_refreshTokenKey, refreshToken);
+    await _prefs?.setInt(_refreshExpiresInKey, refreshExpiresIn);
     debugPrint('AuthStorage: Luu auth data thanh cong. userId = ${user['id']}');
   }
 
@@ -68,6 +92,9 @@ class AuthStorage {
     await _prefs?.remove(_tokenKey);
     await _prefs?.remove(_tokenTypeKey);
     await _prefs?.remove(_userKey);
+    await _prefs?.remove(_expiresInKey);
+    await _prefs?.remove(_refreshTokenKey);
+    await _prefs?.remove(_refreshExpiresInKey);
     debugPrint('AuthStorage: Xoa auth data thanh cong');
   }
 

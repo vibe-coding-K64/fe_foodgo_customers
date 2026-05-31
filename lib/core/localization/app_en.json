@@ -737,5 +737,13 @@
   "status_cancelled": "Cancelled",
   "finding_driver": "Finding driver...",
   "required": "Required",
-  "optional": "Optional"
+  "optional": "Optional",
+  "checkout_success_title": "Order Placed Successfully!",
+  "checkout_success_order_code": "Order ID",
+  "checkout_success_store": "Store",
+  "checkout_success_delivery_address": "Delivery Address",
+  "checkout_success_total": "Total Payment",
+  "checkout_success_note": "Please wait for the store to confirm your order.",
+  "checkout_success_view_order": "View Order",
+  "checkout_success_ok": "OK"
 }

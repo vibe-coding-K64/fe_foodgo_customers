@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../search/views/search_view.dart';
 import '../models/rewards_model.dart';
 import '../services/offer_service.dart';
 import 'my_vouchers_view.dart';
 import 'reward_detail_view.dart';
 import 'widgets/rewards_point_card.dart';
 import 'widgets/rewards_voucher_card.dart';
-import 'voucher_applicable_products_view.dart';
 
 /// Man hinh Uu dai (Rewards).
 ///
@@ -250,34 +250,6 @@ class _RewardsViewState extends State<RewardsView> {
                   color: AppColors.textPrimary,
                 ),
               ),
-              FutureBuilder<List<MyVoucherModel>>(
-                future: _myVouchersFuture,
-                builder: (context, snapshot) {
-                  final hasData = snapshot.hasData && snapshot.data!.isNotEmpty;
-                  return TextButton(
-                    onPressed: hasData
-                        ? () {
-                            debugPrint('RewardsView: Mo trang tat ca voucher');
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => MyVouchersView(
-                                  vouchers: snapshot.data!,
-                                ),
-                              ),
-                            );
-                          }
-                        : null,
-                    child: Text(
-                      context.t('common_see_all'),
-                      style: TextStyle(
-                        color: hasData ? AppColors.primary : AppColors.textHint,
-                        fontSize: 14,
-                      ),
-                    ),
-                  );
-                },
-              ),
             ],
           ),
         ),
@@ -295,12 +267,14 @@ class _RewardsViewState extends State<RewardsView> {
               );
             }
 
-            final vouchers = snapshot.data!;
+            final vouchers = List<MyVoucherModel>.from(snapshot.data!)
+              ..where((v) => v.isValid)
+              ..sort((a, b) => b.expiryDate.compareTo(a.expiryDate));
             return ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: vouchers.length > 3 ? 3 : vouchers.length,
+              itemCount: vouchers.length,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final voucher = vouchers[index];
@@ -311,9 +285,7 @@ class _RewardsViewState extends State<RewardsView> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => VoucherApplicableProductsView(
-                          voucher: voucher,
-                        ),
+                        builder: (context) => const SearchView(),
                       ),
                     );
                   },
@@ -444,7 +416,9 @@ class _SystemVoucherCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      voucher.discountText,
+                      voucher.type == 1
+                          ? context.t('voucher_discount_percent').replaceFirst('\$1', '${voucher.value.toInt()}')
+                          : context.t('voucher_discount_amount').replaceFirst('\$1', '${(voucher.value / 1000).round()}'),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,

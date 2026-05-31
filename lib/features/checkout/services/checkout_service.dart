@@ -13,7 +13,8 @@ class CheckoutService {
 
   /// Thuc hien dat hang (checkout).
   ///
-  /// [request] chua userId, addressId, paymentMethod, voucherId, note.
+  /// [request] chua: userId, addressId, paymentMethod, storeId, items,
+  /// note, discountVoucherId, shopVoucherId, freeshipVoucherId.
   ///
   /// Tra ve [CheckoutResponse] neu thanh cong.
   /// Nem [CheckoutError] neu that bai.

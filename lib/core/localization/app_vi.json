@@ -743,5 +743,13 @@
   "status_cancelled": "Đã hủy",
   "finding_driver": "Dang tim tai xe...",
   "required": "Bắt buộc",
-  "optional": "Không bắt buộc"
+  "optional": "Không bắt buộc",
+  "checkout_success_title": "Đặt hàng thành công!",
+  "checkout_success_order_code": "Mã đơn hàng",
+  "checkout_success_store": "Tên cửa hàng",
+  "checkout_success_delivery_address": "Địa chỉ giao hàng",
+  "checkout_success_total": "Tổng thanh toán",
+  "checkout_success_note": "Vui lòng chờ cửa hàng xác nhận đơn hàng.",
+  "checkout_success_view_order": "Xem đơn hàng",
+  "checkout_success_ok": "OK"
 }

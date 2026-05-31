@@ -115,6 +115,9 @@ class ProfileService {
         token: AuthStorage.getToken() ?? '',
         tokenType: AuthStorage.getTokenType() ?? 'Bearer',
         user: updatedUser.toJson(),
+        expiresIn: AuthStorage.getExpiresIn() ?? 0,
+        refreshToken: AuthStorage.getRefreshToken() ?? '',
+        refreshExpiresIn: AuthStorage.getRefreshExpiresIn() ?? 0,
       );
 
       debugPrint('ProfileService: Cap nhat ho so thanh cong');

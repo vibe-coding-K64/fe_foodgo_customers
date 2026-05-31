@@ -126,10 +126,16 @@ class AuthService {
 
       // Luu token va thong tin nguoi dung.
       final tokenType = data['tokenType'] as String? ?? 'Bearer';
+      final expiresIn = data['expiresIn'] as int? ?? 0;
+      final refreshToken = data['refreshToken'] as String? ?? '';
+      final refreshExpiresIn = data['refreshExpiresIn'] as int? ?? 0;
       await AuthStorage.saveAuthData(
         token: token,
         tokenType: tokenType,
         user: user.toJson(),
+        expiresIn: expiresIn,
+        refreshToken: refreshToken,
+        refreshExpiresIn: refreshExpiresIn,
       );
 
       debugPrint('AuthService: Dang nhap thanh cong. userId = ${user.id}');

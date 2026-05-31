@@ -18,7 +18,7 @@ class ToppingOption {
     );
   }
 
-  Map<String, dynamic> toJson() => {'name': name, 'price': price};
+  Map<String, dynamic> toJson() => {'name': name};
 }
 
 /// Model mot mon an trong don hang, tuong thich voi API checkout.
@@ -29,6 +29,7 @@ class CheckoutOrderItem {
   final int quantity;
   final String? imageUrl;
   final List<ToppingOption> options;
+  final String? note;
 
   const CheckoutOrderItem({
     required this.foodId,
@@ -37,6 +38,7 @@ class CheckoutOrderItem {
     required this.quantity,
     this.imageUrl,
     this.options = const [],
+    this.note,
   });
 
   factory CheckoutOrderItem.fromJson(Map<String, dynamic> json) {
@@ -51,15 +53,24 @@ class CheckoutOrderItem {
               .map((e) => ToppingOption.fromJson(e))
               .toList() ??
           [],
+      note: json['note'] as String?,
     );
   }
 }
 
 /// Request body gui len API checkout.
+///
+/// Endpoint: POST /orders/checkout
+///
+/// Request body:
+///   userId, addressId, paymentMethod, storeId, items (danh sach mon da chon),
+///   note (order-level), discountVoucherId, shopVoucherId, freeshipVoucherId.
 class CheckoutRequest {
   final String userId;
   final String addressId;
   final String paymentMethod;
+  final String storeId;
+  final List<CheckoutOrderItem> items;
   final String? discountVoucherId;
   final String? shopVoucherId;
   final String? freeshipVoucherId;
@@ -69,6 +80,8 @@ class CheckoutRequest {
     required this.userId,
     required this.addressId,
     required this.paymentMethod,
+    required this.storeId,
+    required this.items,
     this.discountVoucherId,
     this.shopVoucherId,
     this.freeshipVoucherId,
@@ -80,6 +93,15 @@ class CheckoutRequest {
       'userId': userId,
       'addressId': addressId,
       'paymentMethod': paymentMethod,
+      'storeId': storeId,
+      'items': items.map((item) => {
+        'foodId': item.foodId,
+        'name': item.name,
+        'quantity': item.quantity,
+        'imageUrl': item.imageUrl,
+        'options': item.options.map((o) => o.toJson()).toList(),
+        if (item.note != null && item.note!.isNotEmpty) 'note': item.note,
+      }).toList(),
       if (discountVoucherId != null && discountVoucherId!.isNotEmpty)
         'discountVoucherId': discountVoucherId,
       if (shopVoucherId != null && shopVoucherId!.isNotEmpty)
