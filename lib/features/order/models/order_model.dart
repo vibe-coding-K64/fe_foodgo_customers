@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
@@ -159,6 +161,16 @@ class OrderModel {
               .whereType<Map<String, dynamic>>()
               .map((e) => OrderItemModel.fromMap(e))
               .toList();
+        } else if (itemsData is String && itemsData.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(itemsData);
+            if (decoded is List) {
+              parsedItems = (decoded as List)
+                  .whereType<Map<String, dynamic>>()
+                  .map((e) => OrderItemModel.fromMap(e))
+                  .toList();
+            }
+          } catch (_) {}
         }
       } catch (e) {
         debugPrint('OrderModel.fromFirestore: Loi parse items: $e');
@@ -208,24 +220,24 @@ class OrderModel {
         discountAmount: discountAmount,
         finalAmount: finalAmount,
         status: status,
-        deliveryAddress: (data['deliveryAddress'] as String?) ?? '',
-        paymentMethod: (data['paymentMethod'] as String?) ?? '',
+        deliveryAddress: _parseString(data['deliveryAddress']),
+        paymentMethod: _parseString(data['paymentMethod']),
         createdAt: _parseDateTime(data['createdAt']),
-        note: data['note'] as String?,
-        orderCode: data['orderCode'] as String?,
-        driverId: data['driverId'] as String?,
-        driverName: data['driverName'] as String?,
-        driverPhone: data['driverPhone'] as String?,
-        vehiclePlate: data['vehiclePlate'] as String?,
-        storeAvatar: data['storeAvatar'] as String?,
-        storeAddress: data['storeAddress'] as String?,
-        userAvatar: data['userAvatar'] as String?,
-        addressId: data['addressId'] as String?,
-        addressName: data['addressName'] as String?,
+        note: _parseStringNullable(data['note']),
+        orderCode: _parseStringNullable(data['orderCode']),
+        driverId: _parseStringNullable(data['driverId']),
+        driverName: _parseStringNullable(data['driverName']),
+        driverPhone: _parseStringNullable(data['driverPhone']),
+        vehiclePlate: _parseStringNullable(data['vehiclePlate']),
+        storeAvatar: _parseStringNullable(data['storeAvatar']),
+        storeAddress: _parseStringNullable(data['storeAddress']),
+        userAvatar: _parseStringNullable(data['userAvatar']),
+        addressId: _parseStringNullable(data['addressId']),
+        addressName: _parseStringNullable(data['addressName']),
         addressLat: (data['addressLat'] as num?)?.toDouble(),
         addressLng: (data['addressLng'] as num?)?.toDouble(),
-        receiverName: data['receiverName'] as String?,
-        receiverPhone: data['receiverPhone'] as String?,
+        receiverName: _parseStringNullable(data['receiverName']),
+        receiverPhone: _parseStringNullable(data['receiverPhone']),
         deletedAt: _parseDateTime(data['deletedAt']),
       );
     } catch (e, stack) {
@@ -242,6 +254,20 @@ class OrderModel {
       return DateTime.tryParse(value) ?? DateTime.now();
     }
     return DateTime.now();
+  }
+
+  /// Parse string tu bat ky kieu nao (String, int, double...).
+  static String _parseString(dynamic value) {
+    if (value == null) return '';
+    if (value is String) return value;
+    return value.toString();
+  }
+
+  /// Parse string cho phep null.
+  static String? _parseStringNullable(dynamic value) {
+    if (value == null) return null;
+    if (value is String) return value;
+    return value.toString();
   }
 
   bool get isActive => status == 0 || status == 1 || status == 2;

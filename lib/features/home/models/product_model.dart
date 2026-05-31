@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Model mot option trong optionGroup (VD: size M, topping trân châu).
@@ -171,11 +173,25 @@ class ProductModel {
     }
 
     // Parse optionGroups tu API (flat structure: optionGroups[].options[])
-    final groups = (json['optionGroups'] as List<dynamic>?)
-            ?.map((g) =>
-                OptionGroupModel.fromJson(g as Map<String, dynamic>))
-            .toList() ??
-        [];
+    // Ho tro ca String (JSON) va List (Firestore array).
+    List<OptionGroupModel> groups = [];
+    final optionGroupsRaw = json['optionGroups'];
+    if (optionGroupsRaw is List) {
+      groups = optionGroupsRaw
+          .map((g) =>
+              OptionGroupModel.fromJson(g as Map<String, dynamic>))
+          .toList();
+    } else if (optionGroupsRaw is String && optionGroupsRaw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(optionGroupsRaw);
+        if (decoded is List) {
+          groups = (decoded as List)
+              .map((g) =>
+                  OptionGroupModel.fromJson(g as Map<String, dynamic>))
+              .toList();
+        }
+      } catch (_) {}
+    }
 
     return ProductModel(
       id: json['id']?.toString() ?? '',
@@ -220,11 +236,25 @@ class ProductModel {
       throw Exception('Du lieu Firestore cua ProductModel bi null');
     }
 
-    final groups = (data['optionGroups'] as List<dynamic>?)
-            ?.map((g) =>
-                OptionGroupModel.fromJson(g as Map<String, dynamic>))
-            .toList() ??
-        [];
+    // Ho tro ca String (JSON) va List (Firestore array).
+    List<OptionGroupModel> groups = [];
+    final optionGroupsRaw = data['optionGroups'];
+    if (optionGroupsRaw is List) {
+      groups = optionGroupsRaw
+          .map((g) =>
+              OptionGroupModel.fromJson(g as Map<String, dynamic>))
+          .toList();
+    } else if (optionGroupsRaw is String && optionGroupsRaw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(optionGroupsRaw);
+        if (decoded is List) {
+          groups = (decoded as List)
+              .map((g) =>
+                  OptionGroupModel.fromJson(g as Map<String, dynamic>))
+              .toList();
+        }
+      } catch (_) {}
+    }
 
     return ProductModel(
       id: doc.id,

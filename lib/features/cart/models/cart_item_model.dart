@@ -72,10 +72,14 @@ class CartItemModel {
   factory CartItemModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
 
-    final groups = (data['selectedOptions'] as List<dynamic>?)
-            ?.map((g) => SelectedOptionGroup.fromJson(g as Map<String, dynamic>))
-            .toList() ??
-        [];
+    List<SelectedOptionGroup> groups = [];
+    final rawSelectedOptions = data['selectedOptions'];
+    if (rawSelectedOptions is List) {
+      groups = rawSelectedOptions
+          .whereType<Map<String, dynamic>>()
+          .map((g) => SelectedOptionGroup.fromJson(g))
+          .toList();
+    }
 
     return CartItemModel(
       id: (data['id'] as String?)?.isNotEmpty == true

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 /// Model ket qua tim kiem tu API /api/search.
 ///
 /// Model nay dong hop thong tin san pham + thong tin cua hang de hien thi
@@ -48,7 +50,23 @@ class SearchResultItem {
   /// }
   /// ```
   factory SearchResultItem.fromJson(Map<String, dynamic> json) {
-    final optionGroupsRaw = json['optionGroups'] as List<dynamic>? ?? [];
+    final optionGroupsRaw = json['optionGroups'];
+    List<Map<String, dynamic>> optionGroups = [];
+    if (optionGroupsRaw is List) {
+      optionGroups = optionGroupsRaw
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    } else if (optionGroupsRaw is String && optionGroupsRaw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(optionGroupsRaw);
+        if (decoded is List) {
+          optionGroups = (decoded as List)
+              .map((e) => Map<String, dynamic>.from(e as Map))
+              .toList();
+        }
+      } catch (_) {}
+    }
+
     return SearchResultItem(
       productId: json['productId'] as String? ?? '',
       productName: json['productName'] as String? ?? '',
@@ -61,9 +79,7 @@ class SearchResultItem {
       imageUrl: json['imageUrl'] as String? ?? '',
       isOutOfStock: json['isOutOfStock'] as bool? ?? false,
       storeAvatarUrl: json['storeAvatarUrl'] as String?,
-      optionGroups: optionGroupsRaw
-          .map((e) => Map<String, dynamic>.from(e as Map))
-          .toList(),
+      optionGroups: optionGroups,
     );
   }
 }

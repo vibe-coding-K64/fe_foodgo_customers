@@ -40,6 +40,20 @@ class StoreModel {
   /// Parse tu JSON cua my-json-server (db.json).
   /// Cac truong thieu se duoc gan gia tri mac dinh.
   factory StoreModel.fromJson(Map<String, dynamic> json) {
+    final rawCategoryIds = json['categoryIds'];
+    List<String> categoryIds = [];
+    if (rawCategoryIds is List) {
+      categoryIds = rawCategoryIds
+          .whereType<String>()
+          .toList();
+    } else if (rawCategoryIds is String && rawCategoryIds.isNotEmpty) {
+      categoryIds = rawCategoryIds
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+
     return StoreModel(
       id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? '',
@@ -52,10 +66,7 @@ class StoreModel {
       deliveryTime: json['deliveryTime'] as String? ?? '15-25 phut',
       deliveryFee: (json['deliveryFee'] as num?)?.toDouble() ?? 0.0,
       distance: (json['distance'] as num?)?.toDouble() ?? 0.0,
-      categoryIds: (json['categoryIds'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          [],
+      categoryIds: categoryIds,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -85,6 +96,21 @@ class StoreModel {
     if (data == null) {
       throw Exception('Du lieu Firestore cua StoreModel bi null');
     }
+
+    final rawCategoryIds = data['categoryIds'];
+    List<String> categoryIds = [];
+    if (rawCategoryIds is List) {
+      categoryIds = rawCategoryIds
+          .whereType<String>()
+          .toList();
+    } else if (rawCategoryIds is String && rawCategoryIds.isNotEmpty) {
+      categoryIds = rawCategoryIds
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+
     return StoreModel(
       id: doc.id,
       name: data['name'] as String? ?? '',
@@ -97,10 +123,7 @@ class StoreModel {
       deliveryTime: data['deliveryTime'] as String? ?? '',
       deliveryFee: (data['deliveryFee'] as num?)?.toDouble() ?? 0.0,
       distance: (data['distance'] as num?)?.toDouble() ?? 0.0,
-      categoryIds: (data['categoryIds'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          [],
+      categoryIds: categoryIds,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       lat: (data['lat'] as num?)?.toDouble(),
