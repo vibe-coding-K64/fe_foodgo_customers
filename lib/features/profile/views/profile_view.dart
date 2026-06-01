@@ -4,8 +4,10 @@ import '../../../core/localization/language_service.dart';
 import '../../auth/views/login_view.dart';
 import '../../address/views/address_management_view.dart';
 import '../../expense/views/expense_management_view.dart';
+import '../../order/services/order_service.dart';
 import '../../payment/views/payment_methods_view.dart';
 import '../../partner/views/partner_registration_view.dart';
+import '../../rewards/services/offer_service.dart';
 import '../../settings/views/settings_view.dart';
 import '../../support/views/support_view.dart';
 import '../../terms/views/terms_view.dart';
@@ -33,10 +35,77 @@ class _ProfileViewState extends State<ProfileView> {
   /// Danh sach cac muc menu.
   late final List<ProfileMenuItem> _menuItems;
 
+  /// So don hang da dat.
+  int _totalOrders = 0;
+
+  /// So voucher con han su dung.
+  int _availableVouchers = 0;
+
+  /// Diem thuong hieu hien co.
+  int _rewardPoints = 0;
+
+  /// Flag de chi load stats 1 lan.
+  bool _statsLoaded = false;
+
   @override
   void initState() {
     super.initState();
     _menuItems = _buildMenuItems();
+    _loadStats();
+  }
+
+  /// Tai stats: so don, voucher, diem.
+  Future<void> _loadStats() async {
+    if (_statsLoaded) return;
+    _statsLoaded = true;
+
+    try {
+      final results = await Future.wait([
+        _loadTotalOrders(),
+        _loadAvailableVouchers(),
+        _loadRewardPoints(),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          _totalOrders = results[0] as int;
+          _availableVouchers = results[1] as int;
+          _rewardPoints = results[2] as int;
+        });
+      }
+    } catch (e) {
+      debugPrint('ProfileView: loi load stats - $e');
+    }
+  }
+
+  Future<int> _loadTotalOrders() async {
+    try {
+      final orders = await OrderService.getMyOrders();
+      return orders.length;
+    } catch (e) {
+      debugPrint('ProfileView: loi load total orders - $e');
+      return 0;
+    }
+  }
+
+  Future<int> _loadAvailableVouchers() async {
+    try {
+      final vouchers = await OfferService.getMyVouchers();
+      return vouchers.where((v) => v.isValid).length;
+    } catch (e) {
+      debugPrint('ProfileView: loi load vouchers - $e');
+      return 0;
+    }
+  }
+
+  Future<int> _loadRewardPoints() async {
+    try {
+      final info = await OfferService.getUserRewardInfo();
+      return info?.loyaltyPoints ?? 0;
+    } catch (e) {
+      debugPrint('ProfileView: loi load reward points - $e');
+      return 0;
+    }
   }
 
   /// Xay dung danh sach cac muc menu.
@@ -202,7 +271,7 @@ class _ProfileViewState extends State<ProfileView> {
       backgroundColor: Colors.white,
       body: CustomScrollView(
         slivers: [
-          // Header gradient xanh chua avatar va thong tin nguoi dung.
+          // Header moi: gradient xanh, avatar, stats.
           SliverToBoxAdapter(
             child: StreamBuilder<UserModel?>(
               stream: _profileService.getCurrentUserStream(),
@@ -221,7 +290,7 @@ class _ProfileViewState extends State<ProfileView> {
                 return ProfileHeader(
                   userName: user.fullName.isNotEmpty
                       ? user.fullName
-                      : context.t('profile_no_name'),
+                      : 'Khách hàng FoodGo',
                   phoneNumber: user.phoneNumber.isNotEmpty
                       ? user.phoneNumber
                       : '',
@@ -229,6 +298,9 @@ class _ProfileViewState extends State<ProfileView> {
                   onEditProfile: () => _onEditProfile(user),
                   isDriver: user.isDriver,
                   isCustomer: user.isCustomer,
+                  totalOrders: _totalOrders,
+                  availableVouchers: _availableVouchers,
+                  rewardPoints: _rewardPoints,
                 );
               },
             ),
@@ -242,32 +314,36 @@ class _ProfileViewState extends State<ProfileView> {
     );
   }
 
-  /// Header khi dang loading.
+  /// Header khi dang loading — thiet ke moi.
   Widget _buildLoadingHeader() {
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.bottomCenter,
-          end: Alignment.topCenter,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: [
+            Color(0xFF43A047),
+            Color(0xFF66BB6A),
             Color(0xFF2E7D32),
-            Color(0xFF4CAF50),
           ],
+          stops: [0.0, 0.5, 1.0],
         ),
       ),
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 32),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             children: [
+              const SizedBox(height: 16),
+              // Avatar loading
               Container(
-                width: 100,
-                height: 100,
+                width: 108,
+                height: 108,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 4),
                   color: Colors.white.withOpacity(0.2),
                 ),
                 child: const Center(
@@ -277,34 +353,73 @@ class _ProfileViewState extends State<ProfileView> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
+              // Name skeleton
               Container(
-                width: 150,
-                height: 20,
+                width: 160,
+                height: 22,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
               const SizedBox(height: 8),
+              // Phone skeleton
               Container(
-                width: 100,
+                width: 110,
                 height: 14,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(7),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 26),
+              // Stats skeleton
               Container(
-                width: 120,
-                height: 36,
+                margin: const EdgeInsets.only(bottom: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
                 decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  border: Border.all(color: Colors.white),
-                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Row(
+                  children: List.generate(3, (i) {
+                    return Expanded(
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            width: 40,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            width: 55,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
                 ),
               ),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -312,80 +427,26 @@ class _ProfileViewState extends State<ProfileView> {
     );
   }
 
-  /// Header mac dinh khi khong co du lieu.
+  /// Header mac dinh khi khong co du lieu — thiet ke moi.
   Widget _buildDefaultHeader() {
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.bottomCenter,
-          end: Alignment.topCenter,
-          colors: [
-            Color(0xFF2E7D32),
-            Color(0xFF4CAF50),
-          ],
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.2),
-                ),
-                child: const Icon(
-                  Icons.person,
-                  size: 50,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                context.t('profile_no_name'),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () {
-                  debugPrint('ProfileView: Nguoi dung bam nut chinh sua ho so (default)');
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const EditProfileView(),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.edit, size: 16),
-                label: Text(
-                  context.t('profile_edit'),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 8,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-              ),
-            ],
+    return ProfileHeader(
+      userName: 'Khách hàng FoodGo',
+      phoneNumber: '',
+      avatarUrl: '',
+      onEditProfile: () {
+        debugPrint('ProfileView: Nguoi dung bam nut chinh sua ho so (default)');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const EditProfileView(),
           ),
-        ),
-      ),
+        );
+      },
+      isDriver: false,
+      isCustomer: true,
+      totalOrders: _totalOrders,
+      availableVouchers: _availableVouchers,
+      rewardPoints: _rewardPoints,
     );
   }
 }

@@ -766,5 +766,8 @@
   "cancel_order_reason_other": "Lý do khác",
   "cancel_order_reason_hint": "Nhập lý do của bạn...",
   "cancel_order_btn": "Huỷ đơn",
-  "error_cancel_order": "Huỷ đơn thất bại. Vui lòng thử lại."
+  "error_cancel_order": "Huỷ đơn thất bại. Vui lòng thử lại.",
+  "profile_stat_orders": "Đơn hàng",
+  "profile_stat_vouchers": "Voucher",
+  "profile_stat_points": "Điểm thưởng"
 }

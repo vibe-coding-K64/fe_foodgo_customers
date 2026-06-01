@@ -760,5 +760,8 @@
   "cancel_order_reason_other": "Other reason",
   "cancel_order_reason_hint": "Enter your reason...",
   "cancel_order_btn": "Cancel order",
-  "error_cancel_order": "Failed to cancel order. Please try again."
+  "error_cancel_order": "Failed to cancel order. Please try again.",
+  "profile_stat_orders": "Orders",
+  "profile_stat_vouchers": "Vouchers",
+  "profile_stat_points": "Reward Points"
 }
