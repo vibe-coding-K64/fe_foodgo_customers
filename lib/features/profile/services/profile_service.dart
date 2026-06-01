@@ -50,6 +50,7 @@ class ProfileService {
 
   /// Stream lang nghe thong tin nguoi dung hien tai.
   Stream<UserModel?> getCurrentUserStream() {
+    debugPrint('ProfileService.getCurrentUserStream called');
     return Stream.fromFuture(getCurrentUser());
   }
 
@@ -145,12 +146,12 @@ class ProfileService {
   /// Lay thong ke nguoi dung (don hang, voucher, diem) tu Firestore.
   Future<ProfileStats> getUserStats() async {
     final userId = AuthStorage.getUserId();
+    debugPrint('=== getUserStats START ===');
+    debugPrint('AuthStorage.getUserId() = ${userId ?? "null"}');
     if (userId == null || userId.isEmpty) {
       debugPrint('ProfileService: Khong co userId, tra ve stats mac dinh');
       return const ProfileStats();
     }
-
-    debugPrint('ProfileService: Lay stats cho userId=$userId');
 
     final firestore = FirebaseFirestore.instance;
 
@@ -160,49 +161,65 @@ class ProfileService {
       int loyaltyPoints = 0;
 
       // Dem so don hang da hoan thanh (status == 3).
+      debugPrint('Query orders with userId=$userId');
       final orderSnap = await firestore
           .collection('orders')
           .where('userId', isEqualTo: userId)
           .get();
-      debugPrint('ProfileService: orderSnap size=${orderSnap.size}');
+      debugPrint('orders query: ${orderSnap.size} docs found');
+      debugPrint('orders docs: ${orderSnap.docs.map((d) => '${d.id} status=${(d.data() as Map<String, dynamic>)['status']}').join(', ')}');
       orderCount = orderSnap.docs.where((doc) {
         final status = (doc.data() as Map<String, dynamic>)['status'];
         return status == 3;
       }).length;
-      debugPrint('ProfileService: orderCount=$orderCount');
+      debugPrint('orderCount=$orderCount (status==3 only)');
 
       // Dem so voucher con han su dung.
+      debugPrint('Query my_vouchers under customer_profiles/$userId');
       final voucherSnap = await firestore
           .collection('customer_profiles')
           .doc(userId)
           .collection('my_vouchers')
           .get();
-      debugPrint('ProfileService: voucherSnap size=${voucherSnap.size}');
+      debugPrint('my_vouchers query: ${voucherSnap.size} docs found');
       final now = DateTime.now().toUtc();
       voucherCount = voucherSnap.docs.where((doc) {
-        final expiryStr =
-            (doc.data() as Map<String, dynamic>)['expiryDate'] as String?;
-        if (expiryStr == null) return false;
+        final rawExpiry = (doc.data() as Map<String, dynamic>)['expiryDate'];
+        if (rawExpiry == null) return false;
         try {
-          final expiry = DateTime.parse(expiryStr);
-          return expiry.isAfter(now);
+          DateTime expiry;
+          if (rawExpiry is Timestamp) {
+            expiry = rawExpiry.toDate();
+          } else if (rawExpiry is String) {
+            expiry = DateTime.parse(rawExpiry);
+          } else {
+            return false;
+          }
+          final isValid = expiry.isAfter(now);
+          debugPrint('  voucher ${doc.id}: expiry=$expiry, isValid=$isValid');
+          return isValid;
         } catch (_) {
           return false;
         }
       }).length;
-      debugPrint('ProfileService: voucherCount=$voucherCount');
+      debugPrint('voucherCount=$voucherCount');
 
       // Lay loyaltyPoints.
+      debugPrint('Query customer_profiles/$userId');
       final profileSnap = await firestore
           .collection('customer_profiles')
           .doc(userId)
           .get();
-      debugPrint('ProfileService: profileSnap exists=${profileSnap.exists}');
+      debugPrint('profileSnap exists=${profileSnap.exists}');
       if (profileSnap.exists) {
         final data = profileSnap.data() as Map<String, dynamic>?;
+        debugPrint('profileSnap data keys: ${data?.keys.join(', ')}');
         loyaltyPoints = (data?['loyaltyPoints'] as int?) ?? 0;
+      } else {
+        debugPrint('WARNING: customer_profiles/$userId document does NOT exist!');
       }
-      debugPrint('ProfileService: loyaltyPoints=$loyaltyPoints');
+      debugPrint('loyaltyPoints=$loyaltyPoints');
+      debugPrint('=== getUserStats END: orders=$orderCount, vouchers=$voucherCount, points=$loyaltyPoints ===');
 
       return ProfileStats(
         totalOrders: orderCount,

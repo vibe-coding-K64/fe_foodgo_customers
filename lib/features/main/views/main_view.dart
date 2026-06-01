@@ -18,6 +18,7 @@ class _MainViewState extends State<MainView> {
   int _currentIndex = 0;
   int _activityRefreshKey = 0;
   int _rewardsRefreshKey = 0;
+  int _profileRefreshKey = 0;
 
   // Danh sach cac tab.
   static const List<Widget> _pages = [
@@ -42,7 +43,7 @@ class _MainViewState extends State<MainView> {
           ActivityView(key: ValueKey(_activityRefreshKey)),
           RewardsView(key: ValueKey(_rewardsRefreshKey)),
           _pages[3],
-          _pages[4],
+          ProfileView(key: ValueKey(_profileRefreshKey)),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -57,6 +58,11 @@ class _MainViewState extends State<MainView> {
             setState(() {
               _currentIndex = index;
               _rewardsRefreshKey++;
+            });
+          } else if (index == 4) {
+            setState(() {
+              _currentIndex = index;
+              _profileRefreshKey++;
             });
           } else {
             setState(() {

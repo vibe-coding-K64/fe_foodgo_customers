@@ -40,6 +40,7 @@ class _ProfileViewState extends State<ProfileView> {
   @override
   void initState() {
     super.initState();
+    debugPrint('ProfileView.initState: creating menu items and fetching stats');
     _menuItems = _buildMenuItems();
     _statsFuture = _profileService.getUserStats();
   }
@@ -208,6 +209,7 @@ class _ProfileViewState extends State<ProfileView> {
       body: FutureBuilder<ProfileStats>(
         future: _statsFuture,
         builder: (context, statsSnapshot) {
+          debugPrint('ProfileView: statsSnapshot state=${statsSnapshot.connectionState}, data=${statsSnapshot.data}');
           // Hien thi loading header neu stats dang load.
           if (statsSnapshot.connectionState != ConnectionState.done) {
             return CustomScrollView(
@@ -224,6 +226,7 @@ class _ProfileViewState extends State<ProfileView> {
           return StreamBuilder<UserModel?>(
             stream: _profileService.getCurrentUserStream(),
             builder: (context, userSnapshot) {
+              debugPrint('ProfileView: userSnapshot state=${userSnapshot.connectionState}, data=${userSnapshot.data}, error=${userSnapshot.error}');
               if (userSnapshot.connectionState == ConnectionState.waiting) {
                 return CustomScrollView(
                   slivers: [

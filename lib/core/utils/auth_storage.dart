@@ -66,6 +66,7 @@ class AuthStorage {
   /// Lay userId tu thong tin nguoi dung da luu.
   static String? getUserId() {
     final user = getUser();
+    debugPrint('AuthStorage.getUserId: user from storage = $user');
     return user?['id'] as String?;
   }
 
