@@ -246,6 +246,21 @@ class ApiClient {
     );
   }
 
+  /// Phuong thuc PUT voi FormData (upload file).
+  static Future<Response<T>> putFormData<T>(
+    String path, {
+    required FormData data,
+    Options? options,
+  }) async {
+    return instance.put<T>(
+      path,
+      data: data,
+      options: options ?? Options(
+        headers: {'Content-Type': 'multipart/form-data'},
+      ),
+    );
+  }
+
   /// Phuong thuc DELETE.
   static Future<Response<T>> delete<T>(
     String path, {

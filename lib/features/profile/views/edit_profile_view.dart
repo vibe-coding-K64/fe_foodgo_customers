@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../models/user_model.dart';
@@ -42,13 +44,15 @@ class _EditProfileViewState extends State<EditProfileView> {
   /// URL avatar moi (sau khi upload).
   String? _newAvatarUrl;
 
+  /// File avatar moi (da chon tu thu vien, chua upload).
+  File? _newAvatarFile;
+
   /// Khoa submit (chan double-tap).
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
-    // Khoi tao controller voi du lieu tu UserModel (neu co).
     _nameController = TextEditingController(
       text: widget.user?.fullName ?? '',
     );
@@ -69,12 +73,11 @@ class _EditProfileViewState extends State<EditProfileView> {
   /// Xu ly bam nut "Luu thay doi".
   void _onSave() {
     if (_isSubmitting) return;
-
     debugPrint('EditProfile: Nguoi dung bam nut Luu thay doi');
     _showPasswordDialog();
   }
 
-  /// Buoc 1: Dialog nhap mat khau xac thuc.
+  /// Dialog nhap mat khau xac thuc (buoc duy nhat).
   void _showPasswordDialog() {
     final pwdController = TextEditingController();
 
@@ -92,7 +95,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                 borderRadius: BorderRadius.circular(16),
               ),
               title: Text(
-                context.t('edit_pwd_title'),
+                context.t('edit_confirm_title'),
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -102,7 +105,16 @@ class _EditProfileViewState extends State<EditProfileView> {
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    context.t('edit_confirm_desc'),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   StatefulBuilder(
                     builder: (ctx, setStateInner) {
                       return TextField(
@@ -113,7 +125,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                           color: AppColors.textPrimary,
                         ),
                         decoration: InputDecoration(
-                          hintText: context.t('edit_pwd_hint'),
+                          hintText: 'Nhập mật khẩu',
                           hintStyle: const TextStyle(
                             fontSize: 15,
                             color: AppColors.textHint,
@@ -172,21 +184,31 @@ class _EditProfileViewState extends State<EditProfileView> {
                   onPressed: () {
                     final pwd = pwdController.text.trim();
                     if (pwd.isEmpty) {
-                      ScaffoldMessenger.of(this.context).showSnackBar(
-                        SnackBar(
+                      ScaffoldMessenger.of(dialogContext).showMaterialBanner(
+                        MaterialBanner(
                           content: Text(
-                              context.t('edit_error_pwd_empty')),
-                          backgroundColor: Colors.red,
-                          duration: const Duration(seconds: 2),
-                          behavior: SnackBarBehavior.floating,
+                            context.t('edit_error_pwd_empty'),
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          backgroundColor: AppColors.error,
+                          actions: [
+                            TextButton(
+                              onPressed: () => ScaffoldMessenger.of(dialogContext).hideCurrentMaterialBanner(),
+                              child: const Text('Đóng', style: TextStyle(color: Colors.white)),
+                            ),
+                          ],
                         ),
                       );
+                      Future.delayed(const Duration(seconds: 2), () {
+                        if (dialogContext.mounted) {
+                          ScaffoldMessenger.of(dialogContext).hideCurrentMaterialBanner();
+                        }
+                      });
                       return;
                     }
-                    debugPrint('EditProfile: Mat khau da nhap, chuyen sang OTP');
+                    debugPrint('EditProfile: Mat khau da nhap, goi updateProfile');
                     Navigator.pop(dialogContext);
-                    // Buoc 2: Hien dialog OTP.
-                    _showOtpDialog();
+                    _onProfileUpdated(pwd);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
@@ -200,7 +222,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                     ),
                   ),
                   child: Text(
-                    context.t('edit_pwd_continue'),
+                    context.t('edit_confirm_btn'),
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -217,185 +239,111 @@ class _EditProfileViewState extends State<EditProfileView> {
     );
   }
 
-  /// Buoc 2: Dialog nhap ma OTP 6 so.
-  void _showOtpDialog() {
-    final otpController = TextEditingController();
+  /// Cap nhat ho so qua API.
+  Future<void> _onProfileUpdated(String password) async {
+    // Kiem tra xem co thay doi gi khong
+    final hasNameChanged = _nameController.text.trim() != (widget.user?.fullName ?? '');
+    final hasEmailChanged = _emailController.text.trim() != (widget.user?.email ?? '');
+    final hasAvatarChanged = _newAvatarFile != null;
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+    if (!hasNameChanged && !hasEmailChanged && !hasAvatarChanged) {
+      debugPrint('EditProfile: Khong co thay doi nao');
+      ScaffoldMessenger.of(context).showMaterialBanner(
+        MaterialBanner(
+          content: Text(
+            context.t('edit_no_changes'),
+            style: const TextStyle(color: Colors.white),
           ),
-          title: Text(
-            context.t('edit_otp_title'),
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                context.t('edit_otp_desc'),
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: otpController,
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                maxLength: 6,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 8,
-                  color: AppColors.textPrimary,
-                ),
-                decoration: InputDecoration(
-                  hintText: '------',
-                  hintStyle: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 8,
-                    color: AppColors.textHint.withAlpha(100),
-                  ),
-                  counterText: '',
-                  filled: true,
-                  fillColor: AppColors.surfaceVariant,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(
-                      color: AppColors.primary,
-                      width: 2,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+          backgroundColor: AppColors.primary,
           actions: [
             TextButton(
-              onPressed: () {
-                debugPrint('EditProfile: Nguoi dung huy dialog OTP');
-                Navigator.pop(dialogContext);
-              },
-              child: Text(
-                context.t('common_cancel'),
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: () async {
-                final otp = otpController.text.trim();
-                if (otp.isEmpty || otp.length < 6) {
-                  ScaffoldMessenger.of(this.context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                          context.t('edit_error_otp_empty')),
-                      backgroundColor: Colors.red,
-                      duration: const Duration(seconds: 2),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                  return;
-                }
-                debugPrint('EditProfile: OTP da xac thuc, goi updateProfile');
-                Navigator.pop(dialogContext);
-                await _onProfileUpdated();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Text(
-                context.t('edit_otp_confirm'),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              onPressed: () => ScaffoldMessenger.of(context).hideCurrentMaterialBanner(),
+              child: const Text('Đóng', style: TextStyle(color: Colors.white)),
             ),
           ],
-          actionsAlignment: MainAxisAlignment.spaceBetween,
-          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        );
-      },
-    );
-  }
+        ),
+      );
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+        }
+      });
+      return;
+    }
 
-  /// Buoc 3: Cap nhat ho so qua API.
-  Future<void> _onProfileUpdated() async {
     setState(() => _isSubmitting = true);
 
+    // Hien thi loading overlay
+    _showLoadingOverlay();
+
     try {
-      await _profileService.updateProfile(
-        fullName: _nameController.text.trim(),
-        avatarUrl: _newAvatarUrl,
+      debugPrint('EditProfile: Goi updateProfileWithAvatar');
+      await _profileService.updateProfileWithAvatar(
+        avatarFile: hasAvatarChanged ? _newAvatarFile : null,
+        fullName: hasNameChanged ? _nameController.text.trim() : null,
+        email: hasEmailChanged ? _emailController.text.trim() : null,
+        password: password,
       );
 
       debugPrint('EditProfile: Cap nhat ho so thanh cong');
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.t('edit_success_msg')),
+        _hideLoadingOverlay();
+        ScaffoldMessenger.of(context).showMaterialBanner(
+          MaterialBanner(
+            content: Text(
+              context.t('edit_success_msg'),
+              style: const TextStyle(color: Colors.white),
+            ),
             backgroundColor: AppColors.primary,
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
+            actions: [
+              TextButton(
+                onPressed: () => ScaffoldMessenger.of(context).hideCurrentMaterialBanner(),
+                child: const Text('Đóng', style: TextStyle(color: Colors.white)),
+              ),
+            ],
           ),
         );
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+          }
+        });
 
-        // Quay ve man hinh truoc.
+        // Quay ve man hinh truoc
         Navigator.pop(context);
       }
     } catch (e) {
       debugPrint('EditProfile: Loi cap nhat ho so - $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.t('edit_error_update_failed')),
+        _hideLoadingOverlay();
+
+        // Revert ve gia tri cu khi that bai
+        _nameController.text = widget.user?.fullName ?? '';
+        _emailController.text = widget.user?.email ?? '';
+        _newAvatarFile = null;
+        setState(() {});
+
+        ScaffoldMessenger.of(context).showMaterialBanner(
+          MaterialBanner(
+            content: Text(
+              context.t('edit_error_update_failed'),
+              style: const TextStyle(color: Colors.white),
+            ),
             backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
+            actions: [
+              TextButton(
+                onPressed: () => ScaffoldMessenger.of(context).hideCurrentMaterialBanner(),
+                child: const Text('Đóng', style: TextStyle(color: Colors.white)),
+              ),
+            ],
           ),
         );
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) {
+            ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+          }
+        });
       }
     } finally {
       if (mounted) {
@@ -404,113 +352,225 @@ class _EditProfileViewState extends State<EditProfileView> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            debugPrint('EditProfile: Nguoi dung bam nut back');
-            Navigator.pop(context);
-          },
-        ),
-        title: Text(
-          context.t('edit_profile_title'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Vung avatar va form.
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                child: Column(
-                  children: [
-                    // Khu vuc avatar.
-                    _buildAvatarArea(),
-                    const SizedBox(height: 28),
-                    // Form nhap lieu.
-                    _buildForm(),
-                  ],
-                ),
-              ),
+  /// Hien thi loading overlay
+  void _showLoadingOverlay() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => PopScope(
+        canPop: false,
+        child: Container(
+          color: Colors.black.withAlpha(100),
+          child: const Center(
+            child: CircularProgressIndicator(
+              color: AppColors.primary,
             ),
-            // Nut luu thay doi (ben duoi, sticky).
-            _buildSaveButton(),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  /// Khu vuc avatar: CircleAvatar + icon camera ghep de.
-  Widget _buildAvatarArea() {
-    final displayAvatarUrl = _newAvatarUrl;
-    return Stack(
-      children: [
-        // Avatar chinh.
-        Container(
-          width: 96,
-          height: 96,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: AppColors.border,
-              width: 1.5,
+  /// An loading overlay
+  void _hideLoadingOverlay() {
+    if (mounted) {
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: CustomScrollView(
+        slivers: [
+          // App Bar
+          SliverAppBar(
+            expandedHeight: 0,
+            pinned: true,
+            backgroundColor: AppColors.surface,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+              onPressed: () {
+                debugPrint('EditProfile: Nguoi dung bam nut back');
+                Navigator.pop(context);
+              },
             ),
+            title: Text(
+              context.t('edit_profile_title'),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            centerTitle: true,
           ),
-          child: displayAvatarUrl != null && displayAvatarUrl.isNotEmpty
-              ? CircleAvatar(
-                  radius: 46,
-                  backgroundColor: AppColors.surfaceVariant,
-                  backgroundImage: NetworkImage(displayAvatarUrl),
-                  onBackgroundImageError: (_, __) {},
-                )
-              : CircleAvatar(
-                  radius: 46,
-                  backgroundColor: AppColors.surfaceVariant,
-                  child: const Icon(
-                    Icons.person,
-                    size: 48,
-                    color: AppColors.textHint,
+
+          // Content
+          SliverToBoxAdapter(
+            child: Column(
+              children: [
+                // Gradient header với avatar
+                _buildHeader(),
+
+                // Form content
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 100),
+                  child: Column(
+                    children: [
+                      // Section: Thông tin cá nhân
+                      _buildSectionHeader(
+                        icon: Icons.person_outline,
+                        title: 'Thông tin cá nhân',
+                      ),
+                      const SizedBox(height: 12),
+                      _buildFormCard(),
+
+                      const SizedBox(height: 24),
+
+                      // Section: Liên hệ
+                      _buildSectionHeader(
+                        icon: Icons.contact_phone_outlined,
+                        title: 'Liên hệ',
+                      ),
+                      const SizedBox(height: 12),
+                      _buildContactCard(),
+
+                      const SizedBox(height: 24),
+
+                      // Lưu ý bảo mật
+                      _buildSecurityNote(),
+                    ],
                   ),
                 ),
+              ],
+            ),
+          ),
+        ],
+      ),
+
+      // Nút Lưu thay đổi cố định bên dưới
+      bottomSheet: _buildSaveButton(),
+    );
+  }
+
+  /// Gradient header với avatar
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF43A047),
+            Color(0xFF66BB6A),
+            Color(0xFF2E7D32),
+          ],
+          stops: [0.0, 0.5, 1.0],
         ),
-        // Icon camera o goc phai duoi (phan ghep de).
-        Positioned(
-          right: 0,
-          bottom: 0,
-          child: GestureDetector(
-            onTap: () {
-              debugPrint('EditProfile: Nguoi dung bam doi avatar');
-              // TODO: Xu ly upload anh avatar khi da co Firebase Storage.
-              // Tam thoi chi show snackbar thong bao.
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(context.t('edit_avatar_hint')),
-                  backgroundColor: AppColors.primary,
-                  duration: const Duration(seconds: 1),
-                  behavior: SnackBarBehavior.floating,
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+          child: Column(
+            children: [
+              // Avatar
+              _buildAvatarArea(),
+
+              const SizedBox(height: 16),
+
+              // Tên user
+              Text(
+                _nameController.text.isNotEmpty
+                    ? _nameController.text
+                    : context.t('profile_no_name'),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
                 ),
-              );
-            },
+              ),
+
+              const SizedBox(height: 4),
+
+              // Email
+              if (_emailController.text.isNotEmpty)
+                Text(
+                  _emailController.text,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white.withAlpha(200),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Khu vuc avatar
+  Widget _buildAvatarArea() {
+    final displayAvatarUrl = _newAvatarUrl;
+    final hasNewAvatar = _newAvatarFile != null;
+
+    return GestureDetector(
+      onTap: _showImageSourcePicker,
+      child: Stack(
+        children: [
+          // Avatar chinh
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 4),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(40),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: hasNewAvatar
+                  ? Image.file(
+                      _newAvatarFile!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _buildAvatarPlaceholder(),
+                    )
+                  : (displayAvatarUrl != null && displayAvatarUrl.isNotEmpty
+                      ? Image.network(
+                          displayAvatarUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _buildAvatarPlaceholder(),
+                        )
+                      : _buildAvatarPlaceholder()),
+            ),
+          ),
+
+          // Icon camera
+          Positioned(
+            right: 0,
+            bottom: 0,
             child: Container(
-              width: 30,
-              height: 30,
-              decoration: const BoxDecoration(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppColors.primary,
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withAlpha(100),
+                    blurRadius: 8,
+                  ),
+                ],
               ),
               child: const Icon(
                 Icons.camera_alt,
@@ -519,155 +579,449 @@ class _EditProfileViewState extends State<EditProfileView> {
               ),
             ),
           ),
-        ),
-      ],
-    );
-  }
-
-  /// Form nhap lieu: Ho ten, Email, So dien thoai (chi doc).
-  Widget _buildForm() {
-    return Column(
-      children: [
-        // Ho ten.
-        _buildLabel(context.t('edit_nickname_label')),
-        const SizedBox(height: 8),
-        _buildTextField(
-          controller: _nameController,
-          hintText: context.t('edit_nickname_hint'),
-          keyboardType: TextInputType.name,
-          textCapitalization: TextCapitalization.words,
-        ),
-        const SizedBox(height: 20),
-        // Email.
-        _buildLabel(context.t('edit_email_label')),
-        const SizedBox(height: 8),
-        _buildTextField(
-          controller: _emailController,
-          hintText: context.t('edit_email_hint'),
-          keyboardType: TextInputType.emailAddress,
-        ),
-        const SizedBox(height: 20),
-        // So dien thoai (chi doc).
-        _buildLabel(context.t('edit_phone_label')),
-        const SizedBox(height: 8),
-        _buildReadOnlyField(),
-      ],
-    );
-  }
-
-  /// Label phia tren moi o nhap.
-  Widget _buildLabel(String text) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textSecondary,
-        ),
+        ],
       ),
     );
   }
 
-  /// O nhap lieu binh thuong (co the soan thao).
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String hintText,
-    TextInputType keyboardType = TextInputType.text,
-    TextCapitalization textCapitalization = TextCapitalization.none,
-  }) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      textCapitalization: textCapitalization,
-      style: const TextStyle(
-        fontSize: 15,
-        color: AppColors.textPrimary,
+  /// Hien thi bottom sheet chon nguon anh
+  void _showImageSourcePicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      decoration: InputDecoration(
-        hintText: hintText,
-        hintStyle: const TextStyle(
-          fontSize: 15,
-          color: AppColors.textHint,
-        ),
-        filled: true,
-        fillColor: AppColors.surfaceVariant,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(
-            color: AppColors.primary,
-            width: 1.5,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                context.t('edit_pick_avatar_title'),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withAlpha(20),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.photo_library_outlined,
+                    color: AppColors.primary,
+                  ),
+                ),
+                title: Text(
+                  context.t('edit_pick_avatar_library'),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                subtitle: Text(
+                  context.t('edit_pick_avatar_library_desc'),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
           ),
         ),
       ),
     );
   }
 
-  /// O nhap so dien thoai chi doc (nen xam, khong cho phep sua).
-  Widget _buildReadOnlyField() {
-    final phoneValue = widget.user?.phoneNumber ?? '';
-    return TextField(
-      controller: TextEditingController(
-        text: phoneValue.isNotEmpty ? phoneValue : context.t('edit_phone_value'),
-      ),
-      readOnly: true,
-      style: const TextStyle(
-        fontSize: 15,
+  /// Chon anh tu thu vien
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final XFile? pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          _newAvatarFile = File(pickedFile.path);
+        });
+        debugPrint('EditProfile: Da chon anh - ${pickedFile.path}');
+      }
+    } catch (e) {
+      debugPrint('EditProfile: Loi chon anh - $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showMaterialBanner(
+          MaterialBanner(
+            content: Text(
+              context.t('edit_pick_avatar_error'),
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: AppColors.error,
+            actions: [
+              TextButton(
+                onPressed: () => ScaffoldMessenger.of(context).hideCurrentMaterialBanner(),
+                child: const Text('Đóng', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        );
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+          }
+        });
+      }
+    }
+  }
+
+  Widget _buildAvatarPlaceholder() {
+    return Container(
+      color: AppColors.surfaceVariant,
+      child: const Icon(
+        Icons.person,
+        size: 52,
         color: AppColors.textHint,
       ),
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: AppColors.surfaceVariant.withAlpha(180),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide.none,
-        ),
-        suffixIcon: Tooltip(
-          message: context.t('edit_phone_locked'),
-          child: const Icon(
-            Icons.lock_outline,
-            color: AppColors.textHint,
+    );
+  }
+
+  /// Section header với icon
+  Widget _buildSectionHeader({
+    required IconData icon,
+    required String title,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withAlpha(20),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            icon,
             size: 20,
+            color: AppColors.primary,
           ),
         ),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Card form thông tin cá nhân
+  Widget _buildFormCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(12),
+            blurRadius: 16,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Họ tên
+          _buildFormField(
+            label: context.t('edit_nickname_label'),
+            hint: context.t('edit_nickname_hint'),
+            controller: _nameController,
+            keyboardType: TextInputType.name,
+            textCapitalization: TextCapitalization.words,
+            prefixIcon: Icons.badge_outlined,
+          ),
+
+          const SizedBox(height: 8),
+
+          // Email
+          _buildFormField(
+            label: context.t('edit_email_label'),
+            hint: context.t('edit_email_hint'),
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            prefixIcon: Icons.email_outlined,
+          ),
+        ],
       ),
     );
   }
 
-  /// Nut "Luu thay doi" o ben duoi man hinh.
+  /// Card form liên hệ
+  Widget _buildContactCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(12),
+            blurRadius: 16,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: _buildReadOnlyField(),
+    );
+  }
+
+  /// Field nhập liệu
+  Widget _buildFormField({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    TextInputType keyboardType = TextInputType.text,
+    TextCapitalization textCapitalization = TextCapitalization.none,
+    required IconData prefixIcon,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Label
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 6),
+
+          // TextField with border
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: AppColors.border,
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 12),
+                  child: Icon(
+                    prefixIcon,
+                    size: 20,
+                    color: AppColors.textHint,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    keyboardType: keyboardType,
+                    textCapitalization: textCapitalization,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimary,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: hint,
+                      hintStyle: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w400,
+                        color: AppColors.textHint,
+                      ),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 0,
+                        vertical: 12,
+                      ),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Trường chỉ đọc (số điện thoại)
+  Widget _buildReadOnlyField() {
+    final phoneValue = widget.user?.phoneNumber ?? '';
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Label
+          Text(
+            context.t('edit_phone_label'),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 6),
+
+          // Container with border
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: AppColors.border,
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.phone_android,
+                  size: 20,
+                  color: AppColors.textHint,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    phoneValue.isNotEmpty ? phoneValue : context.t('edit_phone_value'),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textHint,
+                    ),
+                  ),
+                ),
+                Tooltip(
+                  message: context.t('edit_phone_locked'),
+                  child: Icon(
+                    Icons.lock_outline,
+                    size: 18,
+                    color: AppColors.textHint.withAlpha(150),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Ghi chú bảo mật
+  Widget _buildSecurityNote() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withAlpha(15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.primary.withAlpha(40),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withAlpha(30),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.shield_outlined,
+              size: 22,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.t('edit_security_note_title'),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  context.t('edit_security_note_desc'),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Nút Lưu thay đổi
   Widget _buildSaveButton() {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(
-        20,
+        16,
         12,
-        20,
+        16,
         12 + MediaQuery.of(context).padding.bottom,
       ),
       decoration: BoxDecoration(
         color: AppColors.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(15),
-            blurRadius: 6,
-            offset: const Offset(0, -1),
+            color: Colors.black.withAlpha(20),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
@@ -679,7 +1033,7 @@ class _EditProfileViewState extends State<EditProfileView> {
           disabledBackgroundColor: AppColors.primary.withAlpha(120),
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
           ),
           elevation: 0,
         ),
@@ -687,7 +1041,8 @@ class _EditProfileViewState extends State<EditProfileView> {
           context.t('edit_save_btn'),
           style: const TextStyle(
             fontSize: 16,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.3,
           ),
         ),
       ),

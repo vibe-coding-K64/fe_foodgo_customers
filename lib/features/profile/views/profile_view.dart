@@ -3,9 +3,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../../auth/views/login_view.dart';
 import '../../address/views/address_management_view.dart';
-import '../../expense/views/expense_management_view.dart';
 import '../../payment/views/payment_methods_view.dart';
-import '../../partner/views/partner_registration_view.dart';
 import '../../settings/views/settings_view.dart';
 import '../../support/views/support_view.dart';
 import '../../terms/views/terms_view.dart';
@@ -48,20 +46,6 @@ class _ProfileViewState extends State<ProfileView> {
   /// Xay dung danh sach cac muc menu.
   List<ProfileMenuItem> _buildMenuItems() {
     return [
-      // Quan ly chi tieu.
-      ProfileMenuItem(
-        titleKey: 'profile_spending',
-        icon: Icons.account_balance_wallet_outlined,
-        onTap: () {
-          debugPrint('ProfileView: Mo trang quan ly chi tieu');
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const ExpenseManagementView(),
-            ),
-          );
-        },
-      ),
       // Dia chi mac dinh.
       ProfileMenuItem(
         titleKey: 'profile_default_address',
@@ -86,22 +70,6 @@ class _ProfileViewState extends State<ProfileView> {
             context,
             MaterialPageRoute(
               builder: (context) => const PaymentMethodsView(),
-            ),
-          );
-        },
-      ),
-      // Tro thanh nguoi ban.
-      ProfileMenuItem(
-        titleKey: 'profile_become_seller_or_driver',
-        icon: Icons.content_paste_rounded,
-        onTap: () {
-          debugPrint('ProfileView: Mo trang dang ky doi tac (Nguoi ban)');
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const PartnerRegistrationView(
-                initialRole: PartnerRole.seller,
-              ),
             ),
           );
         },

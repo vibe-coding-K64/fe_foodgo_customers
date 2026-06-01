@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -140,6 +141,96 @@ class ProfileService {
         return 'Yeu cau khong hop le.';
       default:
         return 'Da xay ra loi. Vui long thu lai sau.';
+    }
+  }
+
+  /// Cap nhat ho so voi avatar (multipart/form-data).
+  ///
+  /// Neu [avatarFile] khac null -> gui kem file avatar.
+  /// Neu [fullName] khac null -> gui kem fullName.
+  /// Neu [email] khac null -> gui kem email.
+  /// Chi gui nhung truong thuc su thay doi.
+  Future<UserModel?> updateProfileWithAvatar({
+    File? avatarFile,
+    String? fullName,
+    String? email,
+    required String password,
+  }) async {
+    try {
+      final formData = FormData();
+
+      // Neu co file avatar, them vao formData
+      if (avatarFile != null) {
+        final fileName = avatarFile.path.split(Platform.pathSeparator).last;
+        formData.files.add(MapEntry(
+          'avatar',
+          await MultipartFile.fromFile(
+            avatarFile.path,
+            filename: fileName,
+          ),
+        ));
+        debugPrint('ProfileService: Co file avatar - $fileName');
+      }
+
+      // Neu co fullName, them vao formData
+      if (fullName != null && fullName.trim().isNotEmpty) {
+        formData.fields.add(MapEntry('fullName', fullName.trim()));
+        debugPrint('ProfileService: Co fullName - $fullName');
+      }
+
+      // Neu co email, them vao formData
+      if (email != null && email.trim().isNotEmpty) {
+        formData.fields.add(MapEntry('email', email.trim()));
+        debugPrint('ProfileService: Co email - $email');
+      }
+
+      // Gui kem password xac thuc
+      formData.fields.add(MapEntry('password', password));
+
+      if (formData.fields.isEmpty && formData.files.isEmpty) {
+        debugPrint('ProfileService: Khong co truong nao de cap nhat');
+        return null;
+      }
+
+      debugPrint('ProfileService: Cap nhat ho so voi avatar (formData)');
+
+      final response = await ApiClient.putFormData<Map<String, dynamic>>(
+        '/customers/profile',
+        data: formData,
+      );
+
+      final data = response.data;
+      if (data == null) return null;
+
+      final success = data['success'] as bool? ?? false;
+      if (!success) {
+        final message = data['message'] as String? ?? 'Cap nhat that bai';
+        throw Exception(message);
+      }
+
+      final userData = data['data'] as Map<String, dynamic>?;
+      if (userData == null) return null;
+
+      final updatedUser = UserModel.fromJson(userData);
+
+      await AuthStorage.saveAuthData(
+        token: AuthStorage.getToken() ?? '',
+        tokenType: AuthStorage.getTokenType() ?? 'Bearer',
+        user: updatedUser.toJson(),
+        expiresIn: AuthStorage.getExpiresIn() ?? 0,
+        refreshToken: AuthStorage.getRefreshToken() ?? '',
+        refreshExpiresIn: AuthStorage.getRefreshExpiresIn() ?? 0,
+      );
+
+      debugPrint('ProfileService: Cap nhat ho so thanh cong');
+      return updatedUser;
+    } on DioException catch (e) {
+      final message = _handleDioError(e);
+      debugPrint('ProfileService: loi cap nhat ho so - $message');
+      throw Exception(message);
+    } catch (e) {
+      debugPrint('ProfileService: loi cap nhat ho so - $e');
+      rethrow;
     }
   }
 

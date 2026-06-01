@@ -93,6 +93,26 @@ class UserModel {
       parsedRoles = List<int>.from(_defaultRoles);
     }
 
+    // Handle createdAt - co the la Timestamp, String, hoac null
+    DateTime createdAt;
+    final createdAtRaw = data['createdAt'];
+    if (createdAtRaw is Timestamp) {
+      createdAt = createdAtRaw.toDate();
+    } else if (createdAtRaw is String) {
+      createdAt = DateTime.tryParse(createdAtRaw) ?? DateTime.now();
+    } else {
+      createdAt = DateTime.now();
+    }
+
+    // Handle updatedAt - co the la Timestamp, String, hoac null
+    DateTime? updatedAt;
+    final updatedAtRaw = data['updatedAt'];
+    if (updatedAtRaw is Timestamp) {
+      updatedAt = updatedAtRaw.toDate();
+    } else if (updatedAtRaw is String) {
+      updatedAt = DateTime.tryParse(updatedAtRaw);
+    }
+
     return UserModel(
       id: doc.id,
       email: (data['email'] as String?) ?? '',
@@ -100,8 +120,8 @@ class UserModel {
       phoneNumber: (data['phoneNumber'] as String?) ?? '',
       photoUrl: data['photoUrl'] as String?,
       roles: parsedRoles,
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
+      createdAt: createdAt,
+      updatedAt: updatedAt,
     );
   }
 
