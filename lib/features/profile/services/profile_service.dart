@@ -50,9 +50,28 @@ class ProfileService {
   }
 
   /// Stream lang nghe thong tin nguoi dung hien tai.
+  ///
+  /// Su dung Stream<Firestore> de nhan cap nhat real-time khi Firestore thay doi.
+  /// Tra ve StreamBuilder-friendly stream (khong tao moi Future moi lan build).
   Stream<UserModel?> getCurrentUserStream() {
-    debugPrint('ProfileService.getCurrentUserStream called');
-    return Stream.fromFuture(getCurrentUser());
+    debugPrint('ProfileService.getCurrentUserStream: Bat dau lang nghe Firestore');
+    final userId = AuthStorage.getUserId();
+    if (userId == null || userId.isEmpty) {
+      debugPrint('ProfileService.getCurrentUserStream: Khong co userId, tra ve Stream rong');
+      return Stream.value(null);
+    }
+
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .snapshots()
+        .map((doc) {
+      if (!doc.exists) {
+        debugPrint('ProfileService: Firestore doc khong ton tai');
+        return null;
+      }
+      return UserModel.fromFirestore(doc);
+    });
   }
 
   /// Cap nhat ho so nguoi dung.

@@ -29,17 +29,21 @@ class _ProfileViewState extends State<ProfileView> {
   /// Service quan ly ho so nguoi dung.
   final ProfileService _profileService = const ProfileService();
 
-  /// Danh sach cac muc menu.
-  late final List<ProfileMenuItem> _menuItems;
+  /// Stream lang nghe user tu Firestore (chi tao 1 lan, lazy init o build dau tien).
+  Stream<UserModel?>? _userStream;
+  Stream<UserModel?> get _userStreamVal =>
+      _userStream ??= _profileService.getCurrentUserStream();
 
   /// Thong ke nguoi dung (orders / vouchers / points).
   Future<ProfileStats>? _statsFuture;
 
+  /// Danh sach cac muc menu (lazy getter, khong tao trong initState de tranh su dung context som).
+  List<ProfileMenuItem> get _menuItems => _buildMenuItems();
+
   @override
   void initState() {
     super.initState();
-    debugPrint('ProfileView.initState: creating menu items and fetching stats');
-    _menuItems = _buildMenuItems();
+    debugPrint('ProfileView.initState: Fetching stats');
     _statsFuture = _profileService.getUserStats();
   }
 
@@ -192,7 +196,7 @@ class _ProfileViewState extends State<ProfileView> {
           final stats = statsSnapshot.data ?? const ProfileStats();
 
           return StreamBuilder<UserModel?>(
-            stream: _profileService.getCurrentUserStream(),
+            stream: _userStreamVal,
             builder: (context, userSnapshot) {
               debugPrint('ProfileView: userSnapshot state=${userSnapshot.connectionState}, data=${userSnapshot.data}, error=${userSnapshot.error}');
               if (userSnapshot.connectionState == ConnectionState.waiting) {

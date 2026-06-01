@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../core/localization/language_service.dart';
 import 'support_chat_view.dart';
 
@@ -93,16 +95,24 @@ class _SupportViewState extends State<SupportView> {
   }
 
   /// Xu ly bam nut Goi tong dai.
-  void _onCallTap() {
+  Future<void> _onCallTap() async {
     debugPrint('SupportView: Nguoi dung bam nut Goi tong dai');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.t('support_call_btn')),
-        backgroundColor: AppColors.primary,
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    final phoneNumber = AppStrings.hotlineNumber;
+    final uri = Uri(scheme: 'tel', path: phoneNumber);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Khong the goi den so $phoneNumber'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   @override

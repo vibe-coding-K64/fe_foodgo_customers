@@ -184,26 +184,14 @@ class _EditProfileViewState extends State<EditProfileView> {
                   onPressed: () {
                     final pwd = pwdController.text.trim();
                     if (pwd.isEmpty) {
-                      ScaffoldMessenger.of(dialogContext).showMaterialBanner(
-                        MaterialBanner(
-                          content: Text(
-                            context.t('edit_error_pwd_empty'),
-                            style: const TextStyle(color: Colors.white),
-                          ),
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        SnackBar(
+                          content: Text(context.t('edit_error_pwd_empty')),
                           backgroundColor: AppColors.error,
-                          actions: [
-                            TextButton(
-                              onPressed: () => ScaffoldMessenger.of(dialogContext).hideCurrentMaterialBanner(),
-                              child: const Text('Đóng', style: TextStyle(color: Colors.white)),
-                            ),
-                          ],
+                          duration: const Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
                         ),
                       );
-                      Future.delayed(const Duration(seconds: 2), () {
-                        if (dialogContext.mounted) {
-                          ScaffoldMessenger.of(dialogContext).hideCurrentMaterialBanner();
-                        }
-                      });
                       return;
                     }
                     debugPrint('EditProfile: Mat khau da nhap, goi updateProfile');
@@ -248,26 +236,14 @@ class _EditProfileViewState extends State<EditProfileView> {
 
     if (!hasNameChanged && !hasEmailChanged && !hasAvatarChanged) {
       debugPrint('EditProfile: Khong co thay doi nao');
-      ScaffoldMessenger.of(context).showMaterialBanner(
-        MaterialBanner(
-          content: Text(
-            context.t('edit_no_changes'),
-            style: const TextStyle(color: Colors.white),
-          ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.t('edit_no_changes')),
           backgroundColor: AppColors.primary,
-          actions: [
-            TextButton(
-              onPressed: () => ScaffoldMessenger.of(context).hideCurrentMaterialBanner(),
-              child: const Text('Đóng', style: TextStyle(color: Colors.white)),
-            ),
-          ],
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
         ),
       );
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-        }
-      });
       return;
     }
 
@@ -289,28 +265,8 @@ class _EditProfileViewState extends State<EditProfileView> {
 
       if (mounted) {
         _hideLoadingOverlay();
-        ScaffoldMessenger.of(context).showMaterialBanner(
-          MaterialBanner(
-            content: Text(
-              context.t('edit_success_msg'),
-              style: const TextStyle(color: Colors.white),
-            ),
-            backgroundColor: AppColors.primary,
-            actions: [
-              TextButton(
-                onPressed: () => ScaffoldMessenger.of(context).hideCurrentMaterialBanner(),
-                child: const Text('Đóng', style: TextStyle(color: Colors.white)),
-              ),
-            ],
-          ),
-        );
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-          }
-        });
 
-        // Quay ve man hinh truoc
+        // Quay ve man hinh truoc (SnackBar se tu dong an sau 2s)
         Navigator.pop(context);
       }
     } catch (e) {
@@ -324,26 +280,14 @@ class _EditProfileViewState extends State<EditProfileView> {
         _newAvatarFile = null;
         setState(() {});
 
-        ScaffoldMessenger.of(context).showMaterialBanner(
-          MaterialBanner(
-            content: Text(
-              context.t('edit_error_update_failed'),
-              style: const TextStyle(color: Colors.white),
-            ),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.t('edit_error_update_failed')),
             backgroundColor: AppColors.error,
-            actions: [
-              TextButton(
-                onPressed: () => ScaffoldMessenger.of(context).hideCurrentMaterialBanner(),
-                child: const Text('Đóng', style: TextStyle(color: Colors.white)),
-              ),
-            ],
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
           ),
         );
-        Future.delayed(const Duration(seconds: 3), () {
-          if (mounted) {
-            ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-          }
-        });
       }
     } finally {
       if (mounted) {
@@ -676,26 +620,14 @@ class _EditProfileViewState extends State<EditProfileView> {
     } catch (e) {
       debugPrint('EditProfile: Loi chon anh - $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showMaterialBanner(
-          MaterialBanner(
-            content: Text(
-              context.t('edit_pick_avatar_error'),
-              style: const TextStyle(color: Colors.white),
-            ),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.t('edit_pick_avatar_error')),
             backgroundColor: AppColors.error,
-            actions: [
-              TextButton(
-                onPressed: () => ScaffoldMessenger.of(context).hideCurrentMaterialBanner(),
-                child: const Text('Đóng', style: TextStyle(color: Colors.white)),
-              ),
-            ],
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
           ),
         );
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-          }
-        });
       }
     }
   }
