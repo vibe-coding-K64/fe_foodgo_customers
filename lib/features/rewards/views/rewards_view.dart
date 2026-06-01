@@ -268,7 +268,6 @@ class _RewardsViewState extends State<RewardsView> {
             }
 
             final vouchers = List<MyVoucherModel>.from(snapshot.data!)
-              ..where((v) => v.isValid)
               ..sort((a, b) => b.expiryDate.compareTo(a.expiryDate));
             return ListView.separated(
               shrinkWrap: true,
@@ -459,7 +458,7 @@ class _SystemVoucherCard extends StatelessWidget {
                     const SizedBox(height: 3),
                     // Don toi thieu.
                     Text(
-                      'Tối thiểu ${voucher.minOrderValue.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}đ',
+                      '${context.t('reward_min_order')} ${voucher.minOrderValue.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}đ',
                       style: const TextStyle(
                         fontSize: 9,
                         color: AppColors.textHint,

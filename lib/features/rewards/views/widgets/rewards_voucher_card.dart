@@ -144,7 +144,7 @@ class RewardsVoucherCard extends StatelessWidget {
           const SizedBox(height: 2),
           // Don toi thieu.
           Text(
-            'Toi thieu ${voucher.minOrderValue.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}đ',
+            '${context.t('reward_min_order')} ${voucher.minOrderValue.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}đ',
             style: TextStyle(
               fontSize: 10,
               color: isExpired ? AppColors.textHint : AppColors.textHint,

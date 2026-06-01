@@ -252,6 +252,10 @@
   "activity_search_no_result": "Không tìm thấy đơn hàng nào",
   "profile_title": "Tài khoản",
   "profile_edit": "Chỉnh sửa hồ sơ",
+  "profile_stats_orders": "Đơn hàng",
+  "profile_stats_vouchers": "Voucher",
+  "profile_stats_points": "Điểm thưởng",
+  "profile_no_name": "Khách hàng FoodGo",
   "edit_profile_title": "Chỉnh sửa hồ sơ",
   "edit_avatar_hint": "Đổi ảnh đại diện",
   "edit_nickname_label": "Biệt danh / Họ tên",
@@ -766,8 +770,5 @@
   "cancel_order_reason_other": "Lý do khác",
   "cancel_order_reason_hint": "Nhập lý do của bạn...",
   "cancel_order_btn": "Huỷ đơn",
-  "error_cancel_order": "Huỷ đơn thất bại. Vui lòng thử lại.",
-  "profile_stat_orders": "Đơn hàng",
-  "profile_stat_vouchers": "Voucher",
-  "profile_stat_points": "Điểm thưởng"
+  "error_cancel_order": "Huỷ đơn thất bại. Vui lòng thử lại."
 }

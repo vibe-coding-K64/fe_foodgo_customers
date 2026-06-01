@@ -35,6 +35,7 @@ class UserRewardInfo {
 }
 
 /// Service xu ly cac thao tac lay du lieu uu dai.
+/// Doc truc tiep tu Firebase Firestore, khong goi API.
 class OfferService {
   OfferService._();
 
@@ -90,145 +91,71 @@ class OfferService {
     }
   }
 
-  /// Lay danh sach voucher co the doi diem tu API `/api/vouchers/system`
-  /// (fallback: Firestore `system_vouchers`).
-  ///
-  /// Tra ve danh sach [ExchangeVoucherModel].
+  /// Lay danh sach voucher co the doi diem.
+  /// Doc truc tiep tu Firestore collection `vouchers`.
+  /// Chi lay voucher toan he thong (storeId = null), con han (expiryDate >= hôm nay).
   static Future<List<ExchangeVoucherModel>> getSystemVouchers() async {
-    return getSystemVouchersApi();
-  }
-
-  /// Lay danh sach voucher cua nguoi dung tu API `/api/vouchers/my-vouchers`
-  /// (fallback: Firestore `customer_profiles/{userId}/my_vouchers`).
-  ///
-  /// Tra ve danh sach [MyVoucherModel].
-  static Future<List<MyVoucherModel>> getMyVouchers() async {
-    return getMyVouchersApi();
-  }
-
-  /// Lay danh sach voucher he thong co the doi diem tu API `/api/vouchers/system`.
-  ///
-  /// Su dung auth header. Tra ve danh sach [ExchangeVoucherModel].
-  /// Neu API fail thi fallback ve Firestore `system_vouchers`.
-  static Future<List<ExchangeVoucherModel>> getSystemVouchersApi() async {
-    debugPrint('OfferService: Lay danh sach system vouchers tu API');
+    debugPrint('OfferService: Lay system vouchers tu Firestore');
 
     try {
-      final token = AuthStorage.getToken();
-      if (token == null) {
-        debugPrint('OfferService: Khong co token, fallback ve Firestore');
-        return _fallbackGetSystemVouchers();
-      }
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-      final response = await ApiClient.get<Map<String, dynamic>>(
-        '/vouchers/system',
-        options: Options(
-          headers: {'Authorization': 'Bearer $token'},
-        ),
-      );
-
-      final data = response.data;
-      if (data == null || data['success'] != true) {
-        debugPrint('OfferService: API tra loi khong thanh cong, fallback ve Firestore');
-        return _fallbackGetSystemVouchers();
-      }
-
-      final list = data['data'] as List<dynamic>? ?? [];
-      final vouchers = list
-          .map((e) => SystemVoucherApi.fromJson(e as Map<String, dynamic>))
-          .map((api) => api.toExchangeVoucher())
-          .toList();
-
-      debugPrint('OfferService: Lay tu API duoc ${vouchers.length} system voucher');
-      return vouchers;
-    } catch (e, st) {
-      debugPrint('OfferService: Loi goi API system vouchers = $e');
-      debugPrint('Stack trace: $st');
-      return _fallbackGetSystemVouchers();
-    }
-  }
-
-  /// Fallback: doc tu Firestore `system_vouchers`.
-  static Future<List<ExchangeVoucherModel>> _fallbackGetSystemVouchers() async {
-    debugPrint('OfferService: Fallback - doc vouchers tu Firestore');
-    try {
+      // Firestore chi cho phep toi da 1 inequality filter nen chi loc
+      // isActive va storeId o day, cac dieu kien khac loc bang Dart.
       final snapshot = await _firestore
           .collection('vouchers')
-          .where('pointsRequired', isGreaterThan: 0)
-          .where('remaining', isGreaterThan: 0)
+          .where('isActive', isEqualTo: true)
+          .where('storeId', isNull: true)
           .get();
+
       final vouchers = snapshot.docs
           .map((doc) => ExchangeVoucherModel.fromVoucher(doc))
+          .where((v) =>
+              v.pointsRequired > 0 &&
+              v.remaining > 0 &&
+              !v.expiryDate.isBefore(today))
           .toList();
-      debugPrint('OfferService: Fallback lay duoc ${vouchers.length} voucher');
+
+      debugPrint('OfferService: Lay duoc ${vouchers.length} system voucher con han');
       return vouchers;
     } catch (e) {
-      debugPrint('OfferService: Fallback that bai = $e');
+      debugPrint('OfferService: Loi lay system vouchers = $e');
       return [];
     }
   }
 
-  /// Lay danh sach voucher cua nguoi dung tu API `/api/vouchers/my-vouchers`.
-  ///
-  /// Su dung auth header. Tra ve danh sach [MyVoucherModel].
-  /// Neu API fail thi fallback ve Firestore sub-collection.
-  static Future<List<MyVoucherModel>> getMyVouchersApi() async {
-    debugPrint('OfferService: Lay my-vouchers tu API');
+  /// Lay danh sach voucher cua nguoi dung.
+  /// Doc truc tiep tu Firestore sub-collection `customer_profiles/{userId}/my_vouchers`.
+  /// Chi lay voucher con han (expiryDate >= hôm nay).
+  static Future<List<MyVoucherModel>> getMyVouchers() async {
+    debugPrint('OfferService: Lay my-vouchers tu Firestore');
 
-    try {
-      final token = AuthStorage.getToken();
-      if (token == null) {
-        debugPrint('OfferService: Khong co token, fallback ve Firestore');
-        return _fallbackGetMyVouchers();
-      }
-
-      final response = await ApiClient.get<Map<String, dynamic>>(
-        '/vouchers/my-vouchers',
-        options: Options(
-          headers: {'Authorization': 'Bearer $token'},
-        ),
-      );
-
-      final data = response.data;
-      if (data == null || data['success'] != true) {
-        debugPrint('OfferService: API tra loi khong thanh cong, fallback ve Firestore');
-        return _fallbackGetMyVouchers();
-      }
-
-      final list = data['data'] as List<dynamic>? ?? [];
-      final vouchers = list
-          .map((e) => MyVoucherApi.fromJson(e as Map<String, dynamic>))
-          .map((api) => api.toMyVoucher())
-          .toList();
-
-      debugPrint('OfferService: Lay tu API duoc ${vouchers.length} my voucher');
-      return vouchers;
-    } catch (e, st) {
-      debugPrint('OfferService: Loi goi API my-vouchers = $e');
-      debugPrint('Stack trace: $st');
-      return _fallbackGetMyVouchers();
-    }
-  }
-
-  /// Fallback: doc tu Firestore `customer_profiles/{userId}/my_vouchers`.
-  static Future<List<MyVoucherModel>> _fallbackGetMyVouchers() async {
-    debugPrint('OfferService: Fallback - doc my_vouchers tu Firestore');
     final userId = AuthStorage.getUserId();
-    if (userId == null) return [];
+    if (userId == null) {
+      debugPrint('OfferService: Chua dang nhap, tra ve rong');
+      return [];
+    }
 
     try {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day, 23, 59, 59);
+
       final snapshot = await _firestore
           .collection('customer_profiles')
           .doc(userId)
           .collection('my_vouchers')
           .get();
+
       final vouchers = snapshot.docs
           .map((doc) => MyVoucherModel.fromFirestore(doc))
+          .where((v) => !v.expiryDate.isBefore(today))
           .toList();
-      debugPrint('OfferService: Fallback lay duoc ${vouchers.length} my voucher');
+
+      debugPrint('OfferService: Lay duoc ${vouchers.length} my voucher con han');
       return vouchers;
     } catch (e) {
-      debugPrint('OfferService: Fallback that bai = $e');
+      debugPrint('OfferService: Loi lay my vouchers = $e');
       return [];
     }
   }

@@ -66,7 +66,7 @@ class AuthInterceptor extends Interceptor {
       ));
 
       final response = await dio.post<Map<String, dynamic>>(
-        '/auth/refresh',
+        '/api/auth/refresh-token',
         data: {'refreshToken': refreshToken},
       );
 

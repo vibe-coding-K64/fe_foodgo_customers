@@ -17,6 +17,7 @@ class MainView extends StatefulWidget {
 class _MainViewState extends State<MainView> {
   int _currentIndex = 0;
   int _activityRefreshKey = 0;
+  int _rewardsRefreshKey = 0;
 
   // Danh sach cac tab.
   static const List<Widget> _pages = [
@@ -39,7 +40,7 @@ class _MainViewState extends State<MainView> {
         children: [
           _pages[0],
           ActivityView(key: ValueKey(_activityRefreshKey)),
-          _pages[2],
+          RewardsView(key: ValueKey(_rewardsRefreshKey)),
           _pages[3],
           _pages[4],
         ],
@@ -51,6 +52,11 @@ class _MainViewState extends State<MainView> {
             setState(() {
               _currentIndex = index;
               _activityRefreshKey++;
+            });
+          } else if (index == 2) {
+            setState(() {
+              _currentIndex = index;
+              _rewardsRefreshKey++;
             });
           } else {
             setState(() {

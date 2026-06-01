@@ -41,8 +41,6 @@ class MyVoucherModel {
     } else if (rawDate is DateTime) {
       parsedDate = rawDate;
     } else if (rawDate is Map) {
-      // Firestore Timestamp duoc serialize thanh {epochSecond, nano}.
-      // Su dung dynamic cast de phong truong hop gia tri la double.
       final secondsRaw = rawDate['epochSecond'] as dynamic;
       final nanosRaw = rawDate['nano'] as dynamic?;
       final seconds = (secondsRaw is num) ? secondsRaw.toInt() : null;
@@ -50,13 +48,12 @@ class MyVoucherModel {
       if (seconds != null) {
         parsedDate = DateTime.fromMillisecondsSinceEpoch(
           seconds * 1000 + nanos ~/ 1000000,
-          isUtc: true,
         );
       } else {
-        parsedDate = DateTime.now();
+        parsedDate = DateTime.now().add(const Duration(days: 365));
       }
     } else {
-      parsedDate = DateTime.now();
+      parsedDate = DateTime.now().add(const Duration(days: 365));
     }
 
     return MyVoucherModel(
@@ -114,6 +111,7 @@ class ExchangeVoucherModel {
   final int remaining;
   final String terms;
   final double minOrderValue;
+  final DateTime expiryDate;
 
   const ExchangeVoucherModel({
     required this.id,
@@ -126,11 +124,35 @@ class ExchangeVoucherModel {
     required this.remaining,
     this.terms = '',
     this.minOrderValue = 0,
+    required this.expiryDate,
   });
 
 /// Khoi tao tu Firestore document cua collection `vouchers`.
   factory ExchangeVoucherModel.fromVoucher(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+
+    DateTime parsedDate;
+    final rawDate = data['expiryDate'];
+    if (rawDate is Timestamp) {
+      parsedDate = rawDate.toDate();
+    } else if (rawDate is DateTime) {
+      parsedDate = rawDate;
+    } else if (rawDate is Map) {
+      final secondsRaw = rawDate['epochSecond'] as dynamic;
+      final nanosRaw = rawDate['nano'] as dynamic?;
+      final seconds = (secondsRaw is num) ? secondsRaw.toInt() : null;
+      final nanos = (nanosRaw is num) ? nanosRaw.toInt() : 0;
+      if (seconds != null) {
+        parsedDate = DateTime.fromMillisecondsSinceEpoch(
+          seconds * 1000 + nanos ~/ 1000000,
+        );
+      } else {
+        parsedDate = DateTime.now().add(const Duration(days: 365));
+      }
+    } else {
+      parsedDate = DateTime.now().add(const Duration(days: 365));
+    }
+
     return ExchangeVoucherModel(
       id: doc.id,
       title: data['title'] as String? ?? '',
@@ -142,7 +164,17 @@ class ExchangeVoucherModel {
       remaining: (data['remaining'] as num?)?.toInt() ?? 0,
       terms: data['terms'] as String? ?? '',
       minOrderValue: (data['minOrderValue'] as num?)?.toDouble() ?? 0.0,
+      expiryDate: parsedDate,
     );
+  }
+
+  /// Kiem tra voucher con han su dung hay khong.
+  /// expiryDate >= hôm nay (hết ngày 6/1 thì ngày 6/1 vẫn hiện).
+  bool get isValid {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final expiryDay = DateTime(expiryDate.year, expiryDate.month, expiryDate.day);
+    return !expiryDay.isBefore(today);
   }
 
   /// Tra ve text hien thi gia tri giam.
@@ -225,6 +257,7 @@ class SystemVoucherApi {
       remaining: remaining,
       terms: terms,
       minOrderValue: minOrderValue,
+      expiryDate: DateTime.now().add(const Duration(days: 365)),
     );
   }
 }
@@ -272,7 +305,6 @@ class ExchangedVoucherData {
       if (seconds != null) {
         parsedDate = DateTime.fromMillisecondsSinceEpoch(
           seconds * 1000 + nanos ~/ 1000000,
-          isUtc: true,
         );
       } else {
         parsedDate = DateTime.now();
@@ -346,7 +378,6 @@ class MyVoucherApi {
         if (seconds != null) {
           return DateTime.fromMillisecondsSinceEpoch(
             seconds * 1000 + nanos ~/ 1000000,
-            isUtc: true,
           );
         }
       }

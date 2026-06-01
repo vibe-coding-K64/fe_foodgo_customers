@@ -1,17 +1,18 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/utils/auth_storage.dart';
+import '../models/profile_stats.dart';
 import '../models/user_model.dart';
 
 /// Service quan ly thong tin ho so nguoi dung.
 ///
-/// Su dung backend API `/api/customers/*` de lay va cap nhat thong tin.
-/// Ket hop voi Firebase Firestore cho loyalty/reward data.
+/// Su dung Firebase Firestore cho tat ca thong tin nguoi dung.
 class ProfileService {
   const ProfileService();
 
-  /// Lay header Authorization voi Bearer token.
+  /// Lay header Authorization voi Bearer token (chi dung cho update).
   Options _authOptions() {
     final token = AuthStorage.getToken();
     return Options(
@@ -21,44 +22,33 @@ class ProfileService {
     );
   }
 
-  /// Lay thong tin nguoi dung hien tai tu API.
-  ///
-  /// Goi GET /api/customers/profile
-  /// Tra ve UserModel neu thanh cong, null neu that bai.
+  /// Lay thong tin nguoi dung hien tai tu Firestore `/users/{userId}`.
   Future<UserModel?> getCurrentUser() async {
+    final userId = AuthStorage.getUserId();
+    if (userId == null || userId.isEmpty) {
+      debugPrint('ProfileService: Khong co userId');
+      return null;
+    }
+
     try {
-      final response = await ApiClient.get<Map<String, dynamic>>(
-        '/customers/profile',
-        options: _authOptions(),
-      );
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
 
-      final data = response.data;
-      if (data == null) return null;
-
-      final success = data['success'] as bool? ?? false;
-      if (!success) {
-        debugPrint('ProfileService: API tra ve success=false');
+      if (!doc.exists) {
+        debugPrint('ProfileService: Khong tim thay user doc');
         return null;
       }
 
-      final userData = data['data'] as Map<String, dynamic>?;
-      if (userData == null) return null;
-
-      debugPrint('ProfileService: Lay thong tin thanh cong');
-      return UserModel.fromJson(userData);
-    } on DioException catch (e) {
-      debugPrint('ProfileService: Loi lay thong tin - ${e.message}');
-      return null;
+      return UserModel.fromFirestore(doc);
     } catch (e) {
-      debugPrint('ProfileService: Loi khong xac dinh - $e');
+      debugPrint('ProfileService: loi doc user - $e');
       return null;
     }
   }
 
   /// Stream lang nghe thong tin nguoi dung hien tai.
-  ///
-  /// Goi API lay thong tin ban dau, tra ve Stream don (khong phai real-time).
-  /// De real-time, can backend ho tro WebSocket/SSE.
   Stream<UserModel?> getCurrentUserStream() {
     return Stream.fromFuture(getCurrentUser());
   }
@@ -80,7 +70,7 @@ class ProfileService {
       }
 
       if (avatarUrl != null && avatarUrl.trim().isNotEmpty) {
-        updates['avatarUrl'] = avatarUrl.trim();
+        updates['photoUrl'] = avatarUrl.trim();
       }
 
       if (updates.isEmpty) {
@@ -110,7 +100,6 @@ class ProfileService {
 
       final updatedUser = UserModel.fromJson(userData);
 
-      // Cap nhat lai AuthStorage voi thong tin moi.
       await AuthStorage.saveAuthData(
         token: AuthStorage.getToken() ?? '',
         tokenType: AuthStorage.getTokenType() ?? 'Bearer',
@@ -124,10 +113,10 @@ class ProfileService {
       return updatedUser;
     } on DioException catch (e) {
       final message = _handleDioError(e);
-      debugPrint('ProfileService: Loi cap nhat ho so - $message');
+      debugPrint('ProfileService: loi cap nhat ho so - $message');
       throw Exception(message);
     } catch (e) {
-      debugPrint('ProfileService: Loi cap nhat ho so - $e');
+      debugPrint('ProfileService: loi cap nhat ho so - $e');
       rethrow;
     }
   }
@@ -150,6 +139,79 @@ class ProfileService {
         return 'Yeu cau khong hop le.';
       default:
         return 'Da xay ra loi. Vui long thu lai sau.';
+    }
+  }
+
+  /// Lay thong ke nguoi dung (don hang, voucher, diem) tu Firestore.
+  Future<ProfileStats> getUserStats() async {
+    final userId = AuthStorage.getUserId();
+    if (userId == null || userId.isEmpty) {
+      debugPrint('ProfileService: Khong co userId, tra ve stats mac dinh');
+      return const ProfileStats();
+    }
+
+    debugPrint('ProfileService: Lay stats cho userId=$userId');
+
+    final firestore = FirebaseFirestore.instance;
+
+    try {
+      int orderCount = 0;
+      int voucherCount = 0;
+      int loyaltyPoints = 0;
+
+      // Dem so don hang da hoan thanh (status == 3).
+      final orderSnap = await firestore
+          .collection('orders')
+          .where('userId', isEqualTo: userId)
+          .get();
+      debugPrint('ProfileService: orderSnap size=${orderSnap.size}');
+      orderCount = orderSnap.docs.where((doc) {
+        final status = (doc.data() as Map<String, dynamic>)['status'];
+        return status == 3;
+      }).length;
+      debugPrint('ProfileService: orderCount=$orderCount');
+
+      // Dem so voucher con han su dung.
+      final voucherSnap = await firestore
+          .collection('customer_profiles')
+          .doc(userId)
+          .collection('my_vouchers')
+          .get();
+      debugPrint('ProfileService: voucherSnap size=${voucherSnap.size}');
+      final now = DateTime.now().toUtc();
+      voucherCount = voucherSnap.docs.where((doc) {
+        final expiryStr =
+            (doc.data() as Map<String, dynamic>)['expiryDate'] as String?;
+        if (expiryStr == null) return false;
+        try {
+          final expiry = DateTime.parse(expiryStr);
+          return expiry.isAfter(now);
+        } catch (_) {
+          return false;
+        }
+      }).length;
+      debugPrint('ProfileService: voucherCount=$voucherCount');
+
+      // Lay loyaltyPoints.
+      final profileSnap = await firestore
+          .collection('customer_profiles')
+          .doc(userId)
+          .get();
+      debugPrint('ProfileService: profileSnap exists=${profileSnap.exists}');
+      if (profileSnap.exists) {
+        final data = profileSnap.data() as Map<String, dynamic>?;
+        loyaltyPoints = (data?['loyaltyPoints'] as int?) ?? 0;
+      }
+      debugPrint('ProfileService: loyaltyPoints=$loyaltyPoints');
+
+      return ProfileStats(
+        totalOrders: orderCount,
+        availableVouchers: voucherCount,
+        rewardPoints: loyaltyPoints,
+      );
+    } catch (e) {
+      debugPrint('ProfileService: loi getUserStats - $e');
+      return const ProfileStats();
     }
   }
 }
