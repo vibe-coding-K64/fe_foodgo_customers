@@ -8,8 +8,10 @@ import '../../cart/models/cart_item_model.dart';
 import '../../home/models/product_model.dart';
 
 /// Mo bottom sheet chi tiet mon an voi ProductModel.
-void showProductDetailSheet(BuildContext context, ProductModel product) {
-  showModalBottomSheet(
+/// Tra ve Future<dynamic> tu showModalBottomSheet de caller co the await.
+Future<dynamic> showProductDetailSheet(
+    BuildContext context, ProductModel product) {
+  return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -33,6 +35,7 @@ class ProductDetailBottomSheet extends StatefulWidget {
 class _ProductDetailBottomSheetState
     extends State<ProductDetailBottomSheet> {
   int _quantity = 1;
+  bool _isAddingToCart = false;
 
   /// Map: groupName -> Set of selected option names.
   /// Dung cho tat ca optionGroups (cả single-select và multi-select).
@@ -106,6 +109,8 @@ class _ProductDetailBottomSheetState
   }
 
   Future<void> _onAddToCart() async {
+    if (_isAddingToCart) return;
+
     final userId = AuthStorage.getUserId();
     if (userId == null || userId.isEmpty) {
       showTopSnackBar(
@@ -129,14 +134,20 @@ class _ProductDetailBottomSheetState
       ));
     }
 
+    setState(() => _isAddingToCart = true);
     final cartState = CartState.of(context);
-    final result = await cartState.addItem(
-      userId,
-      widget.product,
-      selectedOptions: selectedOptions,
-      note: _noteController.text.trim(),
-      quantity: _quantity,
-    );
+    CartAddResult result;
+    try {
+      result = await cartState.addItem(
+        userId,
+        widget.product,
+        selectedOptions: selectedOptions,
+        note: _noteController.text.trim(),
+        quantity: _quantity,
+      );
+    } finally {
+      if (mounted) setState(() => _isAddingToCart = false);
+    }
 
     if (!mounted) return;
 
@@ -180,73 +191,96 @@ class _ProductDetailBottomSheetState
     final message = cartState.differentStoreErrorMessage ??
         'Gio hang hien co mon tu cua hang khac. Ban co muon xoa gio hang hien tai de them mon nay?';
 
+    bool dialogIsAdding = false;
+
     showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Cua hang khac'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Huy',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ),
-          FilledButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              final userId = AuthStorage.getUserId();
-              if (userId == null) return;
-
-              final result = await cartState.replaceCartAndAddItem(
-                userId,
-                widget.product,
-                selectedOptions: () {
-                  final groups = <SelectedOptionGroup>[];
-                  for (final group in widget.product.optionGroups) {
-                    final selectedNames = _selectedOptions[group.name];
-                    if (selectedNames == null || selectedNames.isEmpty) continue;
-                    groups.add(SelectedOptionGroup(
-                      name: group.name,
-                      options: selectedNames
-                          .map((name) => SelectedOption(name: name))
-                          .toList(),
-                    ));
-                  }
-                  return groups;
-                }(),
-                note: _noteController.text.trim(),
-                quantity: _quantity,
-              );
-
-              if (!mounted) return;
-
-              if (result == CartAddResult.success) {
-                Navigator.pop(context);
-                showTopSnackBar(
-                  context,
-                  message: context.t('success_add_to_cart'),
-                  backgroundColor: AppColors.primary,
-                );
-              } else {
-                showTopSnackBar(
-                  context,
-                  message: cartState.errorMessage ?? 'Loi them vao gio hang.',
-                  backgroundColor: AppColors.error,
-                );
-              }
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Cua hang khac'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: dialogIsAdding ? null : () => Navigator.pop(ctx),
+              child: Text(
+                'Huy',
+                style: TextStyle(
+                  color: dialogIsAdding
+                      ? AppColors.textHint
+                      : AppColors.textSecondary,
+                ),
               ),
             ),
-            child: const Text('Xoa va them moi'),
-          ),
-        ],
+            FilledButton(
+              onPressed: dialogIsAdding
+                  ? null
+                  : () async {
+                      setDialogState(() => dialogIsAdding = true);
+                      Navigator.pop(ctx);
+                      final userId = AuthStorage.getUserId();
+                      if (userId == null) return;
+
+                      setState(() => _isAddingToCart = true);
+                      final result = await cartState.replaceCartAndAddItem(
+                        userId,
+                        widget.product,
+                        selectedOptions: () {
+                          final groups = <SelectedOptionGroup>[];
+                          for (final group in widget.product.optionGroups) {
+                            final selectedNames = _selectedOptions[group.name];
+                            if (selectedNames == null || selectedNames.isEmpty) continue;
+                            groups.add(SelectedOptionGroup(
+                              name: group.name,
+                              options: selectedNames
+                                  .map((name) => SelectedOption(name: name))
+                                  .toList(),
+                            ));
+                          }
+                          return groups;
+                        }(),
+                        note: _noteController.text.trim(),
+                        quantity: _quantity,
+                      );
+
+                      if (!mounted) return;
+                      setState(() => _isAddingToCart = false);
+
+                      if (result == CartAddResult.success) {
+                        Navigator.pop(context);
+                        showTopSnackBar(
+                          context,
+                          message: context.t('success_add_to_cart'),
+                          backgroundColor: AppColors.primary,
+                        );
+                      } else {
+                        showTopSnackBar(
+                          context,
+                          message: cartState.errorMessage ?? 'Loi them vao gio hang.',
+                          backgroundColor: AppColors.error,
+                        );
+                      }
+                    },
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
+              ),
+              child: dialogIsAdding
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Xoa va them moi'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -588,39 +622,57 @@ class _ProductDetailBottomSheetState
           // Nut them vao gio hang.
           Expanded(
             child: GestureDetector(
-              onTap: _onAddToCart,
+              onTap: _isAddingToCart ? null : _onAddToCart,
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
+                  color: _isAddingToCart
+                      ? AppColors.primary.withValues(alpha: 0.6)
+                      : AppColors.primary,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.shopping_cart_outlined,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
+                    if (_isAddingToCart) ...[
+                      const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ] else ...[
+                      const Icon(
+                        Icons.shopping_cart_outlined,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
                     Text(
-                      context.t('product_add_to_cart'),
+                      _isAddingToCart
+                          ? context.t('common_loading')
+                          : context.t('product_add_to_cart'),
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      _formatPrice(_totalPrice),
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                    if (!_isAddingToCart) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        _formatPrice(_totalPrice),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),

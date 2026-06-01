@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../../../core/network/api_client.dart';
 
 /// Service goi API Cart.
@@ -88,6 +89,7 @@ class CartApiService {
       body['note'] = note;
     }
 
+    debugPrint('CartApiService addToCart: POST /cart/add body=$body');
     final response = await ApiClient.post<Map<String, dynamic>>(
       '/cart/add',
       data: body,

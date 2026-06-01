@@ -38,6 +38,8 @@ class _SearchResultViewState extends State<SearchResultView> {
   List<SearchResultItem> _allResults = [];
   bool _isLoading = true;
   Object? _loadError;
+  /// Tap productId dang duoc add de hien thi loading icon tren card.
+  final Set<String> _addingProductIds = {};
 
   @override
   void initState() {
@@ -147,6 +149,8 @@ class _SearchResultViewState extends State<SearchResultView> {
   }
 
   void _onAddToCart(SearchResultItem item) {
+    if (_addingProductIds.contains(item.productId)) return;
+
     final userId = AuthStorage.getUserId();
     if (userId == null || userId.isEmpty) {
       showTopSnackBar(
@@ -176,12 +180,21 @@ class _SearchResultViewState extends State<SearchResultView> {
     final userId = AuthStorage.getUserId();
     if (userId == null) return;
 
+    setState(() => _addingProductIds.add(item.productId));
+
     final cartState = CartState.of(context);
-    final result = await cartState.addItem(
-      userId,
-      product,
-      quantity: 1,
-    );
+    CartAddResult result;
+    try {
+      result = await cartState.addItem(
+        userId,
+        product,
+        quantity: 1,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _addingProductIds.remove(item.productId));
+      }
+    }
 
     if (!mounted) return;
 
@@ -226,58 +239,81 @@ class _SearchResultViewState extends State<SearchResultView> {
     final message = cartState.differentStoreErrorMessage ??
         'Gio hang hien co mon tu cua hang khac. Ban co muon xoa gio hang hien tai de them mon nay?';
 
+    bool dialogIsAdding = false;
+
     showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Cua hang khac'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Huy',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ),
-          FilledButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              final userId = AuthStorage.getUserId();
-              if (userId == null) return;
-
-              final result = await cartState.replaceCartAndAddItem(
-                userId,
-                product,
-                quantity: 1,
-              );
-
-              if (!mounted) return;
-
-              if (result == CartAddResult.success) {
-                showTopSnackBar(
-                  context,
-                  message: '${item.productName} ${context.t('success_add_to_cart')}',
-                  backgroundColor: AppColors.primary,
-                  duration: const Duration(seconds: 1),
-                );
-              } else {
-                showTopSnackBar(
-                  context,
-                  message: cartState.errorMessage ?? 'Loi them vao gio hang.',
-                  backgroundColor: AppColors.error,
-                );
-              }
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Cua hang khac'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: dialogIsAdding ? null : () => Navigator.pop(ctx),
+              child: Text(
+                'Huy',
+                style: TextStyle(
+                  color: dialogIsAdding
+                      ? AppColors.textHint
+                      : AppColors.textSecondary,
+                ),
               ),
             ),
-            child: const Text('Xoa va them moi'),
-          ),
-        ],
+            FilledButton(
+              onPressed: dialogIsAdding
+                  ? null
+                  : () async {
+                      setDialogState(() => dialogIsAdding = true);
+                      Navigator.pop(ctx);
+                      final userId = AuthStorage.getUserId();
+                      if (userId == null) return;
+
+                      setState(() => _addingProductIds.add(item.productId));
+                      final result = await cartState.replaceCartAndAddItem(
+                        userId,
+                        product,
+                        quantity: 1,
+                      );
+
+                      setState(() => _addingProductIds.remove(item.productId));
+                      if (!mounted) return;
+
+                      if (result == CartAddResult.success) {
+                        showTopSnackBar(
+                          context,
+                          message: '${item.productName} ${context.t('success_add_to_cart')}',
+                          backgroundColor: AppColors.primary,
+                          duration: const Duration(seconds: 1),
+                        );
+                      } else {
+                        showTopSnackBar(
+                          context,
+                          message: cartState.errorMessage ?? 'Loi them vao gio hang.',
+                          backgroundColor: AppColors.error,
+                        );
+                      }
+                    },
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
+              ),
+              child: dialogIsAdding
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Xoa va them moi'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -348,6 +384,7 @@ class _SearchResultViewState extends State<SearchResultView> {
             return SearchResultCard(
               item: item,
               cartQuantity: cartQty,
+              isAddingToCart: _addingProductIds.contains(item.productId),
               onTap: () {
                 debugPrint(
                     'SearchResultView: Nguoi dung bam san pham [${item.productName}]');

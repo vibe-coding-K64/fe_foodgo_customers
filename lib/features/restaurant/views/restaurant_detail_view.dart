@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/state/cart_state.dart';
+import '../../../core/utils/auth_storage.dart';
+import '../../../core/utils/snackbar_helper.dart';
 import '../../home/models/store_model.dart';
 import '../../home/models/product_model.dart';
+import '../../cart/views/cart_view.dart';
 import '../services/restaurant_service.dart';
 import '../models/restaurant_category_model.dart';
 import '../models/restaurant_detail_response.dart';
@@ -42,6 +46,10 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
   // Trang thai loading.
   bool _isLoading = true;
   String? _errorMessage;
+  /// Tap productId dang duoc add de hien thi loading icon tren tile.
+  final Set<String> _addingProductIds = {};
+  /// ProductId dang mo bottom sheet de configure.
+  String? _productIdBeingConfigured;
 
   @override
   void initState() {
@@ -102,7 +110,172 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
   }
 
   void _onAddToCart(ProductModel product) {
-    showProductDetailSheet(context, product);
+    if (_addingProductIds.contains(product.id)) return;
+
+    // Co option -> mo bottom sheet de configure.
+    if (product.optionGroups.isNotEmpty) {
+      setState(() => _addingProductIds.add(product.id));
+      showProductDetailSheet(context, product).then((_) {
+        if (mounted) {
+          setState(() => _addingProductIds.remove(product.id));
+        }
+      });
+      return;
+    }
+
+    // Khong co option -> add truc tiep.
+    _addDirectlyToCart(product);
+  }
+
+  Future<void> _addDirectlyToCart(ProductModel product) async {
+    final userId = AuthStorage.getUserId();
+    if (userId == null || userId.isEmpty) {
+      showTopSnackBar(
+        context,
+        message: context.t('auth_login'),
+        backgroundColor: AppColors.error,
+      );
+      return;
+    }
+
+    if (product.isOutOfStock) return;
+
+    setState(() => _addingProductIds.add(product.id));
+
+    final cartState = CartState.of(context);
+    CartAddResult result;
+    try {
+      result = await cartState.addItem(
+        userId,
+        product,
+        quantity: 1,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _addingProductIds.remove(product.id));
+      }
+    }
+
+    if (!mounted) return;
+
+    switch (result) {
+      case CartAddResult.success:
+        showTopSnackBar(
+          context,
+          message: '${product.name} ${context.t('success_add_to_cart')}',
+          backgroundColor: AppColors.primary,
+          duration: const Duration(seconds: 1),
+        );
+        break;
+      case CartAddResult.differentStore:
+        _showDifferentStoreDialog(cartState, product);
+        break;
+      case CartAddResult.outOfStock:
+        showTopSnackBar(
+          context,
+          message: cartState.errorMessage ?? 'Mon an dang het hang.',
+          backgroundColor: AppColors.error,
+        );
+        break;
+      case CartAddResult.notFound:
+        showTopSnackBar(
+          context,
+          message: cartState.errorMessage ?? 'San pham khong ton tai.',
+          backgroundColor: AppColors.error,
+        );
+        break;
+      case CartAddResult.otherError:
+        showTopSnackBar(
+          context,
+          message: cartState.errorMessage ?? 'Loi them vao gio hang.',
+          backgroundColor: AppColors.error,
+        );
+        break;
+    }
+  }
+
+  void _showDifferentStoreDialog(CartState cartState, ProductModel product) {
+    final message = cartState.differentStoreErrorMessage ??
+        'Gio hang hien co mon tu cua hang khac. Ban co muon xoa gio hang hien tai de them mon nay?';
+
+    bool dialogIsAdding = false;
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Cua hang khac'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: dialogIsAdding ? null : () => Navigator.pop(ctx),
+              child: Text(
+                'Huy',
+                style: TextStyle(
+                  color: dialogIsAdding
+                      ? AppColors.textHint
+                      : AppColors.textSecondary,
+                ),
+              ),
+            ),
+            FilledButton(
+              onPressed: dialogIsAdding
+                  ? null
+                  : () async {
+                      setDialogState(() => dialogIsAdding = true);
+                      Navigator.pop(ctx);
+                      final userId = AuthStorage.getUserId();
+                      if (userId == null) return;
+
+                      final result = await cartState.replaceCartAndAddItem(
+                        userId,
+                        product,
+                        quantity: 1,
+                      );
+
+                      if (!mounted) return;
+
+                      if (result == CartAddResult.success) {
+                        Navigator.pop(context);
+                        showTopSnackBar(
+                          context,
+                          message:
+                              '${product.name} ${context.t('success_add_to_cart')}',
+                          backgroundColor: AppColors.primary,
+                          duration: const Duration(seconds: 1),
+                        );
+                      } else {
+                        showTopSnackBar(
+                          context,
+                          message:
+                              cartState.errorMessage ?? 'Loi them vao gio hang.',
+                          backgroundColor: AppColors.error,
+                        );
+                      }
+                    },
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
+              ),
+              child: dialogIsAdding
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Xoa va them moi'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   String _getCategoryDisplayName(RestaurantCategoryModel category) {
@@ -194,9 +367,14 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
               CircleAvatar(
                 backgroundColor: Colors.black26,
                 child: IconButton(
-                  icon: const Icon(Icons.favorite_border, color: Colors.white),
+                  icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
                   onPressed: () {
-                    debugPrint('RestaurantDetailView: Nguoi dung bam yeu thich');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CartView(),
+                      ),
+                    );
                   },
                 ),
               ),
@@ -287,6 +465,7 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
                   final product = products[index];
                   return _FoodItemTile(
                     product: product,
+                    isAddingToCart: _addingProductIds.contains(product.id),
                     onAddToCart: () => _onAddToCart(product),
                   );
                 },
@@ -581,10 +760,12 @@ class _CategoryTabsDelegate extends SliverPersistentHeaderDelegate {
 
 class _FoodItemTile extends StatelessWidget {
   final ProductModel product;
+  final bool isAddingToCart;
   final VoidCallback onAddToCart;
 
   const _FoodItemTile({
     required this.product,
+    required this.isAddingToCart,
     required this.onAddToCart,
   });
 
@@ -680,7 +861,26 @@ class _FoodItemTile extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    if (!product.isOutOfStock)
+                    if (isAddingToCart)
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Center(
+                          child: SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      )
+                    else if (!product.isOutOfStock)
                       GestureDetector(
                         onTap: onAddToCart,
                         child: Container(

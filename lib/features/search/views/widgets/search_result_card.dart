@@ -9,6 +9,7 @@ import '../../models/search_result_item.dart';
 class SearchResultCard extends StatelessWidget {
   final SearchResultItem item;
   final int cartQuantity;
+  final bool isAddingToCart;
   final VoidCallback? onTap;
   final VoidCallback? onAddToCart;
 
@@ -16,6 +17,7 @@ class SearchResultCard extends StatelessWidget {
     super.key,
     required this.item,
     this.cartQuantity = 0,
+    this.isAddingToCart = false,
     this.onTap,
     this.onAddToCart,
   });
@@ -195,6 +197,27 @@ class SearchResultCard extends StatelessWidget {
           Icons.remove_shopping_cart_outlined,
           color: Colors.white,
           size: 20,
+        ),
+      );
+    }
+
+    if (isAddingToCart) {
+      return Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Center(
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.white,
+            ),
+          ),
         ),
       );
     }
