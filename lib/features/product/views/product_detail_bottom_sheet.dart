@@ -6,6 +6,9 @@ import '../../../core/utils/auth_storage.dart';
 import '../../../core/utils/snackbar_helper.dart';
 import '../../cart/models/cart_item_model.dart';
 import '../../home/models/product_model.dart';
+import '../../store/services/product_service.dart';
+import '../models/product_detail_info.dart';
+import 'product_reviews_view.dart';
 
 /// Mo bottom sheet chi tiet mon an voi ProductModel.
 /// Tra ve Future<dynamic> tu showModalBottomSheet de caller co the await.
@@ -42,11 +45,28 @@ class _ProductDetailBottomSheetState
   final Map<String, Set<String>> _selectedOptions = {};
 
   final TextEditingController _noteController = TextEditingController();
+  late final TextEditingController _quantityController;
+
+  ProductDetailInfo? _detailInfo;
+  bool _isLoadingInfo = false;
 
   @override
   void initState() {
     super.initState();
+    _quantityController = TextEditingController(text: '$_quantity');
     _initDefaultSelections();
+    _loadProductDetailInfo();
+  }
+
+  Future<void> _loadProductDetailInfo() async {
+    setState(() => _isLoadingInfo = true);
+    try {
+      final info = await const ProductService()
+          .getProductDetailInfo(widget.product.id);
+      if (mounted) setState(() => _detailInfo = info);
+    } finally {
+      if (mounted) setState(() => _isLoadingInfo = false);
+    }
   }
 
   /// Khoi tao selection mac dinh: voi single-select chon option dau tien,
@@ -288,6 +308,7 @@ class _ProductDetailBottomSheetState
   @override
   void dispose() {
     _noteController.dispose();
+    _quantityController.dispose();
     super.dispose();
   }
 
@@ -338,6 +359,25 @@ class _ProductDetailBottomSheetState
                             color: AppColors.primary,
                           ),
                         ),
+
+                        // --- RATING / KHOANG CACH / THOI GIAN ---
+                        const SizedBox(height: 8),
+                        if (_isLoadingInfo)
+                          const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.primary,
+                            ),
+                          )
+                        else if (_detailInfo != null)
+                          _buildDetailInfoRow()
+                        else if (widget.product.rating != null ||
+                            widget.product.distance != null ||
+                            widget.product.deliveryTime != null)
+                          _buildDetailInfoRowFromProduct(),
+
                         if (widget.product.description.isNotEmpty) ...[
                           const SizedBox(height: 8),
                           Text(
@@ -559,6 +599,84 @@ class _ProductDetailBottomSheetState
     );
   }
 
+  Widget _buildDetailInfoRow() {
+    final info = _detailInfo!;
+    return _buildRatingChip(
+      rating: info.rating,
+      reviewCount: info.reviewCount,
+    );
+  }
+
+  Widget _buildDetailInfoRowFromProduct() {
+    final p = widget.product;
+    if (p.rating == null) return const SizedBox.shrink();
+    return _buildRatingChip(
+      rating: p.rating!,
+      reviewCount: p.reviewCount ?? 0,
+    );
+  }
+
+  Widget _buildRatingChip({
+    required double rating,
+    required int reviewCount,
+  }) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProductReviewsView(
+              productId: widget.product.id,
+              productName: widget.product.name,
+              storeId: widget.product.storeId,
+            ),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceVariant,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.star,
+              color: Colors.amber,
+              size: 22,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              rating.toStringAsFixed(1),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '$reviewCount ${context.t('restaurant_reviews_count')}',
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(
+              Icons.chevron_right,
+              color: AppColors.textSecondary,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildNoteSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -694,7 +812,10 @@ class _ProductDetailBottomSheetState
         children: [
           GestureDetector(
             onTap: _quantity > 1
-                ? () => setState(() => _quantity--)
+                ? () => setState(() {
+                      _quantity--;
+                      _quantityController.text = '$_quantity';
+                    })
                 : null,
             child: Container(
               width: 36,
@@ -709,19 +830,46 @@ class _ProductDetailBottomSheetState
             ),
           ),
           SizedBox(
-            width: 32,
-            child: Text(
-              '$_quantity',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+            width: 48,
+            child: Focus(
+              onFocusChange: (hasFocus) {
+                if (!hasFocus) {
+                  final parsed = int.tryParse(_quantityController.text);
+                  setState(() {
+                    _quantity = (parsed != null && parsed >= 1) ? parsed : 1;
+                    _quantityController.text = '$_quantity';
+                  });
+                }
+              },
+              child: TextField(
+                controller: _quantityController,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                cursorColor: AppColors.primary,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                  isDense: true,
+                ),
+                onChanged: (value) {
+                  final parsed = int.tryParse(value);
+                  if (parsed != null && parsed >= 1) {
+                    _quantity = parsed;
+                  }
+                },
               ),
             ),
           ),
           GestureDetector(
-            onTap: () => setState(() => _quantity++),
+            onTap: () => setState(() {
+              _quantity++;
+              _quantityController.text = '$_quantity';
+            }),
             child: Container(
               width: 36,
               height: 36,

@@ -51,10 +51,28 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
   /// ProductId dang mo bottom sheet de configure.
   String? _productIdBeingConfigured;
 
+  final ScrollController _scrollController = ScrollController();
+  bool _isCollapsed = false;
+
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _loadRestaurantDetail();
+  }
+
+  void _onScroll() {
+    final collapsed = _scrollController.offset >= 260 - kToolbarHeight;
+    if (collapsed != _isCollapsed) {
+      setState(() => _isCollapsed = collapsed);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadRestaurantDetail() async {
@@ -112,19 +130,12 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
   void _onAddToCart(ProductModel product) {
     if (_addingProductIds.contains(product.id)) return;
 
-    // Co option -> mo bottom sheet de configure.
-    if (product.optionGroups.isNotEmpty) {
-      setState(() => _addingProductIds.add(product.id));
-      showProductDetailSheet(context, product).then((_) {
-        if (mounted) {
-          setState(() => _addingProductIds.remove(product.id));
-        }
-      });
-      return;
-    }
-
-    // Khong co option -> add truc tiep.
-    _addDirectlyToCart(product);
+    setState(() => _addingProductIds.add(product.id));
+    showProductDetailSheet(context, product).then((_) {
+      if (mounted) {
+        setState(() => _addingProductIds.remove(product.id));
+      }
+    });
   }
 
   Future<void> _addDirectlyToCart(ProductModel product) async {
@@ -297,26 +308,31 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: CustomScrollView(
+        controller: _scrollController,
         slivers: [
           // ========== 1. SLIVER APP BAR ==========
           SliverAppBar(
             expandedHeight: 260,
             pinned: true,
             stretch: true,
+            backgroundColor: _isCollapsed ? AppColors.surface : Colors.transparent,
+            foregroundColor: _isCollapsed ? AppColors.textPrimary : Colors.white,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 _store?.name ?? '...',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: _isCollapsed ? AppColors.textPrimary : Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  shadows: [
-                    Shadow(
-                      offset: Offset(0, 1),
-                      blurRadius: 4,
-                      color: Colors.black38,
-                    ),
-                  ],
+                  shadows: _isCollapsed
+                      ? null
+                      : [
+                          const Shadow(
+                            offset: Offset(0, 1),
+                            blurRadius: 4,
+                            color: Colors.black38,
+                          ),
+                        ],
                 ),
               ),
               centerTitle: true,
@@ -356,18 +372,32 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
             leading: Padding(
               padding: const EdgeInsets.all(8),
               child: CircleAvatar(
-                backgroundColor: Colors.black26,
+                backgroundColor: _isCollapsed
+                    ? AppColors.surface
+                    : Colors.black26,
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  icon: Icon(
+                    Icons.arrow_back,
+                    color: _isCollapsed
+                        ? AppColors.textPrimary
+                        : Colors.white,
+                  ),
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
             ),
             actions: [
               CircleAvatar(
-                backgroundColor: Colors.black26,
+                backgroundColor: _isCollapsed
+                    ? AppColors.surface
+                    : Colors.black26,
                 child: IconButton(
-                  icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
+                  icon: Icon(
+                    Icons.shopping_cart_outlined,
+                    color: _isCollapsed
+                        ? AppColors.textPrimary
+                        : Colors.white,
+                  ),
                   onPressed: () {
                     Navigator.push(
                       context,
@@ -548,16 +578,41 @@ class _StoreInfoSection extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          // Ten cua hang.
-          Text(
-            store.name,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+          // Ten cua hang + Trang thai.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  store.name,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: store.isOpen
+                      ? AppColors.primary.withValues(alpha: 0.12)
+                      : AppColors.error.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  store.isOpen
+                      ? context.t('store_status_open')
+                      : context.t('store_status_closed'),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: store.isOpen ? AppColors.primary : AppColors.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
 
-          const SizedBox(height: 4),
+          const SizedBox(height: 12),
 
           // Thoi gian giao.
           Row(
@@ -574,6 +629,21 @@ class _StoreInfoSection extends StatelessWidget {
                   color: AppColors.textSecondary,
                 ),
               ),
+              if (store.deliveryTime.isNotEmpty) ...[
+                const SizedBox(width: 12),
+                Icon(
+                  Icons.access_time_outlined,
+                  size: 16,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  store.deliveryTime,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
             ],
           ),
 
@@ -625,6 +695,49 @@ class _StoreInfoSection extends StatelessWidget {
 
           const SizedBox(height: 16),
           Divider(height: 1, color: AppColors.divider),
+
+          if (store.description.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              context.t('restaurant_description'),
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              store.description,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+          ],
+
+          if (store.address.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.location_on_outlined,
+                  size: 18,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    store.address,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -778,52 +891,75 @@ class _FoodItemTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Anh mon an.
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Stack(
               children: [
-                Image.network(
-                  product.imageUrl,
-                  width: 90,
-                  height: 90,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 90,
-                      height: 90,
-                      color: AppColors.surfaceVariant,
-                      child: Icon(
-                        Icons.fastfood,
-                        size: 32,
-                        color: AppColors.textHint,
+                // Anh mon an.
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Stack(
+                    children: [
+                      Image.network(
+                        product.imageUrl,
+                        width: 90,
+                        height: 90,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 90,
+                            height: 90,
+                            color: AppColors.surfaceVariant,
+                            child: Icon(
+                              Icons.fastfood,
+                              size: 32,
+                              color: AppColors.textHint,
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
-                if (product.isOutOfStock)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        context.t('product_out_of_stock'),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                      if (product.isOutOfStock)
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              context.t('product_out_of_stock'),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
+                      if (product.isFeatured)
+                        Positioned(
+                          top: 4,
+                          left: 4,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.shade700,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Nổi bật',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-              ],
-            ),
-          ),
+                ),
           const SizedBox(width: 12),
 
           // Thong tin mon an.
@@ -841,14 +977,44 @@ class _FoodItemTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  product.description,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                if (product.description.isNotEmpty)
+                  Text(
+                    product.description,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                if (product.rating != null && product.rating! > 0) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.star,
+                        size: 14,
+                        color: Colors.amber.shade700,
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        product.rating!.toStringAsFixed(1),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (product.reviewCount != null && product.reviewCount! > 0) ...[
+                        const SizedBox(width: 4),
+                        Text(
+                          '(${product.reviewCount})',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

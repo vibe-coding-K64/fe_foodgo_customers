@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../../core/network/api_client.dart';
 import '../../home/models/product_model.dart';
+import '../../product/models/product_detail_info.dart';
 
 /// Service goi API lay du lieu san pham.
 class ProductService {
@@ -137,6 +139,31 @@ class ProductService {
       return null;
     } catch (e) {
       debugPrint('ProductService: loi getProductById - $e');
+      return null;
+    }
+  }
+
+  /// Lay rating va reviewCount cua san pham tu Firestore.
+  ///
+  /// Doc tu collection `products/{productId}` fields `rating` va `reviewCount`.
+  Future<ProductDetailInfo?> getProductDetailInfo(String productId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('products')
+          .doc(productId)
+          .get();
+
+      if (!doc.exists) return null;
+
+      final data = doc.data();
+      if (data == null) return null;
+
+      return ProductDetailInfo(
+        rating: (data['rating'] as num?)?.toDouble() ?? 0.0,
+        reviewCount: data['reviewCount'] as int? ?? 0,
+      );
+    } catch (e) {
+      debugPrint('ProductService: loi getProductDetailInfo - $e');
       return null;
     }
   }

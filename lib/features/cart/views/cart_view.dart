@@ -338,6 +338,46 @@ class _CartContentState extends State<_CartContent> {
     }
   }
 
+  bool _isStoreFullySelected(String storeId) {
+    final storeItems = widget.cartState.items.where((i) => i.storeId == storeId).toList();
+    return storeItems.isNotEmpty && storeItems.every((i) => _selectedIds.contains(i.id));
+  }
+
+  void _onToggleStoreAll(String storeId) {
+    final storeItems = widget.cartState.items.where((i) => i.storeId == storeId).toList();
+    final isFullySelected = _isStoreFullySelected(storeId);
+    final hasOutOfStock = storeItems.any((i) => _products[i.foodId]?.isOutOfStock ?? false);
+
+    setState(() {
+      if (isFullySelected) {
+        // Bo chon tat ca
+        for (final item in storeItems) {
+          _selectedIds.remove(item.id);
+        }
+      } else {
+        // Neu dang co activeStoreId va khac cua hang nay -> reset
+        if (_activeStoreId != null && _activeStoreId != storeId) {
+          _selectedIds.clear();
+        }
+        _activeStoreId = storeId;
+        for (final item in storeItems) {
+          if (!(_products[item.foodId]?.isOutOfStock ?? false)) {
+            _selectedIds.add(item.id);
+          }
+        }
+      }
+      if (_selectedIds.isEmpty) {
+        _activeStoreId = null;
+      }
+    });
+  }
+
+  void _onQuantityChanged(CartItemModel item, int qty) {
+    final userId = AuthStorage.getUserId();
+    if (userId == null) return;
+    widget.cartState.updateQuantity(userId, item.id, qty);
+  }
+
   void _onDismissItem(CartItemModel item) {
     final userId = AuthStorage.getUserId();
     if (userId == null) return;
@@ -414,7 +454,7 @@ class _CartContentState extends State<_CartContent> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header ten cua hang.
+                  // Header ten cua hang + nut chon tat ca.
                   Padding(
                     padding: EdgeInsets.only(
                       left: 4,
@@ -441,6 +481,47 @@ class _CartContentState extends State<_CartContent> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        // Nut chon tat ca cua cua hang.
+                        GestureDetector(
+                          onTap: () {
+                            debugPrint('CartView: Toggle chon tat ca cua hang [$storeName]');
+                            _onToggleStoreAll(storeId);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _isStoreFullySelected(storeId)
+                                  ? AppColors.primary.withValues(alpha: 0.12)
+                                  : AppColors.surfaceVariant,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _isStoreFullySelected(storeId)
+                                      ? Icons.check_box
+                                      : Icons.check_box_outline_blank,
+                                  size: 16,
+                                  color: _isStoreFullySelected(storeId)
+                                      ? AppColors.primary
+                                      : AppColors.textHint,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  context.t('cart_select_all'),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: _isStoreFullySelected(storeId)
+                                        ? AppColors.primary
+                                        : AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -459,6 +540,7 @@ class _CartContentState extends State<_CartContent> {
                         onDecrease: () => _onDecrease(item),
                         onDismiss: () => _onDismissItem(item),
                         onItemTap: () => _onTapItem(item),
+                        onQuantityChanged: (qty) => _onQuantityChanged(item, qty),
                       ),
                     );
                   }),

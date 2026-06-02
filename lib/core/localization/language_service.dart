@@ -15,8 +15,14 @@ class AppLocalizations {
 
   AppLocalizations(this._translations);
 
-  String translate(String key) {
-    return _translations[key] ?? key;
+  String translate(String key, [List<Object>? args]) {
+    String text = _translations[key] ?? key;
+    if (args != null) {
+      for (var i = 0; i < args.length; i++) {
+        text = text.replaceAll('\$${i + 1}', args[i].toString());
+      }
+    }
+    return text;
   }
 }
 
@@ -27,8 +33,8 @@ extension AppLocalizationsExtension on BuildContext {
         ?? AppLocalizations({});
   }
 
-  String t(String key) {
-    return translations.translate(key);
+  String t(String key, [List<Object>? args]) {
+    return translations.translate(key, args);
   }
 }
 
@@ -107,8 +113,14 @@ class LanguageService {
   }
 
   /// Lay gia tri dich tu key.
-  static String translate(String key) {
-    return _translations[key] ?? key;
+  static String translate(String key, [List<Object>? args]) {
+    String text = _translations[key] ?? key;
+    if (args != null) {
+      for (var i = 0; i < args.length; i++) {
+        text = text.replaceAll('\$${i + 1}', args[i].toString());
+      }
+    }
+    return text;
   }
 
   /// Thay doi ngon ngu, thong bao cho toan bo app.

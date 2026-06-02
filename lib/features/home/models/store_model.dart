@@ -4,6 +4,7 @@ class StoreModel {
   final String id;
   final String name;
   final String address;
+  final String description;
   final double rating;
   final int reviewCount;
   final String avtUrl;
@@ -22,6 +23,7 @@ class StoreModel {
     required this.id,
     required this.name,
     required this.address,
+    required this.description,
     required this.rating,
     required this.reviewCount,
     required this.avtUrl,
@@ -58,6 +60,7 @@ class StoreModel {
       id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? '',
       address: json['address'] as String? ?? '',
+      description: json['description'] as String? ?? '',
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       reviewCount: json['reviewCount'] as int? ?? 0,
       avtUrl: _parseImageUrl(json, 'avtUrl', 'logoUrl', 'avatarUrl', 'avatar', 'imageUrl', 'image'),
@@ -115,6 +118,7 @@ class StoreModel {
       id: doc.id,
       name: data['name'] as String? ?? '',
       address: data['address'] as String? ?? '',
+      description: data['description'] as String? ?? '',
       rating: (data['rating'] as num?)?.toDouble() ?? 0.0,
       reviewCount: data['reviewCount'] as int? ?? 0,
       avtUrl: data['avtUrl'] as String? ?? data['avt_url'] as String? ?? '',
@@ -136,6 +140,7 @@ class StoreModel {
       'id': id,
       'name': name,
       'address': address,
+      'description': description,
       'rating': rating,
       'reviewCount': reviewCount,
       'avtUrl': avtUrl,
@@ -156,6 +161,7 @@ class StoreModel {
     String? id,
     String? name,
     String? address,
+    String? description,
     double? rating,
     int? reviewCount,
     String? avtUrl,
@@ -174,6 +180,7 @@ class StoreModel {
       id: id ?? this.id,
       name: name ?? this.name,
       address: address ?? this.address,
+      description: description ?? this.description,
       rating: rating ?? this.rating,
       reviewCount: reviewCount ?? this.reviewCount,
       avtUrl: avtUrl ?? this.avtUrl,

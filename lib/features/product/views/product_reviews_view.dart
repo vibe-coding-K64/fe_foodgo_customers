@@ -3,32 +3,36 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
-import '../models/review_model.dart';
-import '../services/review_service.dart';
+import '../models/product_review_model.dart';
+import '../services/product_review_service.dart';
 
-/// Trang danh gia cua mot quan an.
+/// Trang danh gia cua mot mon an.
 ///
-/// Duoc goi khi nguoi dung bam vao khoi danh gia o trang chi tiet quan.
+/// Duoc goi khi nguoi dung bam vao khoi danh gia o trang chi tiet mon.
 ///
 /// Man hinh gom:
-///   1. AppBar: Tieu de "Danh gia quan an", nut Back.
+///   1. AppBar: Tieu de "Danh gia mon an", nut Back.
 ///   2. Thong ke tong quan: So sao trung binh + Bieu do phan bo.
 ///   3. Bo loc: Loc theo so sao, binh luan, hinh anh.
 ///   4. Danh sach danh gia: Avatar, ten, thoi gian, sao, noi dung, hinh anh.
-class RestaurantReviewsView extends StatefulWidget {
+class ProductReviewsView extends StatefulWidget {
+  final String productId;
+  final String productName;
   final String storeId;
 
-  const RestaurantReviewsView({
+  const ProductReviewsView({
     super.key,
+    required this.productId,
+    required this.productName,
     required this.storeId,
   });
 
   @override
-  State<RestaurantReviewsView> createState() => _RestaurantReviewsViewState();
+  State<ProductReviewsView> createState() => _ProductReviewsViewState();
 }
 
-class _RestaurantReviewsViewState extends State<RestaurantReviewsView> {
-  List<ReviewModel> _allReviews = [];
+class _ProductReviewsViewState extends State<ProductReviewsView> {
+  List<ProductReviewModel> _allReviews = [];
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -41,7 +45,7 @@ class _RestaurantReviewsViewState extends State<RestaurantReviewsView> {
     super.initState();
     _fetchReviews();
     debugPrint(
-        'RestaurantReviewsView: Khoi tao trang danh gia cua quan [${widget.storeId}]');
+        'ProductReviewsView: Khoi tao trang danh gia cua mon [${widget.productId}]');
   }
 
   Future<void> _fetchReviews() async {
@@ -51,36 +55,15 @@ class _RestaurantReviewsViewState extends State<RestaurantReviewsView> {
     });
 
     try {
-      final reviews = await ReviewService.getReviewsByStore(widget.storeId);
-
-      // Lay avatar tu Firestore cho nhung review chua co avatar
-      final reviewsWithoutAvatar = reviews
-          .where((r) => r.userAvatarUrl.isEmpty)
-          .toList();
-
-      if (reviewsWithoutAvatar.isNotEmpty) {
-        final userIds = reviewsWithoutAvatar.map((r) => r.userId).toSet().toList();
-        final avatarMap = await ReviewService.getUserAvatars(userIds);
-
-        // Gan avatar vao review
-        for (var i = 0; i < reviews.length; i++) {
-          if (reviews[i].userAvatarUrl.isEmpty && avatarMap.containsKey(reviews[i].userId)) {
-            reviews[i] = reviews[i].copyWith(userAvatarUrl: avatarMap[reviews[i].userId]);
-          }
-        }
-      }
+      final reviews = await ProductReviewService.getReviewsByProduct(
+        productId: widget.productId,
+        storeId: widget.storeId,
+      );
 
       if (mounted) {
         setState(() {
           _allReviews = reviews;
           _isLoading = false;
-        });
-      }
-    } on ReviewException catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = e.message;
         });
       }
     } catch (e) {
@@ -93,7 +76,7 @@ class _RestaurantReviewsViewState extends State<RestaurantReviewsView> {
     }
   }
 
-  List<ReviewModel> get _filteredReviews {
+  List<ProductReviewModel> get _filteredReviews {
     return _allReviews.where((review) {
       if (_selectedStarFilter != null && review.starRating != _selectedStarFilter) {
         return false;
@@ -119,7 +102,7 @@ class _RestaurantReviewsViewState extends State<RestaurantReviewsView> {
         onSelect: (star) {
           setState(() => _selectedStarFilter = star);
           Navigator.pop(context);
-          debugPrint('RestaurantReviewsView: Loc danh gia theo $star sao');
+          debugPrint('ProductReviewsView: Loc danh gia theo $star sao');
         },
       ),
     );
@@ -131,7 +114,7 @@ class _RestaurantReviewsViewState extends State<RestaurantReviewsView> {
     return total / _allReviews.length;
   }
 
-  ReviewStarDistribution get _distribution {
+  ProductReviewStarDistribution get _distribution {
     int star5 = 0, star4 = 0, star3 = 0, star2 = 0, star1 = 0;
     for (final r in _allReviews) {
       switch (r.starRating) {
@@ -142,7 +125,7 @@ class _RestaurantReviewsViewState extends State<RestaurantReviewsView> {
         case 1: star1++; break;
       }
     }
-    return ReviewStarDistribution(
+    return ProductReviewStarDistribution(
       star5: star5,
       star4: star4,
       star3: star3,
@@ -166,7 +149,7 @@ class _RestaurantReviewsViewState extends State<RestaurantReviewsView> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          context.t('review_title'),
+          context.t('product_review_title'),
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
@@ -255,7 +238,7 @@ class _RestaurantReviewsViewState extends State<RestaurantReviewsView> {
 
 class _ReviewOverviewSection extends StatelessWidget {
   final double averageRating;
-  final ReviewStarDistribution distribution;
+  final ProductReviewStarDistribution distribution;
 
   const _ReviewOverviewSection({
     required this.averageRating,
@@ -325,14 +308,13 @@ class _ReviewOverviewSection extends StatelessWidget {
 // ================================================================
 
 class _ReviewPieChart extends StatelessWidget {
-  final ReviewStarDistribution distribution;
+  final ProductReviewStarDistribution distribution;
 
   const _ReviewPieChart({required this.distribution});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Bang mau cho tung muc sao.
     final colors = [
       const Color(0xFF4CAF50), // 5 sao - xanh la
       const Color(0xFF8BC34A), // 4 sao - xanh nhat
@@ -440,7 +422,6 @@ class _PieChartPainter extends CustomPainter {
       }
     }
 
-    // Mat trang o giua de tao hieu ung donut.
     final centerPaint = Paint()
       ..color = AppColors.surface
       ..style = PaintingStyle.fill;
@@ -488,7 +469,6 @@ class _ReviewFilterBar extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            // Nut loc theo so sao.
             _FilterChipButton(
               label: _getStarLabel(selectedStar),
               icon: Icons.arrow_drop_down,
@@ -498,7 +478,6 @@ class _ReviewFilterBar extends StatelessWidget {
 
             const SizedBox(width: 8),
 
-            // Nut loc theo binh luan.
             _FilterChipButton(
               label: context.t('filter_with_comment'),
               icon: Icons.comment_outlined,
@@ -508,7 +487,6 @@ class _ReviewFilterBar extends StatelessWidget {
 
             const SizedBox(width: 8),
 
-            // Nut loc theo hinh anh.
             _FilterChipButton(
               label: context.t('filter_with_image'),
               icon: Icons.image_outlined,
@@ -522,7 +500,6 @@ class _ReviewFilterBar extends StatelessWidget {
   }
 }
 
-/// Nut bam loc, co trang thai chon / chua chon.
 class _FilterChipButton extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -581,11 +558,10 @@ class _FilterChipButton extends StatelessWidget {
 
 // ================================================================
 // WIDGET: DANH SACH DANH GIA
-// Hien thi danh sach cac danh gia theo bo loc hien tai.
 // ================================================================
 
 class _ReviewListSection extends StatelessWidget {
-  final List<ReviewModel> reviews;
+  final List<ProductReviewModel> reviews;
   final int totalReviews;
 
   const _ReviewListSection({
@@ -632,11 +608,10 @@ class _ReviewListSection extends StatelessWidget {
 
 // ================================================================
 // WIDGET: MOT ITEM DANH GIA
-// Avatar, ten, thoi gian, sao, noi dung, hinh anh (neu co).
 // ================================================================
 
 class _ReviewItemWidget extends StatelessWidget {
-  final ReviewModel review;
+  final ProductReviewModel review;
 
   const _ReviewItemWidget({required this.review});
 
@@ -661,11 +636,9 @@ class _ReviewItemWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header: Avatar + Ten + Thoi gian.
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar.
               review.userAvatarUrl.isNotEmpty
                   ? CircleAvatar(
                       radius: 20,
@@ -679,8 +652,6 @@ class _ReviewItemWidget extends StatelessWidget {
                       child: Icon(Icons.person, size: 20, color: AppColors.textHint),
                     ),
               const SizedBox(width: 10),
-
-              // Ten + Thoi gian.
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -703,16 +674,12 @@ class _ReviewItemWidget extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // So sao.
               _StarRatingDisplay(rating: review.starRating),
             ],
           ),
 
-          // Khoang trong giua header va noi dung.
           const SizedBox(height: 10),
 
-          // Noi dung binh luan.
           if (review.comment != null && review.comment!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(left: 50),
@@ -736,7 +703,6 @@ class _ReviewItemWidget extends StatelessWidget {
               ),
             ),
 
-          // Hinh anh dinh kem.
           if (review.imageUrls.isNotEmpty) ...[
             const SizedBox(height: 10),
             Padding(
@@ -766,66 +732,6 @@ class _ReviewItemWidget extends StatelessWidget {
               ),
             ),
           ],
-
-          // Phan hoi cua nguoi ban.
-          if (review.replyComment != null && review.replyComment!.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.only(left: 50),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.06),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: AppColors.primary.withOpacity(0.15),
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            context.t('review_seller_reply_label'),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ),
-                        const Spacer(),
-                        if (review.repliedAt != null)
-                          Text(
-                            _formatDate(context, review.repliedAt!),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: AppColors.textHint,
-                              fontSize: 11,
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      review.replyComment!,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textPrimary,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -834,7 +740,6 @@ class _ReviewItemWidget extends StatelessWidget {
 
 // ================================================================
 // WIDGET: HIEN THI SAO (5 ICON)
-// Tao mot hang 5 icon sao, mau vang hoac xam tuong ung voi rating.
 // ================================================================
 
 class _StarRatingDisplay extends StatelessWidget {
@@ -860,7 +765,6 @@ class _StarRatingDisplay extends StatelessWidget {
 
 // ================================================================
 // WIDGET: TRANG THAI EMPTY
-// Khi khong co danh gia nao phu hop bo loc.
 // ================================================================
 
 class _EmptyReviewsWidget extends StatelessWidget {
@@ -894,7 +798,6 @@ class _EmptyReviewsWidget extends StatelessWidget {
 
 // ================================================================
 // BOTTOM SHEET: CHON SO SAO LOC
-// Modal bottom sheet cho phep nguoi dung chon muc sao loc.
 // ================================================================
 
 class _StarFilterBottomSheet extends StatelessWidget {
@@ -916,7 +819,6 @@ class _StarFilterBottomSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Tieu de.
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
             child: Text(
@@ -927,8 +829,6 @@ class _StarFilterBottomSheet extends StatelessWidget {
               ),
             ),
           ),
-
-          // Cac tuy chon.
           ...options.map((star) {
             final isSelected = star == selectedStar;
             return ListTile(
@@ -944,7 +844,7 @@ class _StarFilterBottomSheet extends StatelessWidget {
               title: Text(
                 star == null
                     ? context.t('filter_all')
-                    : '${star} ${context.t('review_star_label')}',
+                    : '$star ${context.t('review_star_label')}',
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: AppColors.textPrimary,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -957,7 +857,6 @@ class _StarFilterBottomSheet extends StatelessWidget {
               contentPadding: const EdgeInsets.symmetric(horizontal: 20),
             );
           }),
-
           const SizedBox(height: 8),
         ],
       ),

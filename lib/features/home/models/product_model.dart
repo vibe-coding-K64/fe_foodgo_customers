@@ -137,6 +137,9 @@ class ProductModel {
   final double? rating;
   final int? reviewCount;
   final String? deliveryTime;
+  final String? address;
+  final int? sales;
+  final String? storeName;
 
   /// Nested store info tu API /products/featured.
   final StoreSummary? store;
@@ -161,6 +164,9 @@ class ProductModel {
     this.rating,
     this.reviewCount,
     this.deliveryTime,
+    this.address,
+    this.sales,
+    this.storeName,
     this.store,
   });
 
@@ -226,6 +232,9 @@ class ProductModel {
       rating: (json['rating'] as num?)?.toDouble(),
       reviewCount: json['reviewCount'] as int?,
       deliveryTime: json['deliveryTime'] as String?,
+      address: json['address'] as String?,
+      sales: json['sales'] as int?,
+      storeName: json['storeName'] as String?,
       store: storeSummary,
     );
   }
@@ -276,6 +285,9 @@ class ProductModel {
       rating: (data['rating'] as num?)?.toDouble(),
       reviewCount: data['reviewCount'] as int?,
       deliveryTime: data['deliveryTime'] as String?,
+      address: data['address'] as String?,
+      sales: data['sales'] as int?,
+      storeName: data['storeName'] as String?,
     );
   }
 
@@ -317,6 +329,9 @@ class ProductModel {
     double? rating,
     int? reviewCount,
     String? deliveryTime,
+    String? address,
+    int? sales,
+    String? storeName,
     StoreSummary? store,
   }) {
     return ProductModel(
@@ -339,6 +354,9 @@ class ProductModel {
       rating: rating ?? this.rating,
       reviewCount: reviewCount ?? this.reviewCount,
       deliveryTime: deliveryTime ?? this.deliveryTime,
+      address: address ?? this.address,
+      sales: sales ?? this.sales,
+      storeName: storeName ?? this.storeName,
       store: store ?? this.store,
     );
   }

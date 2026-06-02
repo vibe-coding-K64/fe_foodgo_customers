@@ -760,16 +760,37 @@ class _ProductCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    formatCurrency(product.basePrice, context),
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        formatCurrency(product.basePrice, context),
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                      if (product.sales != null && product.sales! > 0) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade50,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '${context.t('home_sold_count')} ${product.sales ?? 0}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.orange.shade700,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 4),
-                  // Hien thi khoang cach + danh gia + thoi gian giao.
                   Row(
                     children: [
                       if (product.rating != null) ...[
@@ -785,12 +806,29 @@ class _ProductCard extends StatelessWidget {
                         Icon(Icons.location_on, size: 12, color: AppColors.primary),
                         const SizedBox(width: 2),
                         Text(
-                          '${product.distance!.toStringAsFixed(1)} ${context.t('unit_km')}',
+                          '${product.distance?.toStringAsFixed(1) ?? '0'} ${context.t('unit_km')}',
                           style: TextStyle(fontSize: 11, color: AppColors.primary),
                         ),
                       ],
                     ],
                   ),
+                  if (product.address != null && product.address!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Icon(Icons.store, size: 12, color: Colors.grey[600]),
+                        const SizedBox(width: 2),
+                        Expanded(
+                          child: Text(
+                            product.storeName ?? product.address!,
+                            style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   if (product.deliveryTime != null) ...[
                     const SizedBox(height: 2),
                     Row(

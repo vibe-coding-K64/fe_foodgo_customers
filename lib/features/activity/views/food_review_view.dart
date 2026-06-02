@@ -91,7 +91,7 @@ class _FoodReviewViewState extends State<FoodReviewView> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.t('error_unknown')),
+            content: Text(context.t('food_review_failed_after_retry')),
             backgroundColor: Colors.red,
           ),
         );

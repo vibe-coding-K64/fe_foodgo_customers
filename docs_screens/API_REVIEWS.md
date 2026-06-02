@@ -56,7 +56,9 @@ Content-Type: application/json
         "https://storage.foodgo.com/reviews/review_001_img2.jpg"
       ],
       "createdAt": "2026-05-28T14:30:00.000Z",
-      "updatedAt": "2026-05-28T14:30:00.000Z"
+      "updatedAt": "2026-05-28T14:30:00.000Z",
+      "replyComment": "Cam on ban da danh gia! Chung toi se co gang phuc vu tot hon.",
+      "repliedAt": "2026-05-28T16:00:00.000Z"
     },
     {
       "id": "review_002",
@@ -69,7 +71,9 @@ Content-Type: application/json
       "comment": "Mon an kha ngon, giao hang dung gio",
       "imageUrls": [],
       "createdAt": "2026-05-27T10:15:00.000Z",
-      "updatedAt": "2026-05-27T10:15:00.000Z"
+      "updatedAt": "2026-05-27T10:15:00.000Z",
+      "replyComment": null,
+      "repliedAt": null
     },
     {
       "id": "review_003",
@@ -118,6 +122,8 @@ Content-Type: application/json
 | `imageUrls` | Array\<String\> | DS URL hinh anh | Neu rong -> khong hien thi khoi hinh anh |
 | `createdAt` | String (ISO 8601) | Thoi gian tao | Format HH:mm - DD/MM/YYYY |
 | `updatedAt` | String (ISO 8601) | Thoi gian cap nhat | Khong hien thi tren UI |
+| `replyComment` | String? | Noi dung phan hoi cua nguoi ban | Hien thi o cuoi item, trong khoi mau tim |
+| `repliedAt` | String? (ISO 8601) | Thoi gian phan hoi | Hien thi cung hang voi label "Phan hoi" |
 
 ---
 
@@ -169,6 +175,8 @@ Frontend ho tro nhieu ten truong khac nhau:
 |---|---|---|---|
 | `userAvatarUrl` | `avatarUrl` | `avatar` | - |
 | `imageUrls` | `reviewImages` | `images` | - |
+| `replyComment` | `sellerReply` | `storeReply` | - |
+| `repliedAt` | `sellerRepliedAt` | `storeRepliedAt` | - |
 
 Backend co the tra bat ky alias nao, frontend tu dong nhan dien.
 
@@ -193,6 +201,8 @@ ReviewModel({
   imageUrls:     json['imageUrls']          ?? json['reviewImages'] ?? json['images'] ?? [],
   createdAt:     DateTime.parse(json['createdAt']),
   updatedAt:     DateTime.parse(json['updatedAt']),
+  replyComment:  json['replyComment']       ?? json['sellerReply'] ?? json['storeReply'],
+  repliedAt:     json['repliedAt'] != null ? DateTime.parse(json['repliedAt']) : null,
 })
 ```
 
@@ -210,6 +220,8 @@ ReviewModel({
 | `starRating` | 5 icon star (vang/xam) | Item header, ben phai |
 | `comment` | Text hoac "(Khong co binh luan)" | Item body |
 | `imageUrls` | Wrap grid (80x80, boi tron 8px) | Item body, phia duoi comment |
+| `replyComment` | Text trong khoi mau tim (#primary) + label "Phan hoi" | Cuoi item, sau hinh anh |
+| `repliedAt` | Text thoi gian cung dong label | Ben phai label "Phan hoi" |
 
 ---
 
@@ -218,6 +230,7 @@ ReviewModel({
 | Phien ban | Ngay | Mo ta |
 |---|---|---|
 | 1.0 | 2026-06-02 | Phien ban dau tien |
+| 1.1 | 2026-06-03 | Them `replyComment` va `repliedAt` - phan hoi cua nguoi ban |
 
 ---
 

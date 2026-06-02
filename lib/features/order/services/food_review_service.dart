@@ -206,15 +206,9 @@ class FoodReviewService {
     debugPrint('FormData fields : ${formData.fields.map((f) => '${f.key}: ${f.value}').join(' | ')}');
     debugPrint('FormData files  : ${formData.files.map((f) => '${f.key}: ${f.value.filename}').join(' | ')}');
 
-    // 3. Goi API that
+    // 3. Goi API that, retry 1 lan neu that bai
     try {
-      final response = await ApiClient.post<Map<String, dynamic>>(
-        '/reviews/batch',
-        data: formData,
-        options: Options(
-          headers: {'Content-Type': 'multipart/form-data'},
-        ),
-      );
+      final response = await _postWithRetry(formData);
 
       // === LOG NHAN ===
       debugPrint('==========================================');
@@ -251,6 +245,39 @@ class FoodReviewService {
         e.response?.data?['message'] as String? ??
             'Gui danh gia that bai. Vui long thu lai.',
       );
+    }
+  }
+
+  /// Goi POST /reviews/batch, tu dong retry 1 lan neu that bai.
+  static Future<Response<Map<String, dynamic>>> _postWithRetry(
+    FormData formData, {
+    bool isRetry = false,
+  }) async {
+    try {
+      final response = await ApiClient.postUpload<Map<String, dynamic>>(
+        '/reviews/batch',
+        data: formData,
+      );
+
+      if (isRetry) {
+        debugPrint('✅ FOOD REVIEW — RETRY THANH CONG');
+      }
+      return response;
+    } on DioException catch (e) {
+      if (isRetry) {
+        debugPrint('❌ FOOD REVIEW — RETRY THAT BAI');
+        debugPrint('Type    : ${e.type}');
+        debugPrint('Message : ${e.message}');
+        rethrow;
+      }
+
+      debugPrint('❌ FOOD REVIEW — LAN 1 THAT BAI, SE RETRY SAU 5s...');
+      debugPrint('Type    : ${e.type}');
+      debugPrint('Message : ${e.message}');
+
+      await Future.delayed(const Duration(seconds: 5));
+
+      return _postWithRetry(formData, isRetry: true);
     }
   }
 }

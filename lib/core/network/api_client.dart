@@ -231,6 +231,24 @@ class ApiClient {
     );
   }
 
+  /// Phuong thuc POST cho upload file, voi timeout 120s.
+  static Future<Response<T>> postUpload<T>(
+    String path, {
+    required FormData data,
+    int sendTimeoutSeconds = 120,
+    int receiveTimeoutSeconds = 120,
+  }) async {
+    return instance.post<T>(
+      path,
+      data: data,
+      options: Options(
+        headers: {'Content-Type': 'multipart/form-data'},
+        sendTimeout: Duration(seconds: sendTimeoutSeconds),
+        receiveTimeout: Duration(seconds: receiveTimeoutSeconds),
+      ),
+    );
+  }
+
   /// Phuong thuc PUT.
   static Future<Response<T>> put<T>(
     String path, {

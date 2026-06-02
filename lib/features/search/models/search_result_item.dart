@@ -9,10 +9,12 @@ class SearchResultItem {
   final String productName;
   final String storeId;
   final String storeName;
+  final String address;
   final double price;
   final double rating;
   final int reviewCount;
   final double distance;
+  final int deliveryTime;
   final String imageUrl;
   final bool isOutOfStock;
   final String? storeAvatarUrl;
@@ -23,10 +25,12 @@ class SearchResultItem {
     required this.productName,
     required this.storeId,
     required this.storeName,
+    required this.address,
     required this.price,
     required this.rating,
     required this.reviewCount,
     required this.distance,
+    required this.deliveryTime,
     required this.imageUrl,
     this.isOutOfStock = false,
     this.storeAvatarUrl,
@@ -42,10 +46,12 @@ class SearchResultItem {
   ///   "productName": "Com tam suon bi cha",
   ///   "storeId": "store_001",
   ///   "storeName": "Com tam Phuc Loc Tho",
+  ///   "address": "123 Nguyen Trai, Q1, HCM",
   ///   "price": 45000.0,
   ///   "rating": 4.8,
   ///   "reviewCount": 500,
   ///   "distance": 2.1,
+  ///   "deliveryTime": 25,
   ///   "imageUrl": "https://..."
   /// }
   /// ```
@@ -72,10 +78,12 @@ class SearchResultItem {
       productName: json['productName'] as String? ?? '',
       storeId: json['storeId'] as String? ?? '',
       storeName: json['storeName'] as String? ?? '',
+      address: json['address'] as String? ?? '',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
       distance: (json['distance'] as num?)?.toDouble() ?? 0.0,
+      deliveryTime: (json['deliveryTime'] as num?)?.toInt() ?? 0,
       imageUrl: json['imageUrl'] as String? ?? '',
       isOutOfStock: json['isOutOfStock'] as bool? ?? false,
       storeAvatarUrl: json['storeAvatarUrl'] as String?,

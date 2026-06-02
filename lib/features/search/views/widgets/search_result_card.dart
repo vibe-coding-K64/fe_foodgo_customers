@@ -44,7 +44,7 @@ class SearchResultCard extends StatelessWidget {
               // Hinh anh san pham ben trai.
               _buildProductImage(context),
               const SizedBox(width: 12),
-              // Noi dung chinh: ten mon, ten cua hang, gia, danh gia.
+              // Noi dung chinh: ten mon, ten cua hang, gia, danh gia, dia chi/giao hang.
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,11 +54,16 @@ class SearchResultCard extends StatelessWidget {
                     _buildStoreName(),
                     const SizedBox(height: 6),
                     _buildPriceAndRating(),
+                    const SizedBox(height: 4),
+                    _buildDeliveryInfo(),
                   ],
                 ),
               ),
-              // Nut them vao gio hang ben phai.
-              _buildAddButton(),
+              // Nut them vao gio hang ben phai — can giua theo chieu doc.
+              Align(
+                alignment: Alignment.center,
+                child: _buildAddButton(),
+              ),
             ],
           ),
         ),
@@ -156,7 +161,7 @@ class SearchResultCard extends StatelessWidget {
             color: AppColors.primary,
           ),
         ),
-        const Spacer(),
+        const SizedBox(width: 8),
         // Danh gia sao.
         Icon(
           Icons.star,
@@ -180,6 +185,75 @@ class SearchResultCard extends StatelessWidget {
             color: AppColors.textSecondary,
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildDeliveryInfo() {
+    final hasAddress = item.address.isNotEmpty;
+    final hasDistance = item.distance > 0;
+    final hasDeliveryTime = item.deliveryTime > 0;
+
+    if (!hasAddress && !hasDistance && !hasDeliveryTime) {
+      return const SizedBox.shrink();
+    }
+
+    return Row(
+      children: [
+        // Dia chi cua hang.
+        if (hasAddress) ...[
+          Icon(
+            Icons.location_on_outlined,
+            size: 12,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(width: 2),
+          Expanded(
+            child: Text(
+              item.address,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+        // Khoang cach.
+        if (hasDistance) ...[
+          if (hasAddress) const SizedBox(width: 8),
+          Icon(
+            Icons.directions_walk,
+            size: 12,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(width: 2),
+          Text(
+            '${item.distance.toStringAsFixed(1)} km',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+        // Thoi gian giao hang.
+        if (hasDeliveryTime) ...[
+          const SizedBox(width: 8),
+          Icon(
+            Icons.schedule,
+            size: 12,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(width: 2),
+          Text(
+            '${item.deliveryTime} ph',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
       ],
     );
   }

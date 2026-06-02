@@ -1,8 +1,9 @@
-/// Model danh gia cua mot quan an.
-class ReviewModel {
+/// Model danh gia cua mot mon an (theo foodId = productId).
+class ProductReviewModel {
   final String id;
+  final String productId;   // = foodId
   final String? orderId;
-  final String storeId;
+  final String? storeId;
   final String userId;
   final String userName;
   final String userAvatarUrl;
@@ -11,15 +12,14 @@ class ReviewModel {
   final List<String> imageUrls;
   final DateTime createdAt;
   final DateTime updatedAt;
-
-  /// Phan hoi cua nguoi ban (nguoi quan ly cua hang).
-  final String? replyComment;
   final DateTime? repliedAt;
+  final String? replyComment;
 
-  ReviewModel({
+  ProductReviewModel({
     required this.id,
+    required this.productId,
     this.orderId,
-    required this.storeId,
+    this.storeId,
     required this.userId,
     required this.userName,
     required this.userAvatarUrl,
@@ -28,26 +28,24 @@ class ReviewModel {
     this.imageUrls = const [],
     required this.createdAt,
     required this.updatedAt,
-    this.replyComment,
     this.repliedAt,
+    this.replyComment,
   });
 
-  factory ReviewModel.fromJson(Map<String, dynamic> json) {
-    return ReviewModel(
+  factory ProductReviewModel.fromJson(Map<String, dynamic> json) {
+    return ProductReviewModel(
       id: json['id'] as String? ?? '',
+      productId: (json['foodId'] as String?) ??
+                 (json['productId'] as String?) ?? '',
       orderId: json['orderId'] as String?,
-      storeId: json['storeId'] as String? ?? '',
+      storeId: json['storeId'] as String?,
       userId: json['userId'] as String? ?? '',
       userName: json['userName'] as String? ?? '',
       userAvatarUrl: (json['userAvatarUrl'] as String?) ??
-                     (json['avatarUrl'] as String?) ??
-                     (json['avatar'] as String?) ?? '',
+                     (json['avatarUrl'] as String?) ?? '',
       starRating: json['starRating'] as int? ?? 0,
       comment: json['comment'] as String?,
       imageUrls: (json['imageUrls'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          (json['reviewImages'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           (json['images'] as List<dynamic>?)
@@ -56,8 +54,8 @@ class ReviewModel {
           [],
       createdAt: _parseDateTime(json['createdAt']),
       updatedAt: _parseDateTime(json['updatedAt']),
+      repliedAt: _parseNullableDateTime(json['repliedAt']),
       replyComment: json['replyComment'] as String?,
-      repliedAt: _parseDateTimeOrNull(json['repliedAt']),
     );
   }
 
@@ -70,7 +68,7 @@ class ReviewModel {
     return DateTime.now();
   }
 
-  static DateTime? _parseDateTimeOrNull(dynamic value) {
+  static DateTime? _parseNullableDateTime(dynamic value) {
     if (value == null) return null;
     if (value is DateTime) return value;
     if (value is String) {
@@ -82,6 +80,7 @@ class ReviewModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'productId': productId,
       'orderId': orderId,
       'storeId': storeId,
       'userId': userId,
@@ -92,13 +91,14 @@ class ReviewModel {
       'imageUrls': imageUrls,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
-      'replyComment': replyComment,
       'repliedAt': repliedAt?.toIso8601String(),
+      'replyComment': replyComment,
     };
   }
 
-  ReviewModel copyWith({
+  ProductReviewModel copyWith({
     String? id,
+    String? productId,
     String? orderId,
     String? storeId,
     String? userId,
@@ -109,11 +109,12 @@ class ReviewModel {
     List<String>? imageUrls,
     DateTime? createdAt,
     DateTime? updatedAt,
-    String? replyComment,
     DateTime? repliedAt,
+    String? replyComment,
   }) {
-    return ReviewModel(
+    return ProductReviewModel(
       id: id ?? this.id,
+      productId: productId ?? this.productId,
       orderId: orderId ?? this.orderId,
       storeId: storeId ?? this.storeId,
       userId: userId ?? this.userId,
@@ -124,21 +125,21 @@ class ReviewModel {
       imageUrls: imageUrls ?? this.imageUrls,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      replyComment: replyComment ?? this.replyComment,
       repliedAt: repliedAt ?? this.repliedAt,
+      replyComment: replyComment ?? this.replyComment,
     );
   }
 }
 
 /// Mock data thong ke so sao.
-class ReviewStarDistribution {
+class ProductReviewStarDistribution {
   final int star5;
   final int star4;
   final int star3;
   final int star2;
   final int star1;
 
-  ReviewStarDistribution({
+  ProductReviewStarDistribution({
     required this.star5,
     required this.star4,
     required this.star3,
