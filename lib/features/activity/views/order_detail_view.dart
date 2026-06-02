@@ -9,6 +9,7 @@ import 'package:fe_foodgo_customers/features/checkout/views/checkout_view.dart';
 import 'package:fe_foodgo_customers/features/support/views/support_view.dart';
 import 'package:fe_foodgo_customers/features/activity/views/driver_chat_view.dart';
 import 'package:fe_foodgo_customers/features/activity/views/order_tracking_map_view.dart';
+import 'package:fe_foodgo_customers/features/activity/views/food_review_view.dart';
 import 'package:fe_foodgo_customers/features/activity/views/widgets/cancel_order_dialog.dart';
 
 ///=============================================================================
@@ -1077,7 +1078,12 @@ class _OrderDetailViewState extends State<OrderDetailView> {
             child: OutlinedButton.icon(
               onPressed: () {
                 debugPrint(
-                  'OrderDetailView: Nguoi dung bam Danh gia mon an',
+                  'OrderDetailView: Nguoi dung bam Danh gia mon an');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FoodReviewView(order: order),
+                  ),
                 );
               },
               icon: const Icon(Icons.restaurant_outlined, size: 18),

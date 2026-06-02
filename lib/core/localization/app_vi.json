@@ -781,5 +781,18 @@
   "cancel_order_reason_other": "Lý do khác",
   "cancel_order_reason_hint": "Nhập lý do của bạn...",
   "cancel_order_btn": "Huỷ đơn",
-  "error_cancel_order": "Huỷ đơn thất bại. Vui lòng thử lại."
+  "error_cancel_order": "Huỷ đơn thất bại. Vui lòng thử lại.",
+  "food_review_title": "Đánh giá món ăn",
+  "food_review_section_title": "Bạn đánh giá các món như thế nào?",
+  "food_review_order_date": "Ngày đặt",
+  "food_review_rating_label": "Đánh giá:",
+  "food_review_comment_hint": "Chia sẻ cảm nhận của bạn về món ăn...",
+  "food_review_submit": "Gửi đánh giá",
+  "food_review_success": "Gửi đánh giá thành công!",
+  "food_review_error_no_rating": "Vui lòng chọn ít nhất một món để đánh giá.",
+  "food_review_star_1": "Rất tệ",
+  "food_review_star_2": "Tệ",
+  "food_review_star_3": "Bình thường",
+  "food_review_star_4": "Ngon",
+  "food_review_star_5": "Tuyệt vời"
 }

@@ -180,10 +180,10 @@ class ApiClient {
         LogInterceptor(
           request: false,
           requestHeader: false,
-          requestBody: false,
+          requestBody: true,
           responseHeader: false,
-          responseBody: false,
-          error: false,
+          responseBody: true,
+          error: true,
           logPrint: (obj) => debugPrint('[ApiClient] $obj'),
         ),
       );

@@ -775,5 +775,18 @@
   "cancel_order_reason_other": "Other reason",
   "cancel_order_reason_hint": "Enter your reason...",
   "cancel_order_btn": "Cancel order",
-  "error_cancel_order": "Failed to cancel order. Please try again."
+  "error_cancel_order": "Failed to cancel order. Please try again.",
+  "food_review_title": "Rate Food",
+  "food_review_section_title": "How would you rate the dishes?",
+  "food_review_order_date": "Order date",
+  "food_review_rating_label": "Rating:",
+  "food_review_comment_hint": "Share your thoughts about the food...",
+  "food_review_submit": "Submit Review",
+  "food_review_success": "Review submitted successfully!",
+  "food_review_error_no_rating": "Please rate at least one dish.",
+  "food_review_star_1": "Terrible",
+  "food_review_star_2": "Bad",
+  "food_review_star_3": "Okay",
+  "food_review_star_4": "Good",
+  "food_review_star_5": "Amazing"
 }

@@ -203,10 +203,31 @@ class OfferService {
       final exchanged = ExchangedVoucherData.fromJson(json);
       debugPrint('OfferService: Doi voucher thanh cong - ${exchanged.name}');
       return (exchanged, null);
-    } catch (e, st) {
+    } on DioException catch (e) {
       debugPrint('OfferService: Loi khi goi API exchange = $e');
+
+      final serverMessage = e.response?.data is Map
+          ? (e.response?.data as Map)['message'] as String?
+          : null;
+      if (serverMessage != null && serverMessage.isNotEmpty) {
+        debugPrint('OfferService: Server tra loi loi = $serverMessage');
+        return (null, serverMessage);
+      }
+
+      switch (e.type) {
+        case DioExceptionType.connectionTimeout:
+        case DioExceptionType.sendTimeout:
+        case DioExceptionType.receiveTimeout:
+          return (null, 'Het thoi gian cho phan hoi. Vui long thu lai.');
+        case DioExceptionType.connectionError:
+          return (null, 'Khong the ket noi den server. Vui long kiem tra mang.');
+        default:
+          return (null, 'Doi voucher that bai. Vui long thu lai sau.');
+      }
+    } catch (e, st) {
+      debugPrint('OfferService: Loi khong xac dinh = $e');
       debugPrint('Stack trace: $st');
-      return (null, 'Khong the ket noi den server. Vui long thu lai sau.');
+      return (null, 'Doi voucher that bai. Vui long thu lai sau.');
     }
   }
 }

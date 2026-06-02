@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../../core/network/api_client.dart';
@@ -18,6 +19,9 @@ class ReviewException implements Exception {
 /// Su dung backend API (/api/reviews/*) de lay danh sach va tao danh gia.
 class ReviewService {
   ReviewService._();
+
+  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static const String _usersCollection = 'users';
 
   /// Lay danh sach danh gia theo cua hang.
   ///
@@ -63,6 +67,55 @@ class ReviewService {
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
+  }
+
+  /// Lay danh sach URL avatar tu Firestore cho nhieu user cung luc.
+  ///
+  /// Doc tu collection `users/{userId}` field `photoUrl`.
+  /// Tra ve Map<userId, avatarUrl>.
+  static Future<Map<String, String>> getUserAvatars(List<String> userIds) async {
+    if (userIds.isEmpty) return {};
+
+    final uniqueIds = userIds.toSet().toList();
+    final avatarMap = <String, String>{};
+
+    await Future.wait(
+      uniqueIds.map((userId) async {
+        try {
+          final doc = await _firestore
+              .collection(_usersCollection)
+              .doc(userId)
+              .get();
+          final photoUrl = doc.data()?['photoUrl'] as String?;
+          if (photoUrl != null && photoUrl.isNotEmpty) {
+            avatarMap[userId] = photoUrl;
+          }
+        } catch (e) {
+          debugPrint('ReviewService: Loi khi lay avatar userId=$userId: $e');
+        }
+      }),
+    );
+
+    return avatarMap;
+  }
+
+  /// Lay avatar cua mot user cu the tu Firestore.
+  static Future<String?> getUserAvatar(String userId) async {
+    if (userId.isEmpty) return null;
+
+    try {
+      final doc = await _firestore
+          .collection(_usersCollection)
+          .doc(userId)
+          .get();
+      final photoUrl = doc.data()?['photoUrl'] as String?;
+      if (photoUrl != null && photoUrl.isNotEmpty) {
+        return photoUrl;
+      }
+    } catch (e) {
+      debugPrint('ReviewService: Loi khi lay avatar userId=$userId: $e');
+    }
+    return null;
   }
 
   /// Tao mot danh gia moi cho don hang da nhan.

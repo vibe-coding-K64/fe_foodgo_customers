@@ -52,6 +52,24 @@ class _RestaurantReviewsViewState extends State<RestaurantReviewsView> {
 
     try {
       final reviews = await ReviewService.getReviewsByStore(widget.storeId);
+
+      // Lay avatar tu Firestore cho nhung review chua co avatar
+      final reviewsWithoutAvatar = reviews
+          .where((r) => r.userAvatarUrl.isEmpty)
+          .toList();
+
+      if (reviewsWithoutAvatar.isNotEmpty) {
+        final userIds = reviewsWithoutAvatar.map((r) => r.userId).toSet().toList();
+        final avatarMap = await ReviewService.getUserAvatars(userIds);
+
+        // Gan avatar vao review
+        for (var i = 0; i < reviews.length; i++) {
+          if (reviews[i].userAvatarUrl.isEmpty && avatarMap.containsKey(reviews[i].userId)) {
+            reviews[i] = reviews[i].copyWith(userAvatarUrl: avatarMap[reviews[i].userId]);
+          }
+        }
+      }
+
       if (mounted) {
         setState(() {
           _allReviews = reviews;

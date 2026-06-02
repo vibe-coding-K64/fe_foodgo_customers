@@ -77,6 +77,34 @@ class ReviewModel {
       'updatedAt': updatedAt.toIso8601String(),
     };
   }
+
+  ReviewModel copyWith({
+    String? id,
+    String? orderId,
+    String? storeId,
+    String? userId,
+    String? userName,
+    String? userAvatarUrl,
+    int? starRating,
+    String? comment,
+    List<String>? imageUrls,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return ReviewModel(
+      id: id ?? this.id,
+      orderId: orderId ?? this.orderId,
+      storeId: storeId ?? this.storeId,
+      userId: userId ?? this.userId,
+      userName: userName ?? this.userName,
+      userAvatarUrl: userAvatarUrl ?? this.userAvatarUrl,
+      starRating: starRating ?? this.starRating,
+      comment: comment ?? this.comment,
+      imageUrls: imageUrls ?? this.imageUrls,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }
 
 /// Mock data thong ke so sao.
