@@ -46,9 +46,12 @@ class _ProductReviewsViewState extends State<ProductReviewsView> {
     _fetchReviews();
     debugPrint(
         'ProductReviewsView: Khoi tao trang danh gia cua mon [${widget.productId}]');
+    debugPrint('>>> [ProductReviewsView] productId = ${widget.productId}');
+    debugPrint('>>> [ProductReviewsView] storeId   = ${widget.storeId}');
   }
 
   Future<void> _fetchReviews() async {
+    debugPrint('>>> [ProductReviewsView._fetchReviews] goi API voi productId=${widget.productId}, storeId=${widget.storeId}');
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -60,6 +63,7 @@ class _ProductReviewsViewState extends State<ProductReviewsView> {
         storeId: widget.storeId,
       );
 
+      debugPrint('>>> [ProductReviewsView] Nhan duoc ${reviews.length} reviews tu service');
       if (mounted) {
         setState(() {
           _allReviews = reviews;
@@ -67,6 +71,7 @@ class _ProductReviewsViewState extends State<ProductReviewsView> {
         });
       }
     } catch (e) {
+      debugPrint('!!! [ProductReviewsView._fetchReviews] CATCH: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -732,6 +737,60 @@ class _ReviewItemWidget extends StatelessWidget {
               ),
             ),
           ],
+
+          // ===== PHAN HOI TU CUA HANG =====
+          if (review.replyComment != null && review.replyComment!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 50, top: 10),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.divider),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.store,
+                          size: 14,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          context.t('review_seller_reply_label'),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (review.repliedAt != null) ...[
+                          const Spacer(),
+                          Text(
+                            _formatDate(context, review.repliedAt!),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppColors.textHint,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      review.replyComment!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.textPrimary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );

@@ -806,7 +806,7 @@
   "food_review_failed_after_retry": "Gửi đánh giá thất bại. Vui lòng thử lại sau.",
   "product_rating_count": "$1 ($2 đánh giá)",
 
-  "map_picker_title": "Chọn vị trí giao hàng",
+  "map_picker_title": "Chọn vị trí",
   "address_form_confirm_location": "Xác nhận vị trí",
   "address_form_search_location": "Tìm địa chỉ...",
   "address_form_no_results": "Không tìm thấy địa chỉ",

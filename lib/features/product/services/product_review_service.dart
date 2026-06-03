@@ -14,7 +14,10 @@ class ProductReviewService {
     required String productId,
     required String storeId,
   }) async {
-    debugPrint('ProductReviewService: Lay danh gia mon [$productId] cua store [$storeId]');
+    debugPrint('========== [ProductReviewService] BAT DAU ==========');
+    debugPrint('>>> REQUEST: GET /reviews');
+    debugPrint('>>>   storeId = $storeId');
+    debugPrint('>>>   foodId   = $productId');
 
     try {
       final response = await ApiClient.get<Map<String, dynamic>>(
@@ -26,20 +29,53 @@ class ProductReviewService {
       );
 
       final data = response.data;
+      debugPrint('<<< RESPONSE: ${data?.toString()}');
+      debugPrint('<<< success  = ${data?['success']}');
+
+      final responseData = data?['data'];
+      debugPrint('<<< data.runtimeType = ${responseData?.runtimeType}');
+
       if (data == null || data['success'] != true) {
         throw Exception(data?['message'] ?? 'Loi lay danh sach danh gia');
       }
 
-      final List<dynamic> rawList = data['data'] as List<dynamic>? ?? [];
-      final reviews = rawList
+      // Backend tra ve: { "total": N, "reviews": [...] }
+      // reviews la mot List con nam trong key "reviews"
+      List<dynamic>? rawList;
+      if (responseData is List) {
+        // Phong chan: neu backend tra ve List truc tiep (sai cu phap)
+        rawList = responseData;
+        debugPrint('<<< RAW LIST (direct) length = ${rawList.length}');
+      } else if (responseData is Map) {
+        // Dung cu phap: lay key "reviews"
+        rawList = responseData['reviews'] as List<dynamic>?;
+        debugPrint('<<< RAW LIST (from reviews key) length = ${rawList?.length}');
+        debugPrint('<<< total field = ${responseData['total']}');
+      } else {
+        rawList = null;
+        debugPrint('!!! responseData khong phai List hay Map, runtimeType = ${responseData?.runtimeType}');
+      }
+
+      if (rawList == null || rawList.isEmpty) {
+        debugPrint('!!! rawList rong hoac null — API tra ve danh sach trong');
+        throw Exception('Danh sach danh gia trong');
+      }
+
+      if (rawList.isNotEmpty) {
+        debugPrint('<<< RAW ITEM[0] = ${rawList[0]}');
+      }
+
+      final reviews = rawList!
           .map((item) => ProductReviewModel.fromJson(item as Map<String, dynamic>))
           .toList();
 
-      debugPrint('ProductReviewService: Da lay ${reviews.length} danh gia');
+      debugPrint('>>> Parsed ${reviews.length} reviews — DUNG API THAT');
+      debugPrint('========== [ProductReviewService] XONG (API) ==========');
       return reviews;
     } catch (e) {
-      debugPrint('ProductReviewService ERROR: $e');
-      // Neu API chua san sang, tra ve mock data tam thoi
+      debugPrint('!!! ProductReviewService ERROR: $e');
+      debugPrint('!!! Fallback sang MOCK DATA — API chua san sang hoac loi');
+      debugPrint('========== [ProductReviewService] XONG (MOCK) ==========');
       return _mockReviews;
     }
   }

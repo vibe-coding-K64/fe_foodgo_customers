@@ -46,13 +46,9 @@ class _AddressFormViewState extends State<AddressFormView> {
   late final TextEditingController _receiverNameController;
   late final TextEditingController _phoneController;
   late final TextEditingController _labelController;
-  late final TextEditingController _streetController;
-  late final TextEditingController _wardController;
-  late final TextEditingController _districtController;
-  late final TextEditingController _cityController;
 
   /// FocusNode de quyen khong focus giua cac o.
-  final List<FocusNode> _focusNodes = List.generate(5, (_) => FocusNode());
+  final List<FocusNode> _focusNodes = List.generate(2, (_) => FocusNode());
 
   /// Loai dia chi dang chon (0 = Nha, 1 = Van phong, 2 = Khac).
   int _selectedLabel = 0;
@@ -67,6 +63,9 @@ class _AddressFormViewState extends State<AddressFormView> {
   double? _selectedLat;
   double? _selectedLng;
 
+  /// Dia chi hien thi (lay tu MapPicker, read-only, khong cho nhap tay).
+  String _addressDisplay = '';
+
   /// Cac loi validate hien tai (key = index cua field).
   final Map<int, String> _fieldErrors = {};
 
@@ -78,14 +77,10 @@ class _AddressFormViewState extends State<AddressFormView> {
     _receiverNameController = TextEditingController(text: addr?.receiverName ?? '');
     _phoneController = TextEditingController(text: addr?.receiverPhone ?? '');
     _labelController = TextEditingController(text: addr?.name ?? '');
-    _streetController = TextEditingController();
-    _wardController = TextEditingController();
-    _districtController = TextEditingController();
-    _cityController = TextEditingController();
 
     if (addr != null) {
       _isDefault = addr.isDefault;
-      _parseAddress(addr.address);
+      _addressDisplay = addr.address;
       _selectedLabel = _inferLabelIndex(addr.name);
       _selectedLat = addr.lat;
       _selectedLng = addr.lng;
@@ -125,41 +120,6 @@ class _AddressFormViewState extends State<AddressFormView> {
     }
   }
 
-  /// Phan tich dia chi day du thanh tung thanh phan.
-  void _parseAddress(String fullAddress) {
-    final parts = fullAddress.split(',').map((p) => p.trim()).toList();
-    if (parts.isNotEmpty) _streetController.text = parts[0];
-    if (parts.length >= 2) _districtController.text = parts[1];
-    if (parts.length >= 3) _cityController.text = parts[2];
-    if (parts.length >= 4) {
-      _wardController.text = parts.sublist(3).join(', ');
-    }
-  }
-
-  /// Goop tat ca thanh phan dia chi thanh mot chuoi day du.
-  String _buildFullAddress() {
-    final street = _streetController.text.trim();
-    final district = _districtController.text.trim();
-    final city = _cityController.text.trim();
-    final ward = _wardController.text.trim();
-
-    final buffer = StringBuffer();
-    if (street.isNotEmpty) buffer.write(street);
-    if (district.isNotEmpty) {
-      if (buffer.isNotEmpty) buffer.write(', ');
-      buffer.write(district);
-    }
-    if (city.isNotEmpty) {
-      if (buffer.isNotEmpty) buffer.write(', ');
-      buffer.write(city);
-    }
-    if (ward.isNotEmpty) {
-      if (buffer.isNotEmpty) buffer.write(', ');
-      buffer.write(ward);
-    }
-    return buffer.isEmpty ? street : buffer.toString();
-  }
-
   /// Mo MapPickerPage de chon vi tri tren ban do.
   void _openMapPicker(BuildContext ctx) async {
     final result = await Navigator.push<Map<String, dynamic>>(
@@ -168,7 +128,7 @@ class _AddressFormViewState extends State<AddressFormView> {
         builder: (_) => MapPickerPage(
           initialLat: _selectedLat ?? widget.address?.lat,
           initialLng: _selectedLng ?? widget.address?.lng,
-          initialAddress: widget.address?.address,
+          initialAddress: _addressDisplay.isNotEmpty ? _addressDisplay : widget.address?.address,
         ),
       ),
     );
@@ -181,7 +141,7 @@ class _AddressFormViewState extends State<AddressFormView> {
       setState(() {
         _selectedLat = lat;
         _selectedLng = lng;
-        _parseAddress(fullAddress);
+        _addressDisplay = fullAddress;
       });
 
       debugPrint(
@@ -194,10 +154,6 @@ class _AddressFormViewState extends State<AddressFormView> {
     _receiverNameController.dispose();
     _phoneController.dispose();
     _labelController.dispose();
-    _streetController.dispose();
-    _wardController.dispose();
-    _districtController.dispose();
-    _cityController.dispose();
     for (final node in _focusNodes) {
       node.dispose();
     }
@@ -215,14 +171,8 @@ class _AddressFormViewState extends State<AddressFormView> {
     if (_phoneController.text.trim().isEmpty) {
       errors[1] = t('address_form_phone_required');
     }
-    if (_streetController.text.trim().isEmpty) {
-      errors[2] = t('address_form_street_required');
-    }
-    if (_districtController.text.trim().isEmpty) {
-      errors[3] = t('address_form_district_required');
-    }
-    if (_cityController.text.trim().isEmpty) {
-      errors[4] = t('address_form_city_required');
+    if (_addressDisplay.trim().isEmpty) {
+      errors[2] = t('error_no_address');
     }
 
     setState(() {
@@ -242,7 +192,7 @@ class _AddressFormViewState extends State<AddressFormView> {
     setState(() => _isSaving = true);
 
     try {
-      final fullAddress = _buildFullAddress();
+      final fullAddress = _addressDisplay.trim();
       final label = _getLabelValue(_selectedLabel, context);
 
       debugPrint(
@@ -255,7 +205,8 @@ class _AddressFormViewState extends State<AddressFormView> {
       final AddressModel savedAddress;
 
       if (widget.isEditMode) {
-        savedAddress = await _addressService.saveAddressToFirestore(
+        savedAddress = await _addressService.updateAddress(
+          addressId: widget.address!.id,
           name: label,
           address: fullAddress,
           receiverName: _receiverNameController.text.trim(),
@@ -263,16 +214,15 @@ class _AddressFormViewState extends State<AddressFormView> {
           lat: _selectedLat ?? widget.address?.lat,
           lng: _selectedLng ?? widget.address?.lng,
           isDefault: _isDefault,
-          existingId: widget.address!.id,
         );
       } else {
-        savedAddress = await _addressService.saveAddressToFirestore(
+        savedAddress = await _addressService.createAddress(
           name: label,
           address: fullAddress,
           receiverName: _receiverNameController.text.trim(),
           receiverPhone: _phoneController.text.trim(),
-          lat: _selectedLat ?? widget.address?.lat,
-          lng: _selectedLng ?? widget.address?.lng,
+          lat: _selectedLat,
+          lng: _selectedLng,
           isDefault: _isDefault,
         );
       }
@@ -396,14 +346,6 @@ class _AddressFormViewState extends State<AddressFormView> {
             _buildSectionHeader(context, 'address_form_location'),
             const SizedBox(height: 12),
             _buildMapPicker(context),
-            const SizedBox(height: 14),
-            _buildStreetField(context),
-            const SizedBox(height: 14),
-            _buildWardField(context),
-            const SizedBox(height: 14),
-            _buildDistrictField(context),
-            const SizedBox(height: 14),
-            _buildCityField(context),
             const SizedBox(height: 24),
 
             // MUC 3: Cai dat bo sung.
@@ -435,41 +377,55 @@ class _AddressFormViewState extends State<AddressFormView> {
     );
   }
 
-  /// Nut chon vi tri tren ban do.
+  /// Nut chon vi tri tren ban do / hien thi dia chi da chon.
   Widget _buildMapPicker(BuildContext ctx) {
+    final hasAddress = _addressDisplay.trim().isNotEmpty;
+
     return GestureDetector(
       onTap: () => _openMapPicker(ctx),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: AppColors.primary.withAlpha(10),
+          color: hasAddress
+              ? AppColors.surface
+              : AppColors.primary.withAlpha(10),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: AppColors.primary.withAlpha(60),
+            color: hasAddress
+                ? _fieldErrors[2] != null
+                    ? AppColors.error
+                    : AppColors.border
+                : AppColors.primary.withAlpha(60),
             width: 1,
           ),
         ),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.map_outlined,
-              color: AppColors.primary,
+              color: hasAddress ? AppColors.textSecondary : AppColors.primary,
               size: 22,
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                ctx.t('address_form_select_map'),
-                style: const TextStyle(
+                hasAddress
+                    ? _addressDisplay
+                    : ctx.t('address_form_select_map'),
+                style: TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.primary,
+                  fontWeight: hasAddress ? FontWeight.w400 : FontWeight.w500,
+                  color: hasAddress
+                      ? AppColors.textPrimary
+                      : AppColors.primary,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             const Icon(
               Icons.chevron_right,
-              color: AppColors.primary,
+              color: AppColors.textSecondary,
               size: 22,
             ),
           ],
@@ -500,84 +456,18 @@ class _AddressFormViewState extends State<AddressFormView> {
     return TextField(
       controller: _phoneController,
       focusNode: _focusNodes[1],
-      textInputAction: TextInputAction.next,
+      textInputAction: TextInputAction.done,
       keyboardType: TextInputType.phone,
       inputFormatters: [
         FilteringTextInputFormatter.digitsOnly,
         LengthLimitingTextInputFormatter(11),
       ],
-      onSubmitted: (_) => _focusNodes[2].requestFocus(),
+      onSubmitted: (_) => FocusScope.of(context).unfocus(),
       decoration: _buildInputDecoration(
         ctx: ctx,
         labelKey: 'address_form_phone',
         hintKey: 'address_form_phone_hint',
         errorFieldIndex: 1,
-      ),
-    );
-  }
-
-  /// O nhap So nha / Ten duong.
-  Widget _buildStreetField(BuildContext ctx) {
-    return TextField(
-      controller: _streetController,
-      focusNode: _focusNodes[2],
-      textInputAction: TextInputAction.next,
-      textCapitalization: TextCapitalization.words,
-      onSubmitted: (_) => _focusNodes[3].requestFocus(),
-      decoration: _buildInputDecoration(
-        ctx: ctx,
-        labelKey: 'address_form_street',
-        hintKey: 'address_form_street_hint',
-        errorFieldIndex: 2,
-      ),
-    );
-  }
-
-  /// O nhap Phuong / Xa.
-  Widget _buildWardField(BuildContext ctx) {
-    return TextField(
-      controller: _wardController,
-      focusNode: _focusNodes[3],
-      textInputAction: TextInputAction.next,
-      textCapitalization: TextCapitalization.words,
-      onSubmitted: (_) => _focusNodes[4].requestFocus(),
-      decoration: _buildInputDecoration(
-        ctx: ctx,
-        labelKey: 'address_form_ward',
-        hintKey: 'address_form_ward_hint',
-      ),
-    );
-  }
-
-  /// O nhap Quan / Huyen.
-  Widget _buildDistrictField(BuildContext ctx) {
-    return TextField(
-      controller: _districtController,
-      focusNode: _focusNodes[4],
-      textInputAction: TextInputAction.next,
-      textCapitalization: TextCapitalization.words,
-      onSubmitted: (_) => _focusNodes[0].requestFocus(),
-      decoration: _buildInputDecoration(
-        ctx: ctx,
-        labelKey: 'address_form_district',
-        hintKey: 'address_form_district_hint',
-        errorFieldIndex: 3,
-      ),
-    );
-  }
-
-  /// O nhap Tinh / Thanh pho.
-  Widget _buildCityField(BuildContext ctx) {
-    return TextField(
-      controller: _cityController,
-      textInputAction: TextInputAction.done,
-      textCapitalization: TextCapitalization.words,
-      onSubmitted: (_) => FocusScope.of(context).unfocus(),
-      decoration: _buildInputDecoration(
-        ctx: ctx,
-        labelKey: 'address_form_city',
-        hintKey: 'address_form_city_hint',
-        errorFieldIndex: 4,
       ),
     );
   }

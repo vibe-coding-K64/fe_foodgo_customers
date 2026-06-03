@@ -800,7 +800,7 @@
   "food_review_failed_after_retry": "Failed to submit review. Please try again later.",
   "product_rating_count": "$1 ($2 reviews)",
 
-  "map_picker_title": "Select delivery location",
+  "map_picker_title": "Select location",
   "address_form_confirm_location": "Confirm location",
   "address_form_search_location": "Search address...",
   "address_form_no_results": "Address not found",
