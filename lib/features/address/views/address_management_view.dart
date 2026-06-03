@@ -49,7 +49,7 @@ class _AddressManagementViewState extends State<AddressManagementView> {
     });
   }
 
-  /// Tai danh sach dia chi tu API.
+  /// Tai danh sach dia chi tu Firestore.
   Future<void> _loadAddresses() async {
     setState(() {
       _isLoading = true;
@@ -57,7 +57,7 @@ class _AddressManagementViewState extends State<AddressManagementView> {
     });
 
     try {
-      final addresses = await _addressService.getAddresses();
+      final addresses = await _addressService.getAddressesFromFirestore();
       if (mounted) {
         setState(() {
           _addresses = addresses;
@@ -78,7 +78,7 @@ class _AddressManagementViewState extends State<AddressManagementView> {
   /// Dat mot dia chi lam mac dinh thong qua API.
   void _onSetDefault(String addressId) async {
     try {
-      await _addressService.setDefaultAddress(addressId);
+      await _addressService.setDefaultAddressInFirestore(addressId);
       debugPrint('AddressManagement: Dat dia chi [$addressId] lam mac dinh');
       await _loadAddresses();
     } catch (e) {
@@ -121,7 +121,7 @@ class _AddressManagementViewState extends State<AddressManagementView> {
             onPressed: () async {
               Navigator.pop(ctx);
               try {
-                await _addressService.deleteAddress(address.id);
+                await _addressService.deleteAddressInFirestore(address.id);
                 debugPrint(
                     'AddressManagement: Da xoa dia chi [${address.id}]');
                 await _loadAddresses();
@@ -171,6 +171,7 @@ class _AddressManagementViewState extends State<AddressManagementView> {
     if (updated != null) {
       debugPrint('AddressManagement: Da cap nhat dia chi [${updated.id}]');
       await _loadAddresses();
+      if (mounted) Navigator.pop(context, true);
     }
   }
 
@@ -186,6 +187,7 @@ class _AddressManagementViewState extends State<AddressManagementView> {
     if (created != null) {
       debugPrint('AddressManagement: Da them dia chi [${created.id}]');
       await _loadAddresses();
+      if (mounted) Navigator.pop(context, true);
     }
   }
 

@@ -219,8 +219,7 @@ class _AddressFormViewState extends State<AddressFormView> {
       final AddressModel savedAddress;
 
       if (widget.isEditMode) {
-        savedAddress = await _addressService.updateAddress(
-          addressId: widget.address!.id,
+        savedAddress = await _addressService.saveAddressToFirestore(
           name: label,
           address: fullAddress,
           receiverName: _receiverNameController.text.trim(),
@@ -228,9 +227,10 @@ class _AddressFormViewState extends State<AddressFormView> {
           lat: widget.address?.lat,
           lng: widget.address?.lng,
           isDefault: _isDefault,
+          existingId: widget.address!.id,
         );
       } else {
-        savedAddress = await _addressService.createAddress(
+        savedAddress = await _addressService.saveAddressToFirestore(
           name: label,
           address: fullAddress,
           receiverName: _receiverNameController.text.trim(),

@@ -39,7 +39,7 @@ class HomeHeader extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: FutureBuilder<AddressModel?>(
-              future: const AddressService().getDefaultAddress(),
+              future: const AddressService().getDefaultAddressFromFirestore(),
               builder: (context, snapshot) {
                 String diaChiHienThi;
                 if (snapshot.connectionState == ConnectionState.waiting) {

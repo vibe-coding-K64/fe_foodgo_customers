@@ -8,6 +8,7 @@ import '../../product/views/product_detail_bottom_sheet.dart';
 import '../../cart/views/cart_view.dart';
 import '../../restaurant/views/restaurant_detail_view.dart';
 import '../../address/views/address_management_view.dart';
+import '../../address/services/address_service.dart';
 import '../../store/services/store_service.dart';
 import '../../store/services/product_service.dart';
 import '../../home/models/store_model.dart';
@@ -39,6 +40,11 @@ class _HomeViewState extends State<HomeView> {
   final StoreService _storeService = const StoreService();
   final ProductService _productService = const ProductService();
 
+  late Future<List<StoreModel>> _nearbyStoresFuture;
+  late Future<List<ProductModel>> _featuredProductsFuture;
+  final Future<List<StoreModel>> _popularStoresFuture =
+      const StoreService().getPopularStores();
+
   @override
   void initState() {
     super.initState();
@@ -47,12 +53,23 @@ class _HomeViewState extends State<HomeView> {
       lng: 106.7900,
     );
     _featuredProductsFuture = _productService.getFeaturedProducts();
+    _initLocationAndFetch();
   }
 
-  late final Future<List<StoreModel>> _nearbyStoresFuture;
-  late final Future<List<ProductModel>> _featuredProductsFuture;
-  final Future<List<StoreModel>> _popularStoresFuture =
-      const StoreService().getPopularStores();
+  Future<void> _initLocationAndFetch() async {
+    final addressService = const AddressService();
+    final defaultAddress = await addressService.getDefaultAddressFromFirestore();
+    final lat = defaultAddress?.lat ?? 10.8500;
+    final lng = defaultAddress?.lng ?? 106.7900;
+
+    if (!mounted) return;
+    setState(() {
+      _nearbyStoresFuture = _storeService.getNearbyStores(
+        lat: lat,
+        lng: lng,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,12 +86,17 @@ class _HomeViewState extends State<HomeView> {
                     debugPrint(
                       'HomeView: Nguoi dung bam nut chinh sua dia chi',
                     );
-                    Navigator.push(
+                    Navigator.push<bool>(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const AddressManagementView(),
                       ),
-                    );
+                    ).then((changed) {
+                      if (changed == true) {
+                        debugPrint('HomeView: Dia chi da thay doi, fetch lai du lieu');
+                        _initLocationAndFetch();
+                      }
+                    });
                   },
                 ),
               ),

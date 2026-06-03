@@ -87,6 +87,149 @@ class AddressService {
     }
   }
 
+  /// Lay tat ca dia chi tu Firestore.
+  ///
+  /// Doc tu collection customer_profiles/{userId}/addresses.
+  /// Sap xep: dia chi mac dinh truoc.
+  Future<List<AddressModel>> getAddressesFromFirestore() async {
+    final userId = _getUserId();
+    try {
+      final snap = await _firestore
+          .collection('customer_profiles')
+          .doc(userId)
+          .collection('addresses')
+          .get();
+
+      final addresses = snap.docs
+          .map((doc) => AddressModel.fromFirestore(doc))
+          .toList();
+
+      // Sap xep: mac dinh truoc.
+      addresses.sort((a, b) {
+        if (a.isDefault && !b.isDefault) return -1;
+        if (!a.isDefault && b.isDefault) return 1;
+        return 0;
+      });
+
+      debugPrint('AddressService: Da lay ${addresses.length} dia chi tu Firestore');
+      return addresses;
+    } catch (e) {
+      debugPrint('AddressService: Loi lay dia chi tu Firestore - $e');
+      return [];
+    }
+  }
+
+  /// Luu dia chi moi hoac cap nhat dia chi cu vao Firestore.
+  ///
+  /// Neu [isDefault] = true, bo isDefault cac dia chi cu trong Firestore.
+  Future<AddressModel> saveAddressToFirestore({
+    required String name,
+    required String address,
+    required String receiverName,
+    required String receiverPhone,
+    double? lat,
+    double? lng,
+    bool isDefault = false,
+    String? existingId,
+  }) async {
+    final userId = _getUserId();
+    try {
+      if (isDefault) {
+        await _clearDefaultInFirestore(userId);
+      }
+
+      final addressRef = existingId != null
+          ? _firestore
+              .collection('customer_profiles')
+              .doc(userId)
+              .collection('addresses')
+              .doc(existingId)
+          : _firestore
+              .collection('customer_profiles')
+              .doc(userId)
+              .collection('addresses')
+              .doc();
+
+      final data = {
+        'userId': userId,
+        'name': name,
+        'address': address,
+        'receiverName': receiverName,
+        'receiverPhone': receiverPhone,
+        'lat': lat,
+        'lng': lng,
+        'isDefault': isDefault,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      await addressRef.set(data, SetOptions(merge: true));
+
+      final doc = await addressRef.get();
+      final saved = AddressModel.fromFirestore(doc);
+      debugPrint('AddressService: Da luu dia chi [${saved.id}] vao Firestore');
+      return saved;
+    } catch (e) {
+      debugPrint('AddressService: Loi luu dia chi vao Firestore - $e');
+      rethrow;
+    }
+  }
+
+  /// Xoa dia chi khoi Firestore.
+  Future<void> deleteAddressInFirestore(String addressId) async {
+    final userId = _getUserId();
+    try {
+      await _firestore
+          .collection('customer_profiles')
+          .doc(userId)
+          .collection('addresses')
+          .doc(addressId)
+          .delete();
+      debugPrint('AddressService: Da xoa dia chi [$addressId] khoi Firestore');
+    } catch (e) {
+      debugPrint('AddressService: Loi xoa dia chi khoi Firestore - $e');
+      rethrow;
+    }
+  }
+
+  /// Bo isDefault tat ca dia chi trong Firestore cho user hien tai.
+  Future<void> _clearDefaultInFirestore(String userId) async {
+    final snap = await _firestore
+        .collection('customer_profiles')
+        .doc(userId)
+        .collection('addresses')
+        .where('isDefault', isEqualTo: true)
+        .get();
+
+    final batch = _firestore.batch();
+    for (final doc in snap.docs) {
+      batch.update(doc.reference, {'isDefault': false});
+    }
+    await batch.commit();
+  }
+
+  /// Dat mot dia chi lam mac dinh trong Firestore.
+  ///
+  /// Bo isDefault cac dia chi cu, dat isDefault = true cho dia chi duoc chon.
+  Future<void> setDefaultAddressInFirestore(String addressId) async {
+    final userId = _getUserId();
+    try {
+      await _clearDefaultInFirestore(userId);
+
+      await _firestore
+          .collection('customer_profiles')
+          .doc(userId)
+          .collection('addresses')
+          .doc(addressId)
+          .update({'isDefault': true});
+
+      debugPrint('AddressService: Da dat dia chi [$addressId] lam mac dinh trong Firestore');
+    } catch (e) {
+      debugPrint('AddressService: Loi dat dia chi mac dinh trong Firestore - $e');
+      rethrow;
+    }
+  }
+
   List<dynamic> _extractList(Map<String, dynamic>? data) {
     if (data == null) return [];
     if (data['data'] is List) return data['data'] as List;
