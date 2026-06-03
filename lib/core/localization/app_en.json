@@ -798,5 +798,11 @@
   "food_review_star_5": "Amazing",
   "food_review_retrying": "Retrying to submit your review...",
   "food_review_failed_after_retry": "Failed to submit review. Please try again later.",
-  "product_rating_count": "$1 ($2 reviews)"
+  "product_rating_count": "$1 ($2 reviews)",
+
+  "map_picker_title": "Select delivery location",
+  "address_form_confirm_location": "Confirm location",
+  "address_form_search_location": "Search address...",
+  "address_form_no_results": "Address not found",
+  "address_form_fetching_address": "Fetching address..."
 }

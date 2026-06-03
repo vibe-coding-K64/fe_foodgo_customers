@@ -1,388 +1,577 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/services/photon_service.dart';
+import '../../../core/services/nominatim_service.dart';
 
-///=============================================================================
-/// SECTION: MODELS
-///=============================================================================
-
-/// Model mot dia diem duoc goi y (mock).
-class SuggestedLocationModel {
-  final String name;
-  final String address;
-  final double latitude;
-  final double longitude;
-
-  const SuggestedLocationModel({
-    required this.name,
-    required this.address,
-    required this.latitude,
-    required this.longitude,
-  });
-}
-
-///=============================================================================
-/// SECTION: VIEW
-///=============================================================================
-
-/// Man hinh chon dia chi tren ban do.
+///Man hinh chon vi tri tren ban do.
 ///
-/// Duoc goi ra tu trang Them dia chi moi, cho phep nguoi dung:
+///Stack gom:
+///  - AppBar (back + tieu de)
+///  - Search bar (Photon autocomplete)
+///  - FlutterMap (OSM/CartoDB tiles + marker o giua)
+///  - Bottom sheet (dia chi preview + nut xac nhan)
 ///
-/// Lop 1 (day)    : Container toan man hinh - nen xam nhat hoac anh tu Unsplash.
-/// Lop 2 (giua)   : Icon ghim dia diem nam chinh giua man hinh.
-/// Lop 3 (tren)   : Cac cong cu tuong tac (Back, Tim kiem, Bottom Card).
-///
-/// Giao dien chi la Mock UI, chua tich hop Google Maps API.
-class MapPickerView extends StatelessWidget {
-  /// Dia chi mac dinh de hien thi (neu co).
+///Tra ve `Map<String, dynamic>` khi nguoi dung bam "Xac nhan":
+///  - `lat`: double
+///  - `lng`: double
+///  - `address`: String (dia chi day du)
+class MapPickerPage extends StatefulWidget {
+  final double? initialLat;
+  final double? initialLng;
   final String? initialAddress;
 
-  /// Callback khi nguoi dung xac nhan vi tri.
-  final void Function(double latitude, double longitude, String address)?
-      onLocationConfirmed;
-
-  const MapPickerView({
+  const MapPickerPage({
     super.key,
+    this.initialLat,
+    this.initialLng,
     this.initialAddress,
-    this.onLocationConfirmed,
   });
 
-  /// Vi tri mac dinh (mock) - tam thoi dung TP.HCM.
-  static const double _defaultLat = 10.7769;
-  static const double _defaultLng = 106.7009;
+  @override
+  State<MapPickerPage> createState() => _MapPickerPageState();
+}
+
+class _MapPickerPageState extends State<MapPickerPage> {
+  late final MapController _mapController;
+
+  ///Vi tri marker (luc dau = vi tri mac dinh TP.HCM, hoac initial)
+  late LatLng _currentPosition;
+
+  ///Dia chi duoc geocode tu vi tri hien tai
+  String _formattedAddress = '';
+
+  ///Dang tai khi lay dia chi
+  bool _isFetchingAddress = false;
+
+  ///Ket qua search Photon
+  List<PhotonResult> _searchResults = [];
+  bool _isSearching = false;
+
+  ///Debounce reverse geocoding (1 giay)
+  Timer? _debounceGeocode;
+
+  ///Controller cho o tim kiem
+  final TextEditingController _searchController = TextEditingController();
+
+  ///FocusNode de dieu khien keyboard
+  final FocusNode _searchFocus = FocusNode();
+
+  ///Co dang scroll map khong (de tranh goi geocode khi setState)
+  bool _isProgrammaticMove = false;
+
+  ///Dang lay vi tri GPS
+  bool _isLocating = false;
+
+  ///Map dang di chuyen (de xu ly onMapEventMoveEnd)
+  bool _isMoving = false;
+
+  ///Tranh race condition: chi update address khi response ve dung vi tri dang request
+  LatLng? _requestedLatLng;
+
+  ///Da lay dia chi cho vi tri khoi dau chua (de tranh goi API thua voi vi tri TP.HCM)
+  bool _didInitialFetch = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _mapController = MapController();
+    _currentPosition = (widget.initialLat != null && widget.initialLng != null)
+        ? LatLng(widget.initialLat!, widget.initialLng!)
+        : const LatLng(10.7769, 106.7009);
+
+    if (widget.initialAddress != null && widget.initialAddress!.isNotEmpty) {
+      _formattedAddress = widget.initialAddress!;
+      _searchController.text = widget.initialAddress!;
+      _onPositionChanged(_currentPosition);
+    } else {
+      _getInitialLocation();
+    }
+  }
+
+  ///Lay vi tri GPS khi man hinh khoi dau.
+  Future<void> _getInitialLocation() async {
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      );
+      _currentPosition = LatLng(position.latitude, position.longitude);
+      _mapController.move(_currentPosition, 16);
+      _onPositionChanged(_currentPosition);
+    } catch (e) {
+      _onPositionChanged(_currentPosition);
+    }
+  }
+
+  @override
+  void dispose() {
+    _debounceGeocode?.cancel();
+    _searchController.dispose();
+    _searchFocus.dispose();
+    super.dispose();
+  }
+
+  ///Go API reverse geocoding cho vi tri hien tai.
+  Future<void> _onPositionChanged(LatLng position) async {
+    _requestedLatLng = position;
+    setState(() => _isFetchingAddress = true);
+    try {
+      final address = await NominatimService.reverse(position);
+      if (mounted && _requestedLatLng == position) {
+        setState(() {
+          _formattedAddress = address;
+          _isFetchingAddress = false;
+          _didInitialFetch = true;
+        });
+        if (_searchController.text.isEmpty && address.isNotEmpty) {
+          _searchController.text = address;
+        }
+      }
+    } catch (e) {
+      if (mounted && _requestedLatLng == position) {
+        setState(() {
+          _formattedAddress = '';
+          _isFetchingAddress = false;
+          _didInitialFetch = true;
+        });
+      }
+    }
+  }
+
+  ///Lay vi tri GPS hien tai cua may.
+  Future<void> _getCurrentLocation() async {
+    setState(() => _isLocating = true);
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      );
+      final latLng = LatLng(position.latitude, position.longitude);
+      _isProgrammaticMove = true;
+      _mapController.move(latLng, 16);
+      _onPositionChanged(latLng);
+      _isProgrammaticMove = false;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.t('address_form_location_error'))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLocating = false);
+    }
+  }
+
+  ///Khi nguoi dung go vao o tim kiem.
+  Future<void> _onSearchChanged(String query) async {
+    if (query.trim().length < 3) {
+      setState(() => _searchResults = []);
+      return;
+    }
+    setState(() => _isSearching = true);
+    try {
+      final results = await PhotonService.search(query);
+      if (mounted) {
+        setState(() {
+          _searchResults = results;
+          _isSearching = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSearching = false);
+      }
+    }
+  }
+
+  ///Khi nguoi dung bam mot ket qua search.
+  void _onSelectSearchResult(PhotonResult result) {
+    _searchFocus.unfocus();
+    _isProgrammaticMove = true;
+    _searchController.text = result.displayName;
+    setState(() {
+      _searchResults = [];
+      _currentPosition = LatLng(result.lat, result.lng);
+    });
+
+    _mapController.move(LatLng(result.lat, result.lng), 16);
+
+    _debounceGeocode?.cancel();
+    _debounceGeocode = Timer(const Duration(milliseconds: 800), () {
+      _isProgrammaticMove = false;
+      _onPositionChanged(LatLng(result.lat, result.lng));
+    });
+  }
+
+  ///Khi nguoi dung bam "Xac nhan".
+  void _onConfirm() {
+    debugPrint('MapPicker: Xac nhan lat=${_currentPosition.latitude}, '
+        'lng=${_currentPosition.longitude}, address=$_formattedAddress');
+    Navigator.pop(context, {
+      'lat': _currentPosition.latitude,
+      'lng': _currentPosition.longitude,
+      'address': _formattedAddress,
+    });
+  }
+
+  ///Dong ho tro hien thi dia chi.
+  Widget _buildAddressPreview() {
+    if (_isFetchingAddress) {
+      return Row(
+        children: [
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            context.t('address_form_fetching_address'),
+            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          ),
+        ],
+      );
+    }
+    if (_formattedAddress.isEmpty) {
+      return Text(
+        context.t('address_form_no_results'),
+        style: const TextStyle(fontSize: 13, color: AppColors.textHint),
+      );
+    }
+    return Row(
+      children: [
+        const Icon(Icons.location_on, size: 16, color: AppColors.primary),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            _formattedAddress,
+            style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
     return Scaffold(
       body: Stack(
         children: [
-          // ================================================================
-          // LOP 1: NEN BAN DO (Tren cung)
-          // ================================================================
-          _buildMapBackground(),
+          // === FlutterMap ===
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: _currentPosition,
+              initialZoom: 16,
+              minZoom: 4,
+              maxZoom: 19,
+              onMapEvent: (event) {
+                if (event is MapEventMoveStart) {
+                  _isMoving = true;
+                } else if (event is MapEventMoveEnd) {
+                  if (_isMoving && !_isProgrammaticMove && _didInitialFetch) {
+                    _isMoving = false;
+                    _onPositionChanged(event.camera.center);
+                  }
+                }
+              },
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+                subdomains: const ['a', 'b', 'c', 'd'],
+                userAgentPackageName: 'com.example.foodgo',
+              ),
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: _currentPosition,
+                    width: 50,
+                    height: 50,
+                    child: const Icon(
+                      Icons.location_pin,
+                      color: Colors.red,
+                      size: 50,
+                      semanticLabel: 'Selected location',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
 
-          // ================================================================
-          // LOP 2: DIEM GHIM (Giua Stack)
-          // ================================================================
-          _buildPinMarker(),
-
-          // ================================================================
-          // LOP 3: CAC CONG CU TUONG TAC (Tren cung)
-          // ================================================================
-          SafeArea(
-            child: Column(
-              children: [
-                // Nut Back o goc trai tren.
-                _buildBackButton(context),
-                const Spacer(),
-                // Noi dung Bottom Card.
-                _buildBottomCard(context),
-              ],
+          // === Crosshair icon ghim co dinh giua man hinh ===
+          Center(
+            child: IgnorePointer(
+              child: Icon(
+                Icons.add_circle,
+                color: Colors.red.shade400,
+                size: 36,
+              ),
             ),
           ),
 
-          // Thanh tim kiem nam giua man hinh (nam tren Bottom Card).
+          // === AppBar tu ho (back) ===
           Positioned(
-            top: MediaQuery.of(context).padding.top + 16,
-            left: 16,
-            right: 16,
+            top: 0,
+            left: 0,
+            right: 0,
             child: Container(
+              padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
               decoration: BoxDecoration(
+                color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
+                    color: Colors.black.withAlpha(15),
+                    blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
                 ],
               ),
-              child: _buildSearchBar(context),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Lop 1: Container toan man hinh, nen xam nhat.
-  Widget _buildMapBackground() {
-    return SizedBox.expand(
-      child: Container(
-        color: AppColors.surfaceVariant,
-        child: Image.network(
-          // Anh ban do gia tu Unsplash lam nen (TP.HCM).
-          'https://images.unsplash.com/photo-1528183429752-'
-          'cf0b7de6dce9?w=1200&q=80',
-          fit: BoxFit.cover,
-          // Neu anh that bai thi hien thi Container mau xam.
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              color: AppColors.surfaceVariant,
-            );
-          },
-          // Hien thi loading neu anh dang tai.
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Container(
-              color: AppColors.surfaceVariant,
-              child: Center(
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: AppColors.textSecondary,
-                ),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  Expanded(
+                    child: Text(
+                      context.t('map_picker_title'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 48),
+                ],
               ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  /// Lop 2: Icon ghim dia diem nam chinh giua man hinh.
-  Widget _buildPinMarker() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Bong mo duoi chan ghim.
-          Container(
-            width: 20,
-            height: 6,
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(10),
             ),
           ),
-          const SizedBox(height: 2),
-          // Icon ghim mau xanh la.
-          Icon(
-            Icons.location_on,
-            size: 56,
-            color: AppColors.primary,
+
+          // === Search bar ===
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 60,
+            left: 16,
+            right: 16,
+            child: _buildSearchSection(),
+          ),
+
+          // === Nut GPS ===
+          Positioned(
+            right: 16,
+            bottom: 180 + bottomPadding,
+            child: FloatingActionButton.small(
+              heroTag: 'gps',
+              backgroundColor: Colors.white,
+              onPressed: _isLocating ? null : _getCurrentLocation,
+              child: _isLocating
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                    )
+                  : Icon(Icons.my_location, color: Colors.blue.shade700),
+            ),
+          ),
+
+          // === Bottom sheet ===
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: EdgeInsets.fromLTRB(16, 14, 16, 14 + bottomPadding),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(25),
+                    blurRadius: 10,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Address preview
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: _buildAddressPreview(),
+                  ),
+                  const SizedBox(height: 14),
+                  // Confirm button
+                  GestureDetector(
+                    onTap: _onConfirm,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        context.t('address_form_confirm_location'),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  /// Nut Back o goc trai tren.
-  Widget _buildBackButton(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Padding(
-        padding: const EdgeInsets.only(left: 16, top: 16),
-        child: GestureDetector(
-          onTap: () {
-            debugPrint('MapPickerView: Nguoi dung bam nut Back');
-            Navigator.pop(context);
-          },
-          child: Container(
-            width: 42,
-            height: 42,
+  Widget _buildSearchSection() {
+    return Column(
+      children: [
+        // Search text field
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(20),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: TextField(
+            controller: _searchController,
+            focusNode: _searchFocus,
+            textInputAction: TextInputAction.search,
+            textCapitalization: TextCapitalization.words,
+            onChanged: _onSearchChanged,
+            onSubmitted: (_) {
+              if (_searchResults.isNotEmpty) {
+                _onSelectSearchResult(_searchResults.first);
+              }
+            },
+            decoration: InputDecoration(
+              hintText: context.t('address_form_search_location'),
+              prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
+              suffixIcon: _isSearching
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 20),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchResults = []);
+                          },
+                        )
+                      : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+          ),
+        ),
+
+        // Search results dropdown
+        if (_searchResults.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(top: 6),
             decoration: BoxDecoration(
               color: Colors.white,
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withAlpha(20),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
               ],
             ),
-            child: Icon(
-              Icons.arrow_back,
-              size: 22,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Thanh tim kiem giua man hinh.
-  ///
-  /// Su dung TextField lam khoi duy nhat de dam bao border bao toan bo
-  /// (icon trai, text, icon phai deu nam trong cung 1 border).
-  Widget _buildSearchBar(BuildContext context) {
-    return TextField(
-      readOnly: true,
-      onTap: () {
-        debugPrint('MapPickerView: Nguoi dung bam thanh tim kiem');
-        // TODO: Mo trang tim kiem dia chi (tich hop Google Places).
-      },
-      style: const TextStyle(
-        fontSize: 15,
-        color: AppColors.textPrimary,
-      ),
-      decoration: InputDecoration(
-        hintText: context.t('map_search_hint'),
-        hintStyle: TextStyle(
-          fontSize: 15,
-          color: AppColors.textHint,
-        ),
-        // Icon trai nam trong border.
-        prefixIcon: Padding(
-          padding: const EdgeInsets.only(left: 16, right: 8),
-          child: Icon(
-            Icons.search,
-            size: 20,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-        // Icon phai nam trong border.
-        suffixIcon: GestureDetector(
-          onTap: () {
-            debugPrint('MapPickerView: Nguoi dung bam nut xoa tim kiem');
-          },
-          child: Padding(
-            padding: const EdgeInsets.only(left: 8, right: 16),
-            child: Icon(
-              Icons.close,
-              size: 18,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ),
-        suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-        // Border mac dinh (chua focus).
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(28),
-          borderSide: BorderSide(
-            color: AppColors.border,
-            width: 1,
-          ),
-        ),
-        // Border khi focus - cung radius, mau xanh nhat.
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(28),
-          borderSide: BorderSide(
-            color: AppColors.primary.withAlpha(160),
-            width: 1.5,
-          ),
-        ),
-        // Khong co border giua (InputBorder.none lam tat ca).
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(28),
-          borderSide: BorderSide(
-            color: AppColors.primary.withAlpha(160),
-            width: 1.5,
-          ),
-        ),
-        // Nen trang cho toan khoi.
-        filled: true,
-        fillColor: Colors.white,
-        // Noi dung can giua theo chieu cao.
-        contentPadding: const EdgeInsets.symmetric(
-          vertical: 14,
-        ),
-      ),
-    );
-  }
-
-  /// Bottom Card: Hien thi dia chi da ghim va nut xac nhan.
-  Widget _buildBottomCard(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.fromLTRB(20, 16, 20,
-          MediaQuery.of(context).padding.bottom + 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(20),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 16,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Tam ke giua de keo Card (decorative).
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.divider,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Tieu de.
-          Text(
-            context.t('map_pinned_address'),
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          // Dia chi (mock).
-          Text(
-            initialAddress ?? 'So 1, Vo Van Ngan, TP. Thu Duc, TP.HCM',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          // Mo ta them (mock).
-          Text(
-            '10.7769, 106.7009',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textHint,
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Nut Xac nhan vi tri.
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                debugPrint(
-                    'MapPickerView: Nguoi dung xac nhan vi tri tai [$_defaultLat, $_defaultLng]');
-                onLocationConfirmed?.call(
-                  _defaultLat,
-                  _defaultLng,
-                  initialAddress ?? 'So 1, Vo Van Ngan, TP. Thu Duc, TP.HCM',
+            child: ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              itemCount: _searchResults.length,
+              separatorBuilder: (_, __) => const Divider(height: 1, indent: 16, endIndent: 16),
+              itemBuilder: (context, index) {
+                final result = _searchResults[index];
+                return InkWell(
+                  onTap: () => _onSelectSearchResult(result),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.place, size: 20, color: AppColors.primary),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                result.street ?? result.name,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (result.city != null && result.city!.isNotEmpty)
+                                Text(
+                                  result.city!,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 );
-                Navigator.pop(context);
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-              child: Text(
-                context.t('map_confirm_btn'),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 }

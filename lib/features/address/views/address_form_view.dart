@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../models/address_model.dart';
 import '../services/address_service.dart';
+import 'map_picker_view.dart';
 
 /// Man hinh form Them moi / Cap nhat dia chi.
 ///
@@ -62,6 +63,10 @@ class _AddressFormViewState extends State<AddressFormView> {
   /// Trang thai loading khi dang submit form.
   bool _isSaving = false;
 
+  /// Toa do duoc chon tu MapPickerPage.
+  double? _selectedLat;
+  double? _selectedLng;
+
   /// Cac loi validate hien tai (key = index cua field).
   final Map<int, String> _fieldErrors = {};
 
@@ -82,6 +87,8 @@ class _AddressFormViewState extends State<AddressFormView> {
       _isDefault = addr.isDefault;
       _parseAddress(addr.address);
       _selectedLabel = _inferLabelIndex(addr.name);
+      _selectedLat = addr.lat;
+      _selectedLng = addr.lng;
     }
 
     debugPrint(
@@ -153,6 +160,35 @@ class _AddressFormViewState extends State<AddressFormView> {
     return buffer.isEmpty ? street : buffer.toString();
   }
 
+  /// Mo MapPickerPage de chon vi tri tren ban do.
+  void _openMapPicker(BuildContext ctx) async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      ctx,
+      MaterialPageRoute(
+        builder: (_) => MapPickerPage(
+          initialLat: _selectedLat ?? widget.address?.lat,
+          initialLng: _selectedLng ?? widget.address?.lng,
+          initialAddress: widget.address?.address,
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      final lat = result['lat'] as double;
+      final lng = result['lng'] as double;
+      final fullAddress = result['address'] as String;
+
+      setState(() {
+        _selectedLat = lat;
+        _selectedLng = lng;
+        _parseAddress(fullAddress);
+      });
+
+      debugPrint(
+          'AddressFormView: Chon vi tri tu ban do - lat=$lat, lng=$lng, address=$fullAddress');
+    }
+  }
+
   @override
   void dispose() {
     _receiverNameController.dispose();
@@ -213,7 +249,7 @@ class _AddressFormViewState extends State<AddressFormView> {
           'AddressFormView: Dang luu dia chi - name=$label, address=$fullAddress, '
           'receiverName=${_receiverNameController.text.trim()}, '
           'receiverPhone=${_phoneController.text.trim()}, '
-          'lat=${widget.address?.lat}, lng=${widget.address?.lng}, '
+          'lat=${_selectedLat ?? widget.address?.lat}, lng=${_selectedLng ?? widget.address?.lng}, '
           'isDefault=$_isDefault');
 
       final AddressModel savedAddress;
@@ -224,8 +260,8 @@ class _AddressFormViewState extends State<AddressFormView> {
           address: fullAddress,
           receiverName: _receiverNameController.text.trim(),
           receiverPhone: _phoneController.text.trim(),
-          lat: widget.address?.lat,
-          lng: widget.address?.lng,
+          lat: _selectedLat ?? widget.address?.lat,
+          lng: _selectedLng ?? widget.address?.lng,
           isDefault: _isDefault,
           existingId: widget.address!.id,
         );
@@ -235,8 +271,8 @@ class _AddressFormViewState extends State<AddressFormView> {
           address: fullAddress,
           receiverName: _receiverNameController.text.trim(),
           receiverPhone: _phoneController.text.trim(),
-          lat: widget.address?.lat,
-          lng: widget.address?.lng,
+          lat: _selectedLat ?? widget.address?.lat,
+          lng: _selectedLng ?? widget.address?.lng,
           isDefault: _isDefault,
         );
       }
@@ -402,9 +438,7 @@ class _AddressFormViewState extends State<AddressFormView> {
   /// Nut chon vi tri tren ban do.
   Widget _buildMapPicker(BuildContext ctx) {
     return GestureDetector(
-      onTap: () {
-        debugPrint('AddressFormView: Nguoi dung bam chon ban do (chua ho tro)');
-      },
+      onTap: () => _openMapPicker(ctx),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
