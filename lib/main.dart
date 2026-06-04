@@ -9,6 +9,7 @@ import 'core/state/locale_provider.dart';
 import 'core/state/cart_state.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/auth_storage.dart';
+import 'core/services/notification_overlay_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +40,34 @@ void main() async {
   );
 }
 
+class _LoggedInShell extends StatefulWidget {
+  const _LoggedInShell();
+
+  @override
+  State<_LoggedInShell> createState() => _LoggedInShellState();
+}
+
+class _LoggedInShellState extends State<_LoggedInShell> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    NotificationOverlayManager.instance.startListening();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    NotificationOverlayManager.instance.stopListening();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const MainView();
+  }
+}
+
 /// Widget root cua ung dung FoodGo.
 ///
 /// Lang nghe thay doi tu LocaleProvider de tu dong cap nhat
@@ -54,6 +83,7 @@ class FoodGoApp extends StatelessWidget {
       listenable: provider,
       builder: (context, _) {
         return MaterialApp(
+          navigatorKey: NotificationOverlayManager.navigatorKey,
           title: 'FoodGo',
           locale: provider.locale,
           supportedLocales: const [Locale('vi', 'VN'), Locale('en', 'US')],
@@ -65,7 +95,9 @@ class FoodGoApp extends StatelessWidget {
           ],
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,
-          home: AuthStorage.isLoggedIn() ? const MainView() : const LoginView(),
+          home: AuthStorage.isLoggedIn()
+              ? const _LoggedInShell()
+              : const LoginView(),
         );
       },
     );

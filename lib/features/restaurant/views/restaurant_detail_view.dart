@@ -51,6 +51,13 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
   /// ProductId dang mo bottom sheet de configure.
   String? _productIdBeingConfigured;
 
+  /// Query tim kiem san pham trong trang nay.
+  String _searchQuery = '';
+  /// TextEditingController cho search bar.
+  final TextEditingController _searchController = TextEditingController();
+  /// FocusNode de dismiss keyboard.
+  final FocusNode _searchFocusNode = FocusNode();
+
   final ScrollController _scrollController = ScrollController();
   bool _isCollapsed = false;
 
@@ -72,6 +79,8 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -116,6 +125,23 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
     });
     debugPrint(
         'RestaurantDetailView: Nguoi dung bam danh muc [${_categories[index].name}]');
+  }
+
+  /// Loc san pham theo search query va danh muc dang chon.
+  List<ProductModel> _getFilteredProducts() {
+    var products = _selectedCategoryId == 'all'
+        ? _allProducts
+        : _allProducts
+            .where((p) => p.categoryId == _selectedCategoryId)
+            .toList();
+
+    if (_searchQuery.isNotEmpty) {
+      products = products
+          .where((p) => p.name.toLowerCase().contains(_searchQuery))
+          .toList();
+    }
+
+    return products;
   }
 
   void _onRatingTap() {
@@ -408,15 +434,6 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
                   },
                 ),
               ),
-              CircleAvatar(
-                backgroundColor: Colors.black26,
-                child: IconButton(
-                  icon: const Icon(Icons.share, color: Colors.white),
-                  onPressed: () {
-                    debugPrint('RestaurantDetailView: Nguoi dung bam chia se');
-                  },
-                ),
-              ),
             ],
           ),
 
@@ -448,7 +465,24 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
               ),
             ),
 
-          // ========== 3. STICKY HEADER - DANH MUC ==========
+          // ========== 3. SEARCH BAR ==========
+          if (!_isLoading)
+            SliverToBoxAdapter(
+              child: _InPageSearchBar(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                onChanged: (value) {
+                  setState(() => _searchQuery = value.trim().toLowerCase());
+                },
+                onClear: () {
+                  _searchController.clear();
+                  setState(() => _searchQuery = '');
+                  _searchFocusNode.unfocus();
+                },
+              ),
+            ),
+
+          // ========== 4. STICKY HEADER - DANH MUC ==========
           if (_isLoading)
             const SliverToBoxAdapter(
               child: SizedBox(height: 52),
@@ -464,7 +498,7 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
               ),
             ),
 
-          // ========== 4. DANH SACH MON AN ==========
+          // ========== 5. DANH SACH MON AN ==========
           if (_isLoading)
             const SliverFillRemaining(
               child: Center(child: CircularProgressIndicator()),
@@ -482,15 +516,43 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
                 ),
               ),
             )
+          else if (_getFilteredProducts().isEmpty)
+            SliverFillRemaining(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.search_off,
+                      size: 48,
+                      color: AppColors.textHint,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      context.t('search_no_results'),
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '"$_searchQuery"',
+                      style: TextStyle(
+                        color: AppColors.textHint,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
           else
             SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                  final products = _selectedCategoryId == 'all'
-                      ? _allProducts
-                      : _allProducts
-                          .where((p) => p.categoryId == _selectedCategoryId)
-                          .toList();
+                  final products = _getFilteredProducts();
                   if (index >= products.length) return null;
                   final product = products[index];
                   return _FoodItemTile(
@@ -499,13 +561,7 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
                     onAddToCart: () => _onAddToCart(product),
                   );
                 },
-                childCount: (_selectedCategoryId == 'all'
-                        ? _allProducts
-                        : _allProducts
-                            .where(
-                                (p) => p.categoryId == _selectedCategoryId)
-                            .toList())
-                    .length,
+                childCount: _getFilteredProducts().length,
               ),
             ),
 
@@ -759,6 +815,84 @@ class _StoreInfoSection extends StatelessWidget {
       return '${(count / 1000).toStringAsFixed(1)}K+';
     }
     return count.toString();
+  }
+}
+
+// ================================================================
+// WIDGET: SEARCH BAR TRONG TRANG CHI TIET QUAN
+// ================================================================
+
+class _InPageSearchBar extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  const _InPageSearchBar({
+    required this.controller,
+    required this.focusNode,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.surface,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: TextField(
+        controller: controller,
+        focusNode: focusNode,
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          hintText: context.t('restaurant_search_hint') ?? 'Tìm món ăn...',
+          hintStyle: TextStyle(
+            color: AppColors.textHint,
+            fontSize: 14,
+          ),
+          prefixIcon: Icon(
+            Icons.search,
+            color: AppColors.textHint,
+            size: 22,
+          ),
+          suffixIcon: ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controller,
+            builder: (context, value, child) {
+              return value.text.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(
+                        Icons.clear,
+                        color: AppColors.textHint,
+                        size: 20,
+                      ),
+                      onPressed: onClear,
+                    )
+                  : const SizedBox.shrink();
+            },
+          ),
+          filled: true,
+          fillColor: AppColors.surfaceVariant,
+          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+          ),
+        ),
+        style: TextStyle(
+          fontSize: 14,
+          color: AppColors.textPrimary,
+        ),
+        textInputAction: TextInputAction.search,
+      ),
+    );
   }
 }
 

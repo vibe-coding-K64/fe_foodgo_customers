@@ -26,10 +26,18 @@ class AddressFormView extends StatefulWidget {
   /// Callback khi nguoi dung luu thanh cong.
   final void Function(AddressModel address)? onSave;
 
+  /// Callback ngay truoc khi pop 2 lan. Dung de reload danh sach dia chi.
+  final Future<void> Function(AddressModel address)? onBeforeDoublePop;
+
+  /// Neu true, sau khi luu se pop 2 lan (ve trang checkout).
+  final bool autoDoublePop;
+
   const AddressFormView({
     super.key,
     this.address,
     this.onSave,
+    this.onBeforeDoublePop,
+    this.autoDoublePop = false,
   });
 
   /// Kiem tra xem day la che do sua hay tao moi.
@@ -241,7 +249,15 @@ class _AddressFormViewState extends State<AddressFormView> {
         );
 
         widget.onSave?.call(savedAddress);
-        Navigator.pop(context, savedAddress);
+        if (widget.autoDoublePop) {
+          await widget.onBeforeDoublePop?.call(savedAddress);
+          if (mounted) {
+            Navigator.pop(context); // ve AddressManagement
+            Navigator.pop(context, savedAddress); // ve Checkout
+          }
+        } else {
+          Navigator.pop(context, savedAddress);
+        }
       }
     } catch (e) {
       debugPrint('AddressFormView: Loi khi luu dia chi - $e');

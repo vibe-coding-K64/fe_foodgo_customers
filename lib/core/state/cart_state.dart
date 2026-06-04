@@ -108,29 +108,29 @@ class CartState extends ChangeNotifier {
     );
   }
 
-  /// Lang nghe realtime cac product documents trong cart.
+  /// Stream lang nghe cac product documents trong cart.
   ///
-  /// Moi khi product nao do thay doi (vi du isOutOfStock),
-  /// se enrich lai item tuong ung va thong bao UI cap nhat.
+  /// Moi khi product nao do thay doi (vi du isOutOfStock, basePrice),
+  /// se cap nhat product cua item tuong ung ngay trong _items
+  /// ma KHONG lam mat subscription.
+  ///
+  /// Moi foodId chi duoc subscribe 1 lan - cac goi tiep theo se bi skip
+  /// neu da co subscription cho foodId do.
   void _subscribeToProducts(List<CartItemModel> items) {
-    // Huy cac subscription cu.
-    for (final sub in _productSubscriptions.values) {
-      sub.cancel();
-    }
-    _productSubscriptions.clear();
-
-    if (items.isEmpty) return;
-
     for (final item in items) {
+      // Skip neu da co subscription cho foodId nay.
+      if (_productSubscriptions.containsKey(item.foodId)) continue;
+
       _productSubscriptions[item.foodId] = FirebaseFirestore.instance
           .collection('products')
           .doc(item.foodId)
           .snapshots()
           .listen(
-        (doc) async {
+        (doc) {
           if (!doc.exists) return;
 
-          // Tim item trong _items hien tai.
+          // Tim item trong _items hien tai theo cartItemId (item.id),
+          // vi cartItemId khong thay doi khi product thay doi.
           final idx = _items.indexWhere((i) => i.id == item.id);
           if (idx < 0) return;
 
@@ -147,30 +147,68 @@ class CartState extends ChangeNotifier {
 
   /// Khoi dong - lang nghe gio hang theo thoi gian thuc.
   ///
-  /// 1. Fetch lan dau ngay de co du lieu (neu co).
-  /// 2. Sau do lang nghe stream cart de cap nhat khi cart thay doi.
-  /// 3. Dong thoi lang nghe tung product document trong cart de phat hien isOutOfStock.
+  /// Co 2 stream chay song song, KHONG phu thuoc nhau:
+  ///  1. Cart stream: lang nghe cart collection -> cap nhat danh sach items
+  ///  2. Product subscriptions: lang nghe tung product document -> cap nhat product cua item
+  ///
+  /// Cach phan tach nay dam bao:
+  ///  - Khi product thay doi (isOutOfStock, gia...) -> chi product subscription emit
+  ///  - Khi cart thay doi (quantity, options...)  -> chi cart stream emit
+  ///  - Khong co tinh trang subscription bi cancel/tao lai giua chung
   Future<void> startListening(String userId) async {
     _currentUserId = userId;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
-    await _fetchCart();
+    // Huy subscription cu neu co (khi goi lai startListening).
+    await _cartSubscription?.cancel();
+    for (final sub in _productSubscriptions.values) {
+      sub.cancel();
+    }
+    _productSubscriptions.clear();
 
-    // Lang nghe cac product documents trong cart.
+    // --- Lan dau: fetch cart + products ngay de co du lieu hien thi ---
+    final cartItems = await _cartService.getCart(userId);
+    _items = await _enrichItems(cartItems);
+    _isLoading = false;
+    _errorMessage = null;
+    notifyListeners();
+
+    // Bat dau product subscriptions cho lan dau.
     _subscribeToProducts(_items);
 
-    await _cartSubscription?.cancel();
-
-    // Lang nghe stream cart (cho phep add/remove items).
+    // --- Cart stream: lang nghe them/xoa/sua quantity/options ---
     _cartSubscription = _cartService.getCartStream(userId).listen(
-      (items) async {
-        _items = await _enrichItems(items);
-        _isLoading = false;
-        _errorMessage = null;
-        // Cap nhat product subscriptions khi cart items thay doi.
+      (items) {
+      // Tao map cartItemId -> foodId cu de khi item bi xoa van biet can cancel subscription nao.
+      final cartItemIdToFoodId = {for (final i in _items) i.id: i.foodId};
+
+      // Cap nhat danh sach _items giu nguyen product hien co.
+      _items = items.map((newItem) {
+        // Neu item da co trong danh sach cu -> giu lai product cu
+        final old = _items.where((o) => o.id == newItem.id).firstOrNull;
+        if (old != null) {
+          return newItem.copyWith(product: old.product);
+        }
+        // Item moi -> se duoc enrich boi product subscription
+        return newItem;
+      }).toList();
+
+      // Huy product subscription cua items bi xoa.
+      final newIds = _items.map((i) => i.id).toSet();
+      for (final cartItemId in cartItemIdToFoodId.keys) {
+        if (!newIds.contains(cartItemId)) {
+          final foodId = cartItemIdToFoodId[cartItemId]!;
+          _productSubscriptions[foodId]?.cancel();
+          _productSubscriptions.remove(foodId);
+        }
+      }
+
+        // Moi items moi chua co product -> bat dau subscription.
         _subscribeToProducts(_items);
+
+        _errorMessage = null;
         notifyListeners();
       },
       onError: (e) {

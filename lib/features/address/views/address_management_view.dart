@@ -171,7 +171,6 @@ class _AddressManagementViewState extends State<AddressManagementView> {
     if (updated != null) {
       debugPrint('AddressManagement: Da cap nhat dia chi [${updated.id}]');
       await _loadAddresses();
-      if (mounted) Navigator.pop(context, true);
     }
   }
 
@@ -181,13 +180,18 @@ class _AddressManagementViewState extends State<AddressManagementView> {
     final created = await Navigator.push<AddressModel>(
       context,
       MaterialPageRoute(
-        builder: (context) => const AddressFormView(),
+        builder: (context) => AddressFormView(
+          autoDoublePop: widget.isFromCheckout,
+          onBeforeDoublePop: (addr) async {
+            debugPrint('AddressManagement: Da them dia chi [${addr.id}], reload...');
+            await _loadAddresses();
+          },
+        ),
       ),
     );
     if (created != null) {
       debugPrint('AddressManagement: Da them dia chi [${created.id}]');
       await _loadAddresses();
-      if (mounted) Navigator.pop(context, true);
     }
   }
 
@@ -202,7 +206,9 @@ class _AddressManagementViewState extends State<AddressManagementView> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
             debugPrint('AddressManagement: Nguoi dung bam nut back');
-            Navigator.pop(context);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.pop(context);
+            });
           },
         ),
         title: Text(

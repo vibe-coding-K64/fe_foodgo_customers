@@ -4,8 +4,6 @@ import '../../../core/localization/language_service.dart';
 import '../../../core/state/cart_state.dart';
 import '../../../core/utils/auth_storage.dart';
 import '../../../core/utils/snackbar_helper.dart';
-import '../../../features/home/models/product_model.dart';
-import '../../../features/home/services/home_service.dart';
 import '../../../features/product/views/product_detail_bottom_sheet.dart';
 import '../../../features/restaurant/services/restaurant_service.dart';
 import '../../checkout/views/checkout_view.dart';
@@ -225,14 +223,10 @@ class _CartContentState extends State<_CartContent> {
 
   final Map<String, String> _storeNames = {};
 
-  /// Cache products: foodId -> ProductModel (de tinh gia).
-  final Map<String, ProductModel> _products = {};
-
   @override
   void initState() {
     super.initState();
     _loadStoreNames();
-    _loadProducts();
   }
 
   @override
@@ -240,20 +234,6 @@ class _CartContentState extends State<_CartContent> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.cartState.items != widget.cartState.items) {
       _loadStoreNames();
-      _loadProducts();
-    }
-  }
-
-  Future<void> _loadProducts() async {
-    for (final item in widget.cartState.items) {
-      if (!_products.containsKey(item.foodId)) {
-        final product = await HomeService.getProductById(item.foodId);
-        if (product != null && mounted) {
-          setState(() {
-            _products[item.foodId] = product;
-          });
-        }
-      }
     }
   }
 
@@ -273,8 +253,8 @@ class _CartContentState extends State<_CartContent> {
     }
   }
 
-  Future<void> _onTapItem(CartItemModel item) async {
-    final product = _products[item.foodId] ?? await HomeService.getProductById(item.foodId);
+  void _onTapItem(CartItemModel item) {
+    final product = item.product;
     if (product != null && mounted) {
       showProductDetailSheet(context, product);
     } else if (mounted) {
@@ -287,8 +267,7 @@ class _CartContentState extends State<_CartContent> {
   }
 
   double _itemTotalPrice(CartItemModel item) {
-    final product = _products[item.foodId];
-    return item.totalPriceOf(product);
+    return item.totalPriceOf(item.product);
   }
 
   double get _subtotal {
@@ -305,7 +284,6 @@ class _CartContentState extends State<_CartContent> {
   void _onToggleItem(String itemId, bool selected, String itemStoreId) {
     setState(() {
       if (selected) {
-        // Neu dang co activeStoreId va khac cua hang nay -> reset
         if (_activeStoreId != null && _activeStoreId != itemStoreId) {
           _selectedIds.clear();
         }
@@ -313,7 +291,6 @@ class _CartContentState extends State<_CartContent> {
         _selectedIds.add(itemId);
       } else {
         _selectedIds.remove(itemId);
-        // Neu bo chon ma khong con item nao thuoc cua hang -> reset activeStoreId
         final stillSelected = widget.cartState.items
             .where((i) => _selectedIds.contains(i.id) && i.storeId == itemStoreId)
             .toList();
@@ -346,22 +323,19 @@ class _CartContentState extends State<_CartContent> {
   void _onToggleStoreAll(String storeId) {
     final storeItems = widget.cartState.items.where((i) => i.storeId == storeId).toList();
     final isFullySelected = _isStoreFullySelected(storeId);
-    final hasOutOfStock = storeItems.any((i) => _products[i.foodId]?.isOutOfStock ?? false);
 
     setState(() {
       if (isFullySelected) {
-        // Bo chon tat ca
         for (final item in storeItems) {
           _selectedIds.remove(item.id);
         }
       } else {
-        // Neu dang co activeStoreId va khac cua hang nay -> reset
         if (_activeStoreId != null && _activeStoreId != storeId) {
           _selectedIds.clear();
         }
         _activeStoreId = storeId;
         for (final item in storeItems) {
-          if (!(_products[item.foodId]?.isOutOfStock ?? false)) {
+          if (!(item.product?.isOutOfStock ?? false)) {
             _selectedIds.add(item.id);
           }
         }
@@ -381,9 +355,8 @@ class _CartContentState extends State<_CartContent> {
   void _onDismissItem(CartItemModel item) {
     final userId = AuthStorage.getUserId();
     if (userId == null) return;
-    final product = _products[item.foodId];
+    final productName = item.product?.name;
     _selectedIds.remove(item.id);
-    // Neu xoa item cua cua hang dang active va khong con item nao cung cua hang -> reset
     if (_activeStoreId == item.storeId) {
       final stillInCart = widget.cartState.items
           .where((i) => i.id != item.id && i.storeId == item.storeId)
@@ -395,7 +368,7 @@ class _CartContentState extends State<_CartContent> {
     widget.cartState.removeItem(userId, item.id);
     showTopSnackBar(
       context,
-      message: '${product?.name ?? 'Mon an'} ${context.t('cart_item_removed')}',
+      message: '${productName ?? 'Mon an'} ${context.t('cart_item_removed')}',
       backgroundColor: AppColors.textSecondary,
     );
   }
@@ -432,12 +405,10 @@ class _CartContentState extends State<_CartContent> {
     final items = widget.cartState.items;
     final isEmpty = items.isEmpty;
 
-    // Nhom items theo storeId.
     final grouped = <String, List<CartItemModel>>{};
     for (final item in items) {
       grouped.putIfAbsent(item.storeId, () => []).add(item);
     }
-    // Sap xep theo thu tu xuat hien trong danh sach goc.
     final storeIds = grouped.keys.toList();
 
     return Column(
@@ -454,7 +425,6 @@ class _CartContentState extends State<_CartContent> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header ten cua hang + nut chon tat ca.
                   Padding(
                     padding: EdgeInsets.only(
                       left: 4,
@@ -481,7 +451,6 @@ class _CartContentState extends State<_CartContent> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        // Nut chon tat ca cua cua hang.
                         GestureDetector(
                           onTap: () {
                             debugPrint('CartView: Toggle chon tat ca cua hang [$storeName]');
@@ -525,15 +494,14 @@ class _CartContentState extends State<_CartContent> {
                       ],
                     ),
                   ),
-                  // Cac item cua cua hang nay.
                   ...storeItems.map((item) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: CartItemWidget(
                         item: item,
-                        product: _products[item.foodId],
+                        product: item.product,
                         isSelected: _selectedIds.contains(item.id),
-                        isOutOfStock: _products[item.foodId]?.isOutOfStock ?? false,
+                        isOutOfStock: item.product?.isOutOfStock ?? false,
                         onSelectionChanged: (selected) =>
                             _onToggleItem(item.id, selected, item.storeId),
                         onIncrease: () => _onIncrease(item),

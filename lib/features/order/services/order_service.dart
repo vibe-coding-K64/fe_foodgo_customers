@@ -20,60 +20,65 @@ class OrderService {
   ///
   /// Chi lay don hang cua user dang nhap va co deletedAt == null.
   /// Sap xep theo thoi gian tao giam dan (moi nhat len truoc).
+  /// Su dung snapshots() de realtime — tu dong emit khi Firestore thay doi.
   static Stream<List<OrderModel>> getMyOrdersStream() {
-    return Stream.value(null).asyncMap((_) async {
-      final userId = AuthStorage.getUserId();
-      if (userId == null) {
-        debugPrint('OrderService: Chua dang nhap, tra ve danh sach rong');
-        return <OrderModel>[];
-      }
+    return _ordersStream().asyncExpand((orders) async* {
+      yield orders;
+    });
+  }
 
-      debugPrint('OrderService: Lay danh sach don hang cua userId = $userId');
+  /// Stream goc: lang nghe Firestore query, join store avatar, tra ve orders.
+  static Stream<List<OrderModel>> _ordersStream() {
+    final userId = AuthStorage.getUserId();
+    if (userId == null) {
+      return Stream.value(<OrderModel>[]);
+    }
 
-      final querySnapshot = await _firestore
-          .collection(_ordersCollection)
-          .where('userId', isEqualTo: userId)
-          .where('deletedAt', isEqualTo: null)
-          .orderBy('createdAt', descending: true)
-          .get();
+    return _firestore
+        .collection(_ordersCollection)
+        .where('userId', isEqualTo: userId)
+        .where('deletedAt', isEqualTo: null)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .asyncMap((querySnapshot) => _enrichOrdersWithAvatars(querySnapshot.docs));
+  }
 
-      final orders = querySnapshot.docs
-          .map((doc) => OrderModel.fromFirestore(doc))
-          .toList();
+  /// Parse docs thanh OrderModel roi join store avatar.
+  static Future<List<OrderModel>> _enrichOrdersWithAvatars(
+    List<QueryDocumentSnapshot> docs,
+  ) async {
+    final orders = docs.map((doc) => OrderModel.fromFirestore(doc)).toList();
 
-      // Lay danh sach storeId duy nhat de fetch avatar.
-      final storeIds = orders
-          .map((o) => o.storeId)
-          .where((id) => id.isNotEmpty)
-          .toSet()
-          .toList();
+    final storeIds = orders
+        .map((o) => o.storeId)
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
 
-      // Fetch avatar tu Firestore stores collection.
-      final Map<String, String> avatarMap = {};
-      for (final storeId in storeIds) {
+    final avatarResults = await Future.wait(
+      storeIds.map((storeId) async {
         try {
           final storeDoc = await _firestore
               .collection(_storesCollection)
               .doc(storeId)
               .get();
           final avtUrl = storeDoc.data()?['avtUrl'] as String?;
-          if (avtUrl != null && avtUrl.isNotEmpty) {
-            avatarMap[storeId] = avtUrl;
-          }
+          return MapEntry(storeId, avtUrl);
         } catch (e) {
           debugPrint('OrderService: Loi khi lay avatar storeId=$storeId: $e');
+          return MapEntry(storeId, '');
         }
-      }
+      }),
+    );
 
-      // Gan avatar vao moi order.
-      final ordersWithAvatar = orders.map((order) {
-        final avatar = avatarMap[order.storeId];
-        return avatar != null ? order.copyWith(storeAvatar: avatar) : order;
-      }).toList();
+    final avatarMap = Map.fromEntries(avatarResults);
 
-      debugPrint('OrderService: Da lay ${ordersWithAvatar.length} don hang');
-      return ordersWithAvatar;
-    });
+    return orders.map((order) {
+      final avatar = avatarMap[order.storeId];
+      return avatar != null && avatar.isNotEmpty
+          ? order.copyWith(storeAvatar: avatar)
+          : order;
+    }).toList();
   }
 
   /// Lay danh sach don hang cua nguoi dung hien tai (Future version).

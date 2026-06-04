@@ -146,6 +146,47 @@ class PaymentMethodFirestoreService {
     });
   }
 
+  /// Dam bao nguoi dung co phuong thuc thanh toan tien mat (type=1).
+  /// Neu chua co thi tao ngay mot phuong thuc tien mat va dat lam mac dinh.
+  Future<void> ensureDefaultCashPayment() async {
+    final userId = _getUserId();
+    debugPrint('PaymentMethodFirestoreService: Kiem tra payment method type=1 cho user [$userId]');
+
+    try {
+      final snap = await _firestore
+          .collection('customer_profiles')
+          .doc(userId)
+          .collection('payment_methods')
+          .where('type', isEqualTo: 1)
+          .limit(1)
+          .get();
+
+      if (snap.docs.isNotEmpty) {
+        debugPrint('PaymentMethodFirestoreService: Da co payment method type=1, khong can tao them');
+        return;
+      }
+
+      debugPrint('PaymentMethodFirestoreService: Chua co type=1, tao moi phuong thuc tien mat');
+
+      final now = FieldValue.serverTimestamp();
+      await _firestore
+          .collection('customer_profiles')
+          .doc(userId)
+          .collection('payment_methods')
+          .add({
+        'type': 1,
+        'isDefault': true,
+        'isLinked': true,
+        'createdAt': now,
+        'updatedAt': now,
+      });
+
+      debugPrint('PaymentMethodFirestoreService: Da tao payment method type=1 thanh cong');
+    } catch (e) {
+      debugPrint('PaymentMethodFirestoreService: Loi khi dam bao cash payment - $e');
+    }
+  }
+
   /// Chuyen tu Firestore document sang PaymentMethodModel.
   PaymentMethodModel _fromFirestore(Map<String, dynamic> data, String docId) {
     final typeInt = data['type'] as int? ?? 1;

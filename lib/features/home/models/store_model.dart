@@ -72,6 +72,8 @@ class StoreModel {
       categoryIds: categoryIds,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
+      lat: (json['lat'] as num?)?.toDouble() ?? (json['latitude'] as num?)?.toDouble(),
+      lng: (json['lng'] as num?)?.toDouble() ?? (json['longitude'] as num?)?.toDouble(),
     );
   }
 

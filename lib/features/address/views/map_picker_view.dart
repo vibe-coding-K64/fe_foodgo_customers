@@ -6,7 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
-import '../../../core/services/photon_service.dart';
+import '../../../core/services/nominatim_service.dart';
 import '../../../core/services/nominatim_service.dart';
 
 ///Man hinh chon vi tri tren ban do.
@@ -49,12 +49,15 @@ class _MapPickerPageState extends State<MapPickerPage> {
   ///Dang tai khi lay dia chi
   bool _isFetchingAddress = false;
 
-  ///Ket qua search Photon
-  List<PhotonResult> _searchResults = [];
+  ///Ket qua search Nominatim
+  List<NominatimResult> _searchResults = [];
   bool _isSearching = false;
 
   ///Debounce reverse geocoding (1 giay)
   Timer? _debounceGeocode;
+
+  ///Debounce search API (400ms)
+  Timer? _debounceSearch;
 
   ///Controller cho o tim kiem
   final TextEditingController _searchController = TextEditingController();
@@ -111,6 +114,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
   @override
   void dispose() {
     _debounceGeocode?.cancel();
+    _debounceSearch?.cancel();
     _searchController.dispose();
     _searchFocus.dispose();
     super.dispose();
@@ -167,43 +171,50 @@ class _MapPickerPageState extends State<MapPickerPage> {
   }
 
   ///Khi nguoi dung go vao o tim kiem.
-  Future<void> _onSearchChanged(String query) async {
+  void _onSearchChanged(String query) {
+    _debounceSearch?.cancel();
+
     if (query.trim().length < 3) {
       setState(() => _searchResults = []);
       return;
     }
+
     setState(() => _isSearching = true);
-    try {
-      final results = await PhotonService.search(query);
-      if (mounted) {
-        setState(() {
-          _searchResults = results;
-          _isSearching = false;
-        });
+    _debounceSearch = Timer(const Duration(milliseconds: 400), () async {
+      try {
+        final results = await NominatimService.search(query);
+        if (mounted) {
+          setState(() {
+            _searchResults = results;
+            _isSearching = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isSearching = false);
+        }
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isSearching = false);
-      }
-    }
+    });
   }
 
   ///Khi nguoi dung bam mot ket qua search.
-  void _onSelectSearchResult(PhotonResult result) {
+  void _onSelectSearchResult(NominatimResult result) {
     _searchFocus.unfocus();
-    _isProgrammaticMove = true;
-    _searchController.text = result.displayName;
-    setState(() {
-      _searchResults = [];
-      _currentPosition = LatLng(result.lat, result.lng);
-    });
-
-    _mapController.move(LatLng(result.lat, result.lng), 16);
-
+    _debounceSearch?.cancel();
     _debounceGeocode?.cancel();
-    _debounceGeocode = Timer(const Duration(milliseconds: 800), () {
+
+    _searchController.text = result.displayName;
+    final target = LatLng(result.lat, result.lng);
+
+    _isProgrammaticMove = true;
+    _currentPosition = target;
+    setState(() => _searchResults = []);
+
+    _mapController.move(target, 16);
+
+    Timer(const Duration(milliseconds: 600), () {
       _isProgrammaticMove = false;
-      _onPositionChanged(LatLng(result.lat, result.lng));
+      _onPositionChanged(target);
     });
   }
 
@@ -472,6 +483,8 @@ class _MapPickerPageState extends State<MapPickerPage> {
             onSubmitted: (_) {
               if (_searchResults.isNotEmpty) {
                 _onSelectSearchResult(_searchResults.first);
+              } else {
+                _searchFocus.unfocus();
               }
             },
             decoration: InputDecoration(
@@ -542,7 +555,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                result.street ?? result.name,
+                                result.street ?? result.displayName.split(',').first,
                                 style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,

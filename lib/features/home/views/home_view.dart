@@ -15,6 +15,9 @@ import '../../store/services/product_service.dart';
 import '../../home/models/store_model.dart';
 import '../../home/models/product_model.dart';
 import '../../home/models/category_model.dart';
+import 'nearby_stores_view.dart';
+import 'featured_products_view.dart';
+import 'popular_stores_view.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_search_bar.dart';
 import 'widgets/home_categories.dart';
@@ -40,7 +43,7 @@ class _HomeViewState extends State<HomeView> {
   static const _defaultLat = 10.8500;
   static const _defaultLng = 106.7900;
 
-  final StoreService _storeService = const StoreService();
+  final StoreService _storeService = StoreService();
   final ProductService _productService = const ProductService();
   final AddressService _addressService = const AddressService();
 
@@ -61,7 +64,7 @@ class _HomeViewState extends State<HomeView> {
   @override
   void initState() {
     super.initState();
-    _popularStoresFuture = _storeService.getPopularStores();
+    _popularStoresFuture = _storeService.getPopularStores(lat: _lat, lng: _lng);
     _resolveLocationAndFetch();
   }
 
@@ -102,6 +105,7 @@ class _HomeViewState extends State<HomeView> {
       _lng = lng;
       _nearbyStoresFuture = _storeService.getNearbyStores(lat: lat, lng: lng);
       _featuredProductsFuture = _productService.getFeaturedProducts();
+      _popularStoresFuture = _storeService.getPopularStores(lat: lat, lng: lng);
     });
   }
 
@@ -116,6 +120,13 @@ class _HomeViewState extends State<HomeView> {
     if (!mounted) return;
     setState(() {
       _featuredProductsFuture = _productService.getFeaturedProducts();
+    });
+  }
+
+  void _retryPopularStores() {
+    if (!mounted) return;
+    setState(() {
+      _popularStoresFuture = _storeService.getPopularStores(lat: _lat, lng: _lng);
     });
   }
 
@@ -186,6 +197,15 @@ class _HomeViewState extends State<HomeView> {
                     future: _nearbyStoresFuture,
                     onSeeAllTap: () {
                       debugPrint('HomeView: Nguoi dung bam xem tat ca quan gan day');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => NearbyStoresView(
+                            lat: _lat,
+                            lng: _lng,
+                          ),
+                        ),
+                      );
                     },
                     onStoreTap: (store) {
                       debugPrint('HomeView: Nguoi dung bam quan [${store.name}]');
@@ -210,6 +230,12 @@ class _HomeViewState extends State<HomeView> {
                       debugPrint(
                         'HomeView: Nguoi dung bam xem tat ca mon noi bat',
                       );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const FeaturedProductsView(),
+                        ),
+                      );
                     },
                     onProductTap: (product) {
                       showProductDetailSheet(context, product);
@@ -225,6 +251,15 @@ class _HomeViewState extends State<HomeView> {
                     future: _popularStoresFuture,
                     onSeeAllTap: () {
                       debugPrint('HomeView: Nguoi dung bam xem tat ca quan pho bien');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PopularStoresView(
+                            lat: _lat,
+                            lng: _lng,
+                          ),
+                        ),
+                      );
                     },
                     onStoreTap: (store) {
                       debugPrint('HomeView: Nguoi dung bam quan [${store.name}]');
@@ -236,6 +271,7 @@ class _HomeViewState extends State<HomeView> {
                         ),
                       );
                     },
+                    onRetry: _retryPopularStores,
                   ),
                 ),
               ),
@@ -526,11 +562,13 @@ class _PopularStoresSection extends StatelessWidget {
   final Future<List<StoreModel>> future;
   final VoidCallback? onSeeAllTap;
   final void Function(StoreModel store)? onStoreTap;
+  final VoidCallback? onRetry;
 
   const _PopularStoresSection({
     required this.future,
     this.onSeeAllTap,
     this.onStoreTap,
+    this.onRetry,
   });
 
   @override
@@ -583,6 +621,11 @@ class _PopularStoresSection extends StatelessWidget {
                           fontSize: 13,
                           color: Colors.grey.shade600,
                         ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: onRetry,
+                        child: Text(context.t('common_retry')),
                       ),
                     ],
                   ),

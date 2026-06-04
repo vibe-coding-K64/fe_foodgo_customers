@@ -1,4 +1,18 @@
 {
+  "hosting": {
+    "public": "build/web",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "/product/{id}",
+        "destination": "/404.html"
+      },
+      {
+        "source": "/store/{id}",
+        "destination": "/404.html"
+      }
+    ]
+  },
   "flutter": {
     "platforms": {
       "android": {

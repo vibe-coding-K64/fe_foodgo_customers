@@ -4,7 +4,7 @@ import '../../../core/localization/language_service.dart';
 import '../../auth/services/auth_service.dart';
 import '../../auth/views/login_view.dart';
 import '../../address/views/address_management_view.dart';
-import '../../payment/views/payment_methods_view.dart';
+// import '../../payment/views/payment_methods_view.dart';
 import '../../settings/views/settings_view.dart';
 import '../../support/views/support_view.dart';
 import '../../terms/views/terms_view.dart';
@@ -66,19 +66,19 @@ class _ProfileViewState extends State<ProfileView> {
         },
       ),
       // Thanh toan.
-      ProfileMenuItem(
-        titleKey: 'profile_payment',
-        icon: Icons.payment_outlined,
-        onTap: () {
-          debugPrint('ProfileView: Mo man hinh quan ly thanh toan');
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const PaymentMethodsView(),
-            ),
-          );
-        },
-      ),
+      // ProfileMenuItem(
+      //   titleKey: 'profile_payment',
+      //   icon: Icons.payment_outlined,
+      //   onTap: () {
+      //     debugPrint('ProfileView: Mo man hinh quan ly thanh toan');
+      //     Navigator.push(
+      //       context,
+      //       MaterialPageRoute(
+      //         builder: (context) => const PaymentMethodsView(),
+      //       ),
+      //     );
+      //   },
+      // ),
       // Ho tro.
       ProfileMenuItem(
         titleKey: 'profile_support',

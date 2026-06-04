@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fe_foodgo_customers/core/constants/app_colors.dart';
 import 'package:fe_foodgo_customers/core/localization/language_service.dart';
+import 'package:fe_foodgo_customers/core/utils/auth_storage.dart';
 import 'package:fe_foodgo_customers/features/address/models/address_model.dart';
 import 'package:fe_foodgo_customers/features/cart/models/cart_item_model.dart';
 import 'package:fe_foodgo_customers/features/address/services/address_service.dart';
@@ -214,7 +215,14 @@ class _CheckoutViewState extends State<CheckoutView> {
     _selectedPaymentMethod = 'cash';
     _loadDefaultAddress();
     _loadVouchers();
-    _loadPaymentMethods();
+    _ensurePaymentMethod();
+  }
+
+  /// Dam bao nguoi dung co phuong thuc thanh toan tien mat (type=1)
+  /// truoc khi load payment methods de hien thi dung.
+  Future<void> _ensurePaymentMethod() async {
+    await _paymentFirestoreService.ensureDefaultCashPayment();
+    await _loadPaymentMethods();
   }
 
   Future<void> _loadDefaultAddress() async {
@@ -232,7 +240,7 @@ class _CheckoutViewState extends State<CheckoutView> {
     try {
       final storeId = _cartItems.isNotEmpty ? _cartItems.first.storeId : null;
       final voucherData = await MyVoucherFirestoreService.getVouchersForCheckout(
-        userId: 'user_001',
+        userId: AuthStorage.getUserId() ?? '',
         storeId: storeId,
       );
 
@@ -490,6 +498,14 @@ class _CheckoutViewState extends State<CheckoutView> {
       return;
     }
 
+    // Kiem tra dia chi giao hang.
+    if (_deliveryAddress == null ||
+        _deliveryAddress!.id.isEmpty ||
+        _deliveryAddress!.address.trim().isEmpty) {
+      _showSnackBar(context, context.t('checkout_address_required'));
+      return;
+    }
+
     debugPrint('========== CHECKOUT: DAT HANG ==========');
     debugPrint('Dia chi giao hang: ${_deliveryAddress?.address ?? "Chua co dia chi"}');
     debugPrint('So mon: ${_cartItems.length}');
@@ -519,7 +535,7 @@ class _CheckoutViewState extends State<CheckoutView> {
 
     try {
       final request = cm.CheckoutRequest(
-        userId: 'user_001',
+        userId: AuthStorage.getUserId() ?? '',
         addressId: _deliveryAddress!.id,
         paymentMethod: _selectedPaymentMethod,
         storeId: _cartItems.first.storeId,

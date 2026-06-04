@@ -16,6 +16,19 @@ import 'package:fe_foodgo_customers/features/activity/views/widgets/cancel_order
 /// SECTION: VIEW
 ///=============================================================================
 
+/// Buoc trong tracker trang thai don hang.
+class _TrackerStep {
+  final IconData icon;
+  final String label;
+  final int status;
+
+  const _TrackerStep({
+    required this.icon,
+    required this.label,
+    required this.status,
+  });
+}
+
 /// Man hinh chi tiet don hang.
 ///
 /// Hien thi day du thong tin don hang tu Firebase Firestore.
@@ -117,6 +130,8 @@ class _OrderDetailViewState extends State<OrderDetailView> {
         child: Column(
           children: [
             const SizedBox(height: 12),
+            _buildStatusTracker(context, order),
+            const SizedBox(height: 12),
             _buildOrderIdSection(context, order),
             const SizedBox(height: 12),
             _buildAddressSection(context, order),
@@ -193,6 +208,181 @@ class _OrderDetailViewState extends State<OrderDetailView> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Widget hien thi tracker trang thai don hang.
+  ///
+  /// Hien thi 4 buoc: Xac nhan -> Chuan bi -> Dang giao -> Hoan thanh
+  /// Buoc hien tai duoc to mau, cac buoc truoc da xong se to cham,
+  /// buoc sau chua den se mo.
+  Widget _buildStatusTracker(BuildContext context, OrderModel order) {
+    final int currentStatus = order.status;
+
+    // Cac buoc tracker: xac nhan(0), chuan bi(1), dang giao(2), hoan thanh(3).
+    // Huy(4) la trang thai dac biet, hien thi o _buildCancelledSection.
+    final List<_TrackerStep> steps = [
+      _TrackerStep(
+        icon: Icons.check_circle_outline,
+        label: context.t('status_pending'),
+        status: 0,
+      ),
+      _TrackerStep(
+        icon: Icons.restaurant_outlined,
+        label: context.t('status_preparing'),
+        status: 1,
+      ),
+      _TrackerStep(
+        icon: Icons.delivery_dining,
+        label: context.t('status_delivering'),
+        status: 2,
+      ),
+      _TrackerStep(
+        icon: Icons.done_all,
+        label: context.t('status_completed'),
+        status: 3,
+      ),
+    ];
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.t('order_status_title'),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          _buildStatusLabel(context, currentStatus),
+          const SizedBox(height: 16),
+          Row(
+            children: List.generate(steps.length * 2 - 1, (index) {
+              if (index.isOdd) {
+                // Duong noi giua cac buoc.
+                final stepIndex = index ~/ 2;
+                final isFilled = currentStatus > steps[stepIndex].status;
+                return Expanded(
+                  child: Container(
+                    height: 2,
+                    color: isFilled ? AppColors.primary : AppColors.divider,
+                  ),
+                );
+              }
+              // Buoc (icon + label).
+              final stepIndex = index ~/ 2;
+              final step = steps[stepIndex];
+              final isCompleted = currentStatus > step.status;
+              final isCurrent = currentStatus == step.status;
+              return _buildStepItem(
+                step: step,
+                isCompleted: isCompleted,
+                isCurrent: isCurrent,
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusLabel(BuildContext ctx, int status) {
+    Color color;
+    String text;
+    switch (status) {
+      case 0:
+        color = AppColors.warning;
+        text = ctx.t('status_pending');
+        break;
+      case 1:
+        color = AppColors.info;
+        text = ctx.t('status_preparing');
+        break;
+      case 2:
+        color = AppColors.primary;
+        text = ctx.t('status_delivering');
+        break;
+      case 3:
+        color = AppColors.success;
+        text = ctx.t('status_completed');
+        break;
+      case 4:
+        color = AppColors.error;
+        text = ctx.t('status_cancelled');
+        break;
+      default:
+        color = AppColors.textSecondary;
+        text = ctx.t('status_pending');
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepItem({
+    required _TrackerStep step,
+    required bool isCompleted,
+    required bool isCurrent,
+  }) {
+    final Color activeColor = AppColors.primary;
+    final Color inactiveColor = AppColors.divider;
+    final Color activeTextColor = AppColors.primary;
+    final Color inactiveTextColor = AppColors.textSecondary;
+
+    final Color iconColor = isCompleted || isCurrent ? activeColor : inactiveColor;
+    final Color textColor = isCompleted || isCurrent ? activeTextColor : inactiveTextColor;
+
+    return Column(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: isCompleted || isCurrent
+                ? activeColor.withValues(alpha: 0.12)
+                : AppColors.surfaceVariant,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            step.icon,
+            size: 20,
+            color: iconColor,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          step.label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
+            color: textColor,
+          ),
+        ),
+      ],
     );
   }
 
