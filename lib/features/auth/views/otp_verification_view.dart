@@ -24,6 +24,7 @@ class OtpVerificationView extends StatefulWidget {
   /// Thong tin dang ky (chi can khi verifyType == 'register').
   final String? registerPassword;
   final String? registerFullName;
+  final String? registerEmail;
 
   const OtpVerificationView({
     super.key,
@@ -31,6 +32,7 @@ class OtpVerificationView extends StatefulWidget {
     this.verifyType = 'register',
     this.registerPassword,
     this.registerFullName,
+    this.registerEmail,
   });
 
   @override
@@ -95,15 +97,18 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
 
   Future<void> _onResendPressed() async {
     if (!_canResend) return;
-    debugPrint('OtpVerificationView: Gui lai OTP toi ${widget.contactInfo}');
+    final email = widget.verifyType == 'register'
+        ? widget.registerEmail ?? widget.contactInfo
+        : widget.contactInfo;
+    debugPrint('OtpVerificationView: Gui lai OTP toi $email');
 
     try {
-      await AuthService.sendOtp(widget.contactInfo);
+      await AuthService.resendOtp(email);
       _startCountdown();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(context.t('auth_verification_email_sent')),
+          content: Text(context.t('auth_otp_resent')),
           backgroundColor: AppColors.primary,
           behavior: SnackBarBehavior.floating,
         ),
@@ -137,7 +142,6 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
 
     try {
       if (widget.verifyType == 'forgot_password') {
-        // Luong quen mat khau: xac thuc OTP, lay tempToken, chuyen sang ResetPasswordView.
         final result = await AuthService.verifyOtp(widget.contactInfo, _currentOtp);
         if (!mounted) return;
         Navigator.pushReplacement(
@@ -150,18 +154,11 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
           ),
         );
       } else {
-        // Luong dang ky: goi register -> verify OTP -> auto login.
-        await AuthService.register(
-          email: widget.contactInfo,
-          password: widget.registerPassword ?? '',
-          fullName: widget.registerFullName ?? '',
-          phoneNumber: widget.contactInfo,
+        final email = widget.registerEmail ?? widget.contactInfo;
+        await AuthService.registerComplete(
+          email: email,
+          otpCode: _currentOtp,
         );
-
-        await AuthService.verifyOtp(widget.contactInfo, _currentOtp);
-
-        // Sau khi verify OTP thanh cong, auto login.
-        await AuthService.login(widget.contactInfo, widget.registerPassword ?? '');
 
         if (!mounted) return;
         Navigator.pushAndRemoveUntil(
@@ -214,7 +211,7 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
         ),
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -261,35 +258,34 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
               _buildOtpInput(),
 
               const SizedBox(height: 16),
-              const SizedBox(height: 8),
-
-              Center(
-                child: _canResend
-                    ? TextButton(
-                        onPressed: _onResendPressed,
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                        ),
-                        child: Text(
-                          context.t('auth_otp_resend'),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w500,
+              if (widget.verifyType == 'register') ...[
+                const SizedBox(height: 8),
+                Center(
+                  child: _canResend
+                      ? TextButton(
+                          onPressed: _onResendPressed,
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
                           ),
-                        ),
-                      )
-                    : RichText(
-                        text: TextSpan(
-                          text: context.t('auth_otp_resend_countdown'),
+                          child: Text(
+                            context.t('auth_otp_resend'),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        )
+                      : Text(
+                          'Gửi lại mã sau ${_countdownSeconds}s',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: AppColors.textSecondary,
                           ),
                         ),
-                      ),
-              ),
+                ),
+              ],
 
-              const Spacer(),
+              const SizedBox(height: 32),
 
               SizedBox(
                 height: 52,

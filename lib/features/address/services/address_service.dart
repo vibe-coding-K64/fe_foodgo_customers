@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/utils/auth_storage.dart';
 import '../models/address_model.dart';
@@ -416,6 +417,46 @@ class AddressService {
       return addresses.where((a) => a.isDefault).firstOrNull;
     } catch (e) {
       debugPrint('AddressService: Loi lay dia chi mac dinh - $e');
+      return null;
+    }
+  }
+
+  /// Lay toa do GPS hien tai cua may.
+  ///
+  /// Tra ve `Position` neu lay thanh cong, `null` neu:
+  ///  - Quyen truy cap vi tri bi tu choi
+  ///  - Dich vu GPS bi tat
+  ///  - Bat ky loi nao khac
+  static Future<Position?> getGpsPosition() async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint('AddressService[GPS]: Dich vu vi tri bi tat');
+        return null;
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          debugPrint('AddressService[GPS]: Quyen truy cap vi tri bi tu choi');
+          return null;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        debugPrint('AddressService[GPS]: Quyen truy cap vi tri bi tu choi vinh vien');
+        return null;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      );
+      debugPrint(
+          'AddressService[GPS]: Lay duoc vi tri - lat=${position.latitude}, lng=${position.longitude}');
+      return position;
+    } catch (e) {
+      debugPrint('AddressService[GPS]: Loi khi lay vi tri - $e');
       return null;
     }
   }

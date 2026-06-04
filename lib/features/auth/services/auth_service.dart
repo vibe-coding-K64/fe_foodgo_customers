@@ -74,8 +74,16 @@ class LoginResult {
 /// Ket qua verify OTP thanh cong.
 class OtpVerifyResult {
   final String tempToken;
+  final String tokenType;
+  final int expiresIn;
+  final DateTime? expiresAt;
 
-  OtpVerifyResult({required this.tempToken});
+  OtpVerifyResult({
+    required this.tempToken,
+    required this.tokenType,
+    required this.expiresIn,
+    this.expiresAt,
+  });
 }
 
 /// Service xu ly cac thao tac xac thuc nguoi dung.
@@ -168,31 +176,50 @@ class AuthService {
     debugPrint('AuthService: Gui OTP toi $emailOrPhone');
 
     try {
-      await ApiClient.post<Map<String, dynamic>>(
+      final response = await ApiClient.post<Map<String, dynamic>>(
         '/auth/send-otp',
         data: {'emailOrPhone': emailOrPhone.trim()},
       );
-      debugPrint('AuthService: Gui OTP thanh cong');
+      debugPrint('AuthService: Gui OTP thanh cong - response: ${response.data}');
     } on DioException catch (e) {
+      debugPrint('AuthService: Gui OTP loi - response: ${e.response?.data}');
       throw _handleDioError(e);
     }
   }
 
-  /// Dang ky tai khoan moi.
+  /// Gui lai ma OTP.
   ///
-  /// Goi POST /api/auth/register.
-  /// Gui OTP ve email/sdt. Sau do goi verifyOtp de xac thuc.
-  static Future<void> register({
+  /// Goi POST /api/auth/resend-otp.
+  static Future<void> resendOtp(String emailOrPhone) async {
+    debugPrint('AuthService: Gui lai OTP toi $emailOrPhone');
+
+    try {
+      final response = await ApiClient.post<Map<String, dynamic>>(
+        '/auth/resend-otp',
+        data: {'emailOrPhone': emailOrPhone.trim()},
+      );
+      debugPrint('AuthService: Gui lai OTP thanh cong - response: ${response.data}');
+    } on DioException catch (e) {
+      debugPrint('AuthService: Gui lai OTP loi - response: ${e.response?.data}');
+      throw _handleDioError(e);
+    }
+  }
+
+  /// Buoc 1: Dang ky tai khoan moi + gui OTP ve email.
+  ///
+  /// Goi POST /api/auth/register/verify-email.
+  /// Sau buoc nay se hien trang nhap OTP.
+  static Future<void> registerVerifyEmail({
     required String email,
     required String password,
     required String fullName,
     required String phoneNumber,
   }) async {
-    debugPrint('AuthService: Dang ky tai khoan moi cho $email');
+    debugPrint('AuthService: Buoc 1 - Dang ky gui OTP ve email = $email');
 
     try {
-      await ApiClient.post<Map<String, dynamic>>(
-        '/auth/register',
+      final response = await ApiClient.post<Map<String, dynamic>>(
+        '/auth/register/verify-email',
         data: {
           'email': email.trim(),
           'password': password,
@@ -200,7 +227,64 @@ class AuthService {
           'phoneNumber': phoneNumber.trim(),
         },
       );
-      debugPrint('AuthService: Dang ky tai khoan thanh cong');
+      debugPrint('AuthService: Buoc 1 - Dang ky thanh cong, OTP da gui ve email - response: ${response.data}');
+    } on DioException catch (e) {
+      debugPrint('AuthService: Buoc 1 - Dang ky loi - response: ${e.response?.data}');
+      throw _handleDioError(e);
+    }
+  }
+
+  /// Buoc 2: Hoan tat dang ky sau khi xac thuc OTP.
+  ///
+  /// Goi POST /api/auth/register/complete.
+  /// Tra ve LoginResult (token + user) neu thanh cong.
+  static Future<LoginResult> registerComplete({
+    required String email,
+    required String otpCode,
+  }) async {
+    debugPrint('AuthService: Buoc 2 - Hoan tat dang ky email = $email, OTP = $otpCode');
+
+    try {
+      final response = await ApiClient.post<Map<String, dynamic>>(
+        '/auth/register/complete',
+        data: {
+          'email': email.trim(),
+          'otpCode': otpCode.trim(),
+        },
+      );
+
+      final data = response.data;
+      if (data == null) {
+        throw AuthException('Khong nhan duoc phan hoi tu server');
+      }
+
+      final token = data['token'] as String?;
+      if (token == null || token.isEmpty) {
+        throw AuthException('Phan hoi khong chua token');
+      }
+
+      final userJson = data['user'] as Map<String, dynamic>?;
+      if (userJson == null) {
+        throw AuthException('Phan hoi khong chua thong tin nguoi dung');
+      }
+
+      final user = AuthUser.fromJson(userJson);
+      final tokenType = data['tokenType'] as String? ?? 'Bearer';
+      final expiresIn = data['expiresIn'] as int? ?? 0;
+      final refreshToken = data['refreshToken'] as String? ?? '';
+      final refreshExpiresIn = data['refreshExpiresIn'] as int? ?? 0;
+
+      await AuthStorage.saveAuthData(
+        token: token,
+        tokenType: tokenType,
+        user: user.toJson(),
+        expiresIn: expiresIn,
+        refreshToken: refreshToken,
+        refreshExpiresIn: refreshExpiresIn,
+      );
+
+      debugPrint('AuthService: Buoc 2 - Hoan tat dang ky thanh cong. userId = ${user.id}');
+      return LoginResult(token: token, tokenType: tokenType, user: user);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
@@ -236,14 +320,26 @@ class AuthService {
         throw AuthException(message);
       }
 
-      final dataBody = data['data'] as Map<String, dynamic>?;
-      final tempToken = dataBody?['tempToken'] as String?;
-      if (tempToken == null) {
+      final tempToken = data['tempToken'] as String?;
+      if (tempToken == null || tempToken.isEmpty) {
         throw AuthException('Phan hoi khong chua tempToken');
       }
 
-      debugPrint('AuthService: Xac thuc OTP thanh cong');
-      return OtpVerifyResult(tempToken: tempToken);
+      final tokenType = data['tokenType'] as String? ?? 'Bearer';
+      final expiresIn = data['expiresIn'] as int? ?? 0;
+      DateTime? expiresAt;
+      final expiresAtStr = data['expiresAt'] as String?;
+      if (expiresAtStr != null) {
+        expiresAt = DateTime.tryParse(expiresAtStr);
+      }
+
+      debugPrint('AuthService: Xac thuc OTP thanh cong - response: $data');
+      return OtpVerifyResult(
+        tempToken: tempToken,
+        tokenType: tokenType,
+        expiresIn: expiresIn,
+        expiresAt: expiresAt,
+      );
     } on DioException catch (e) {
       throw _handleDioError(e);
     }

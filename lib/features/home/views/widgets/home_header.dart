@@ -6,8 +6,9 @@ import '../../../../features/address/models/address_model.dart';
 /// Widget hien thi banner dia chi o dau trang.
 class HomeHeader extends StatelessWidget {
   final VoidCallback? onEditAddress;
+  final Future<AddressModel?>? addressFuture;
 
-  const HomeHeader({super.key, this.onEditAddress});
+  const HomeHeader({super.key, this.onEditAddress, this.addressFuture});
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +40,7 @@ class HomeHeader extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: FutureBuilder<AddressModel?>(
-              future: const AddressService().getDefaultAddressFromFirestore(),
+              future: addressFuture ?? const AddressService().getDefaultAddressFromFirestore(),
               builder: (context, snapshot) {
                 String diaChiHienThi;
                 if (snapshot.connectionState == ConnectionState.waiting) {

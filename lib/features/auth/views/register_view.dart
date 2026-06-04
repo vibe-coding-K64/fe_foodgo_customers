@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
+import '../services/auth_service.dart';
 import 'otp_verification_view.dart';
 
 /// Man hinh dang ky tai khoan moi (Register).
 ///
 /// Chuc nang:
 ///   - Nhap ho va ten.
+///   - Nhap email.
 ///   - Nhap so dien thoai.
 ///   - Nhap mat khau.
 ///   - Xac nhan mat khau.
-///   - Quyen mat khau.
 ///
 /// Duoc goi tu:
 ///   - LoginView: bam "Dang ky ngay".
@@ -24,6 +25,9 @@ class RegisterView extends StatefulWidget {
 class _RegisterViewState extends State<RegisterView> {
   /// Controller cho o nhap ho va ten.
   final _nameController = TextEditingController();
+
+  /// Controller cho o nhap email.
+  final _emailController = TextEditingController();
 
   /// Controller cho o nhap so dien thoai.
   final _phoneController = TextEditingController();
@@ -43,9 +47,13 @@ class _RegisterViewState extends State<RegisterView> {
   /// Form key de validate form.
   final _formKey = GlobalKey<FormState>();
 
+  /// Trang thai loading khi dang ky.
+  bool _isLoading = false;
+
   @override
   void dispose() {
     _nameController.dispose();
+    _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -53,24 +61,59 @@ class _RegisterViewState extends State<RegisterView> {
   }
 
   /// Xu ly bam nut Dang ky.
-  void _onRegisterPressed() {
+  void _onRegisterPressed() async {
     if (_formKey.currentState?.validate() ?? false) {
       debugPrint('RegisterView: Nguoi dung bam Dang ky');
       debugPrint('  Ho va ten: ${_nameController.text}');
+      debugPrint('  Email: ${_emailController.text}');
       debugPrint('  So dien thoai: ${_phoneController.text}');
       debugPrint('  Mat khau: [${_passwordController.text.replaceAll(RegExp(r'.'), '*')}]');
-      // Chuyen sang trang xac thuc OTP.
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => OtpVerificationView(
-            contactInfo: _phoneController.text.trim(),
-            verifyType: 'register',
-            registerPassword: _passwordController.text,
-            registerFullName: _nameController.text.trim(),
+
+      setState(() => _isLoading = true);
+
+      try {
+        await AuthService.registerVerifyEmail(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          fullName: _nameController.text.trim(),
+          phoneNumber: _phoneController.text.trim(),
+        );
+
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OtpVerificationView(
+              contactInfo: _phoneController.text.trim(),
+              verifyType: 'register',
+              registerPassword: _passwordController.text,
+              registerFullName: _nameController.text.trim(),
+              registerEmail: _emailController.text.trim(),
+            ),
           ),
-        ),
-      );
+        );
+      } on AuthException catch (e) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        debugPrint('RegisterView: Loi bat ngooi khi dang ky = $e');
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Da xay ra loi, vui long thu lai'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
@@ -129,6 +172,9 @@ class _RegisterViewState extends State<RegisterView> {
                 const SizedBox(height: 32),
                 // O nhap ho va ten.
                 _buildNameField(),
+                const SizedBox(height: 16),
+                // O nhap email.
+                _buildEmailField(),
                 const SizedBox(height: 16),
                 // O nhap so dien thoai.
                 _buildPhoneField(),
@@ -201,6 +247,60 @@ class _RegisterViewState extends State<RegisterView> {
         }
         if (value.trim().length < 2) {
           return context.t('auth_error_name_short');
+        }
+        return null;
+      },
+    );
+  }
+
+  /// O nhap email.
+  Widget _buildEmailField() {
+    return TextFormField(
+      controller: _emailController,
+      keyboardType: TextInputType.emailAddress,
+      textInputAction: TextInputAction.next,
+      decoration: InputDecoration(
+        labelText: context.t('auth_email'),
+        labelStyle: const TextStyle(
+          fontSize: 14,
+          color: AppColors.textSecondary,
+        ),
+        prefixIcon: const Icon(
+          Icons.email_outlined,
+          color: AppColors.textSecondary,
+          size: 22,
+        ),
+        filled: true,
+        fillColor: AppColors.surface,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.error),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.error, width: 2),
+        ),
+      ),
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return context.t('auth_error_empty_field');
+        }
+        final emailRegex = RegExp(r'^[\w\.\-]+@[\w\.\-]+\.\w{2,}$');
+        if (!emailRegex.hasMatch(value.trim())) {
+          return context.t('error_invalid_email');
         }
         return null;
       },
@@ -399,22 +499,32 @@ class _RegisterViewState extends State<RegisterView> {
     return SizedBox(
       height: 52,
       child: ElevatedButton(
-        onPressed: _onRegisterPressed,
+        onPressed: _isLoading ? null : _onRegisterPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
+          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           elevation: 0,
         ),
-        child: Text(
-          context.t('auth_register_btn'),
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation(Colors.white),
+                ),
+              )
+            : Text(
+                context.t('auth_register_btn'),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
       ),
     );
   }

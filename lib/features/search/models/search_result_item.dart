@@ -14,7 +14,7 @@ class SearchResultItem {
   final double rating;
   final int reviewCount;
   final double distance;
-  final int deliveryTime;
+  final String deliveryTime;
   final String imageUrl;
   final bool isOutOfStock;
   final String? storeAvatarUrl;
@@ -51,7 +51,7 @@ class SearchResultItem {
   ///   "rating": 4.8,
   ///   "reviewCount": 500,
   ///   "distance": 2.1,
-  ///   "deliveryTime": 25,
+  ///   "deliveryTime": "20-30 phut",
   ///   "imageUrl": "https://..."
   /// }
   /// ```
@@ -79,12 +79,12 @@ class SearchResultItem {
       storeId: json['storeId'] as String? ?? '',
       storeName: json['storeName'] as String? ?? '',
       address: json['address'] as String? ?? '',
-      price: (json['price'] as num?)?.toDouble() ?? 0.0,
-      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
-      reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
-      distance: (json['distance'] as num?)?.toDouble() ?? 0.0,
-      deliveryTime: (json['deliveryTime'] as num?)?.toInt() ?? 0,
-      imageUrl: json['imageUrl'] as String? ?? '',
+    price: (json['price'] as num?)?.toDouble() ?? 0.0,
+    rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+    reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
+    distance: (json['distance'] as num?)?.toDouble() ?? 0.0,
+    deliveryTime: json['deliveryTime']?.toString() ?? '',
+    imageUrl: json['imageUrl'] as String? ?? '',
       isOutOfStock: json['isOutOfStock'] as bool? ?? false,
       storeAvatarUrl: json['storeAvatarUrl'] as String?,
       optionGroups: optionGroups,

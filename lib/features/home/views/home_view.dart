@@ -9,14 +9,15 @@ import '../../cart/views/cart_view.dart';
 import '../../restaurant/views/restaurant_detail_view.dart';
 import '../../address/views/address_management_view.dart';
 import '../../address/services/address_service.dart';
+import '../../address/models/address_model.dart';
 import '../../store/services/store_service.dart';
 import '../../store/services/product_service.dart';
 import '../../home/models/store_model.dart';
 import '../../home/models/product_model.dart';
+import '../../home/models/category_model.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_search_bar.dart';
 import 'widgets/home_categories.dart';
-import 'widgets/home_banner_carousel.dart';
 import '../services/home_service.dart';
 
 /// Trang chu - HomeView.
@@ -25,8 +26,7 @@ import '../services/home_service.dart';
 ///   1. Header dia chi giao hang.
 ///   2. Thanh tim kiem.
 ///   3. Danh muc mon an (tu Firestore Stream).
-///   4. Banner quang cao (tu Firestore Stream).
-///   5. Quan ngon gan day (tu API /api/stores/nearby).
+///   4. Quan ngon gan day (tu API /api/stores/nearby).
 ///   6. Mon an noi bat (tu API /api/products/featured).
 ///   7. Quan pho bien (tu API /api/stores/popular).
 class HomeView extends StatefulWidget {
@@ -37,37 +37,85 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
+  static const _defaultLat = 10.8500;
+  static const _defaultLng = 106.7900;
+
   final StoreService _storeService = const StoreService();
   final ProductService _productService = const ProductService();
+  final AddressService _addressService = const AddressService();
 
-  late Future<List<StoreModel>> _nearbyStoresFuture;
-  late Future<List<ProductModel>> _featuredProductsFuture;
-  final Future<List<StoreModel>> _popularStoresFuture =
-      const StoreService().getPopularStores();
+  double _lat = _defaultLat;
+  double _lng = _defaultLng;
+
+  /// Stable Future references — set once in initState and updated only on retry.
+  /// FutureBuilder only re-executes when the reference changes.
+  Future<AddressModel?> _defaultAddressFuture = Future.value(null);
+  Future<List<StoreModel>> _nearbyStoresFuture = Future.value([]);
+  Future<List<ProductModel>> _featuredProductsFuture = Future.value([]);
+  late Future<List<StoreModel>> _popularStoresFuture;
+
+  /// Stream — created at construction time (not in build).
+  final Stream<List<CategoryModel>> _categoriesStream =
+      HomeService.getCategoriesStream();
 
   @override
   void initState() {
     super.initState();
-    _nearbyStoresFuture = _storeService.getNearbyStores(
-      lat: 10.8500,
-      lng: 106.7900,
-    );
-    _featuredProductsFuture = _productService.getFeaturedProducts();
-    _initLocationAndFetch();
+    _popularStoresFuture = _storeService.getPopularStores();
+    _resolveLocationAndFetch();
   }
 
-  Future<void> _initLocationAndFetch() async {
-    final addressService = const AddressService();
-    final defaultAddress = await addressService.getDefaultAddressFromFirestore();
-    final lat = defaultAddress?.lat ?? 10.8500;
-    final lng = defaultAddress?.lng ?? 106.7900;
+  Future<void> _resolveLocationAndFetch() async {
+    double lat = _defaultLat;
+    double lng = _defaultLng;
+
+    // Start fetching default address and store the future.
+    final defaultAddressFuture = _addressService.getDefaultAddressFromFirestore();
+    if (mounted) {
+      setState(() {
+        _defaultAddressFuture = defaultAddressFuture;
+      });
+    }
+
+    final defaultAddress = await defaultAddressFuture;
+    if (defaultAddress != null && defaultAddress.lat != null && defaultAddress.lng != null) {
+      lat = defaultAddress.lat!;
+      lng = defaultAddress.lng!;
+      debugPrint('HomeView: Su dung dia chi mac dinh - lat=$lat, lng=$lng');
+    } else {
+      debugPrint('HomeView: Bat dau lay GPS...');
+      final gpsPos = await AddressService.getGpsPosition();
+      if (gpsPos != null) {
+        lat = gpsPos.latitude;
+        lng = gpsPos.longitude;
+        debugPrint('HomeView: [GPS OK] lat=${gpsPos.latitude}, lng=${gpsPos.longitude}');
+      } else {
+        debugPrint('HomeView: [GPS NULL] Khong lay duoc GPS, su dung toa do mac dinh');
+        debugPrint('HomeView: Khong co dia chi, su dung toa do mac dinh - lat=$lat, lng=$lng');
+      }
+    }
 
     if (!mounted) return;
+
     setState(() {
-      _nearbyStoresFuture = _storeService.getNearbyStores(
-        lat: lat,
-        lng: lng,
-      );
+      _lat = lat;
+      _lng = lng;
+      _nearbyStoresFuture = _storeService.getNearbyStores(lat: lat, lng: lng);
+      _featuredProductsFuture = _productService.getFeaturedProducts();
+    });
+  }
+
+  void _retryNearbyStores() {
+    if (!mounted) return;
+    setState(() {
+      _nearbyStoresFuture = _storeService.getNearbyStores(lat: _lat, lng: _lng);
+    });
+  }
+
+  void _retryFeaturedProducts() {
+    if (!mounted) return;
+    setState(() {
+      _featuredProductsFuture = _productService.getFeaturedProducts();
     });
   }
 
@@ -76,12 +124,11 @@ class _HomeViewState extends State<HomeView> {
     return Scaffold(
       body: Stack(
         children: [
-          // Noi dung cuon chinh.
           CustomScrollView(
             slivers: [
-              // 1. Header banner dia chi.
               SliverToBoxAdapter(
                 child: HomeHeader(
+                  addressFuture: _defaultAddressFuture,
                   onEditAddress: () {
                     debugPrint(
                       'HomeView: Nguoi dung bam nut chinh sua dia chi',
@@ -94,13 +141,12 @@ class _HomeViewState extends State<HomeView> {
                     ).then((changed) {
                       if (changed == true) {
                         debugPrint('HomeView: Dia chi da thay doi, fetch lai du lieu');
-                        _initLocationAndFetch();
+                        _resolveLocationAndFetch();
                       }
                     });
                   },
                 ),
               ),
-              // 2. Thanh tim kiem.
               SliverToBoxAdapter(
                 child: HomeSearchBar(
                   onTap: () {
@@ -113,12 +159,11 @@ class _HomeViewState extends State<HomeView> {
                   },
                 ),
               ),
-              // 3. Danh muc mon an.
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.only(top: 16),
                   child: HomeCategories(
-                    categoriesStream: HomeService.getCategoriesStream(),
+                    categoriesStream: _categoriesStream,
                     onCategoryTap: (category) {
                       debugPrint(
                         'HomeView: Nguoi dung bam danh muc [${category.name}]',
@@ -134,16 +179,6 @@ class _HomeViewState extends State<HomeView> {
                   ),
                 ),
               ),
-              // 4. Banner quang cao carousel.
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 24),
-                  child: HomeBannerCarousel(
-                    bannersStream: HomeService.getBannersStream(),
-                  ),
-                ),
-              ),
-              // 5. Quan ngon gan day (FutureBuilder -> API /nearby_stores).
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.only(top: 24),
@@ -162,10 +197,10 @@ class _HomeViewState extends State<HomeView> {
                         ),
                       );
                     },
+                    onRetry: _retryNearbyStores,
                   ),
                 ),
               ),
-              // 6. Mon an noi bat (FutureBuilder -> API /featured_products).
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.only(top: 24),
@@ -179,10 +214,10 @@ class _HomeViewState extends State<HomeView> {
                     onProductTap: (product) {
                       showProductDetailSheet(context, product);
                     },
+                    onRetry: _retryFeaturedProducts,
                   ),
                 ),
               ),
-              // 7. Quan pho bien (FutureBuilder -> API /stores/popular).
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.only(top: 24),
@@ -204,11 +239,9 @@ class _HomeViewState extends State<HomeView> {
                   ),
                 ),
               ),
-              // Khoang trong cuoi cung cho FAB.
               const SliverToBoxAdapter(child: SizedBox(height: 80)),
             ],
           ),
-          // 8. Nut FAB Gio hang.
           Positioned(right: 16, bottom: 16, child: _CartFab()),
         ],
       ),
@@ -241,11 +274,13 @@ class _NearbyStoresSection extends StatelessWidget {
   final Future<List<StoreModel>> future;
   final VoidCallback? onSeeAllTap;
   final void Function(StoreModel store)? onStoreTap;
+  final VoidCallback? onRetry;
 
   const _NearbyStoresSection({
     required this.future,
     this.onSeeAllTap,
     this.onStoreTap,
+    this.onRetry,
   });
 
   @override
@@ -316,10 +351,7 @@ class _NearbyStoresSection extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       TextButton(
-                        onPressed: () {
-                          // Retry: refresh widget.
-                          (context as Element).markNeedsBuild();
-                        },
+                        onPressed: onRetry,
                         child: Text(context.t('common_retry')),
                       ),
                     ],
@@ -368,11 +400,13 @@ class _FeaturedProductsSection extends StatelessWidget {
   final Future<List<ProductModel>> future;
   final VoidCallback? onSeeAllTap;
   final void Function(ProductModel product)? onProductTap;
+  final VoidCallback? onRetry;
 
   const _FeaturedProductsSection({
     required this.future,
     this.onSeeAllTap,
     this.onProductTap,
+    this.onRetry,
   });
 
   @override
@@ -443,9 +477,7 @@ class _FeaturedProductsSection extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       TextButton(
-                        onPressed: () {
-                          (context as Element).markNeedsBuild();
-                        },
+                        onPressed: onRetry,
                         child: Text(context.t('common_retry')),
                       ),
                     ],
@@ -517,8 +549,10 @@ class _PopularStoresSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        FutureBuilder<List<StoreModel>>(
-          future: future,
+        SizedBox(
+          height: 660,
+          child: FutureBuilder<List<StoreModel>>(
+            future: future,
           builder: (context, snapshot) {
             // Dang tai.
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -589,6 +623,7 @@ class _PopularStoresSection extends StatelessWidget {
               },
             );
           },
+          ),
         ),
       ],
     );

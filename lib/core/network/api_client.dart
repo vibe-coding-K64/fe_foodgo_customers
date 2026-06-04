@@ -38,16 +38,20 @@ class AuthInterceptor extends Interceptor {
 
     _isRefreshing = true;
 
+    _enqueue(err.requestOptions, handler);
+
     try {
       final refreshed = await _refreshToken();
       if (refreshed) {
         await _retryPendingRequests();
+      } else {
+        await AuthStorage.clearAuth();
+        _rejectPendingRequests();
       }
-      handler.next(err);
     } catch (e) {
+      debugPrint('AuthInterceptor: Refresh token failed - $e');
       await AuthStorage.clearAuth();
       _rejectPendingRequests();
-      handler.next(err);
     } finally {
       _isRefreshing = false;
       _pendingRequests.clear();
@@ -66,7 +70,7 @@ class AuthInterceptor extends Interceptor {
       ));
 
       final response = await dio.post<Map<String, dynamic>>(
-        '/api/auth/refresh-token',
+        '/auth/refresh-token',
         data: {'refreshToken': refreshToken},
       );
 
@@ -105,20 +109,42 @@ class AuthInterceptor extends Interceptor {
   }
 
   Future<void> _retryPendingRequests() async {
+    final dio = Dio(BaseOptions(
+      baseUrl: ApiClient._baseUrl,
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 10),
+    ));
+
     for (final req in _pendingRequests) {
       final token = AuthStorage.getToken();
       if (token != null && token.isNotEmpty) {
         req.requestOptions.headers['Authorization'] =
             '${AuthStorage.getTokenType() ?? 'Bearer'} $token';
-      }
-      try {
-        req.handler.resolve(
-          await Dio().fetch(req.requestOptions),
+        // Neu chua save auth data (vi saveAuthData la async),
+        // chi retry khi da co token.
+        try {
+          req.handler.resolve(
+            await dio.fetch(req.requestOptions),
+          );
+        } catch (e) {
+          req.handler.next(e as DioException);
+        }
+      } else {
+        // Token chua san sang, reject request.
+        req.handler.next(
+          DioException(
+            requestOptions: req.requestOptions,
+            error: 'Token chua san sang de retry',
+            type: DioExceptionType.badResponse,
+            response: Response(
+              requestOptions: req.requestOptions,
+              statusCode: 401,
+            ),
+          ),
         );
-      } catch (e) {
-        req.handler.next(e as DioException);
       }
     }
+    dio.close();
   }
 
   void _rejectPendingRequests() {

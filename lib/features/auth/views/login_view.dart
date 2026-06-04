@@ -13,7 +13,6 @@ import 'forgot_password_view.dart';
 ///   - Nhap email va mat khau.
 ///   - Hien thi/an mat khau.
 ///   - Quen mat khau.
-///   - Dang nhap bang Google, Facebook.
 ///   - Chuyen sang man hinh Dang ky.
 ///
 /// Duoc goi tu:
@@ -118,32 +117,6 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
-  /// Xu ly bam nut Dang nhap Google.
-  void _onGoogleLoginPressed() {
-    debugPrint('LoginView: Nguoi dung bam Dang nhap Google');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.t('auth_login_google')),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 1),
-      ),
-    );
-  }
-
-  /// Xu ly bam nut Dang nhap Facebook.
-  void _onFacebookLoginPressed() {
-    debugPrint('LoginView: Nguoi dung bam Dang nhap Facebook');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.t('auth_login_facebook')),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 1),
-      ),
-    );
-  }
-
   /// Xu ly bam chuyen sang man hinh Dang ky.
   void _onRegisterTap() {
     debugPrint('LoginView: Chuyen sang man hinh Dang ky');
@@ -171,8 +144,8 @@ class _LoginViewState extends State<LoginView> {
                     // Phan Logo va tieu de.
                     _buildHeader(),
                     const SizedBox(height: 40),
-                    // O nhap so dien thoai/email.
-                    _buildPhoneEmailField(),
+                    // O nhap email.
+                    _buildEmailField(),
                     const SizedBox(height: 16),
                     // O nhap mat khau.
                     _buildPasswordField(),
@@ -197,12 +170,6 @@ class _LoginViewState extends State<LoginView> {
                     const SizedBox(height: 24),
                     // Nut Dang nhap.
                     _buildLoginButton(),
-                    const SizedBox(height: 24),
-                    // Dong chia隔.
-                    _buildDivider(),
-                    const SizedBox(height: 24),
-                    // Nut Dang nhap mang xa hoi.
-                    _buildSocialLoginButtons(),
                     const SizedBox(height: 32),
                     // Dong chuyen sang Dang ky.
                     _buildRegisterFooter(),
@@ -238,10 +205,14 @@ class _LoginViewState extends State<LoginView> {
             color: AppColors.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: const Icon(
-            Icons.restaurant_menu,
-            size: 48,
-            color: AppColors.primary,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Image.asset(
+              'asset/img/logo.png',
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
+            ),
           ),
         ),
         const SizedBox(height: 20),
@@ -264,8 +235,8 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
-  /// O nhap so dien thoai hoac email.
-  Widget _buildPhoneEmailField() {
+  /// O nhap email.
+  Widget _buildEmailField() {
     return TextFormField(
       controller: _emailController,
       keyboardType: TextInputType.emailAddress,
@@ -277,7 +248,7 @@ class _LoginViewState extends State<LoginView> {
           color: AppColors.textSecondary,
         ),
         prefixIcon: const Icon(
-          Icons.person_outline,
+          Icons.email_outlined,
           color: AppColors.textSecondary,
           size: 22,
         ),
@@ -410,71 +381,6 @@ class _LoginViewState extends State<LoginView> {
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
-    );
-  }
-
-  /// Dong chia隔 giua Dang nhap va Mang xa hoi.
-  Widget _buildDivider() {
-    return Row(
-      children: [
-        const Expanded(child: Divider(color: AppColors.divider, thickness: 1)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            context.t('auth_or_label'),
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ),
-        const Expanded(child: Divider(color: AppColors.divider, thickness: 1)),
-      ],
-    );
-  }
-
-  /// 2 nut Dang nhap Google va Facebook.
-  Widget _buildSocialLoginButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: _onGoogleLoginPressed,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.textPrimary,
-              side: const BorderSide(color: AppColors.border),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            icon: const Icon(Icons.g_mobiledata, size: 24),
-            label: Text(
-              context.t('auth_google_label'),
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: _onFacebookLoginPressed,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.textPrimary,
-              side: const BorderSide(color: AppColors.border),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            icon: const Icon(Icons.facebook, size: 22, color: Colors.blue),
-            label: Text(
-              context.t('auth_facebook_label'),
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-            ),
-          ),
-        ),
-      ],
     );
   }
 

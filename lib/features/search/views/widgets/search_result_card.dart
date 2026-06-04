@@ -192,7 +192,7 @@ class SearchResultCard extends StatelessWidget {
   Widget _buildDeliveryInfo() {
     final hasAddress = item.address.isNotEmpty;
     final hasDistance = item.distance > 0;
-    final hasDeliveryTime = item.deliveryTime > 0;
+    final hasDeliveryTime = item.deliveryTime.isNotEmpty;
 
     if (!hasAddress && !hasDistance && !hasDeliveryTime) {
       return const SizedBox.shrink();
@@ -247,7 +247,7 @@ class SearchResultCard extends StatelessWidget {
           ),
           const SizedBox(width: 2),
           Text(
-            '${item.deliveryTime} ph',
+            item.deliveryTime,
             style: TextStyle(
               fontSize: 12,
               color: AppColors.textSecondary,

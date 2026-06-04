@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../auth/services/auth_service.dart';
 import '../../auth/views/login_view.dart';
 import '../../address/views/address_management_view.dart';
 import '../../payment/views/payment_methods_view.dart';
@@ -154,15 +155,17 @@ class _ProfileViewState extends State<ProfileView> {
             child: Text(context.t('common_cancel')),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
               debugPrint('ProfileView: Nguoi dung xac nhan dang xuat');
-              // Xoa toan bo lich su man hinh va chuyen ve man hinh Dang nhap.
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginView()),
-                (route) => false,
-              );
+              await AuthService.logout();
+              if (context.mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginView()),
+                  (route) => false,
+                );
+              }
             },
             child: Text(
               context.t('common_yes'),
