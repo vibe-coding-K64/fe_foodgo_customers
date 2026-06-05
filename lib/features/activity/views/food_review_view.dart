@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../../../core/utils/auth_storage.dart';
+import '../../../core/utils/snackbar_helper.dart';
 import '../../order/models/order_model.dart';
 import '../../order/services/food_review_service.dart';
 
@@ -48,11 +49,10 @@ class _FoodReviewViewState extends State<FoodReviewView> {
 
   Future<void> _submitReviews() async {
     if (!_hasAnyRating) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.t('food_review_error_no_rating')),
-          backgroundColor: Colors.orange,
-        ),
+      showAppToast(
+        context,
+        message: context.t('food_review_error_no_rating'),
+        type: AppToastType.warning,
       );
       return;
     }
@@ -70,30 +70,27 @@ class _FoodReviewViewState extends State<FoodReviewView> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.t('food_review_success')),
-            backgroundColor: Colors.green,
-          ),
+        showAppToast(
+          context,
+          message: context.t('food_review_success'),
+          type: AppToastType.success,
         );
         Navigator.pop(context, true);
       }
     } on FoodReviewException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message),
-            backgroundColor: Colors.red,
-          ),
+        showAppToast(
+          context,
+          message: e.message,
+          type: AppToastType.error,
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.t('food_review_failed_after_retry')),
-            backgroundColor: Colors.red,
-          ),
+        showAppToast(
+          context,
+          message: context.t('food_review_failed_after_retry'),
+          type: AppToastType.error,
         );
       }
     } finally {

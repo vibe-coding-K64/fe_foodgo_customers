@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
+import '../../../../core/utils/snackbar_helper.dart';
 import '../services/auth_service.dart';
 
 /// Man hinh Dat lai mat khau.
@@ -65,12 +66,10 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
         );
 
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.t('auth_update_password')),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showAppToast(
+          context,
+          message: context.t('auth_update_password'),
+          type: AppToastType.success,
         );
 
         // Quay ve man hinh chinh sau khi cap nhat thanh cong.
@@ -78,23 +77,19 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
       } on AuthException catch (e) {
         if (!mounted) return;
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showAppToast(
+          context,
+          message: e.message,
+          type: AppToastType.error,
         );
       } catch (e) {
         if (!mounted) return;
         debugPrint('ResetPasswordView: Loi bat ngooi = $e');
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Da xay ra loi, vui long thu lai'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showAppToast(
+          context,
+          message: 'Da xay ra loi, vui long thu lai',
+          type: AppToastType.error,
         );
       }
     }

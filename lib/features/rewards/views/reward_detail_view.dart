@@ -186,17 +186,21 @@ class _RewardDetailViewState extends State<RewardDetailView> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildSuccessRow('Voucher', data.name),
-                      const SizedBox(height: 6),
-                      _buildSuccessRow('Ma', data.code),
-                      const SizedBox(height: 6),
-                      _buildSuccessRow('Giam gia', data.discountText),
+                      _buildSuccessRow(
+                          context.t('reward_voucher_label'), data.name),
                       const SizedBox(height: 6),
                       _buildSuccessRow(
-                          'Diem da dung', _formatPoints(data.diemDaDung)),
+                          context.t('reward_code_label'), data.code),
                       const SizedBox(height: 6),
                       _buildSuccessRow(
-                          'Diem con lai', _formatPoints(data.diemConLai)),
+                          context.t('reward_discount_label_row'),
+                          data.discountText),
+                      const SizedBox(height: 6),
+                      _buildSuccessRow(context.t('reward_points_used'),
+                          _formatPoints(data.diemDaDung)),
+                      const SizedBox(height: 6),
+                      _buildSuccessRow(context.t('reward_points_remaining'),
+                          _formatPoints(data.diemConLai)),
                     ],
                   ),
                 ),
@@ -277,16 +281,18 @@ class _RewardDetailViewState extends State<RewardDetailView> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.error_outline, color: AppColors.error, size: 24),
-              SizedBox(width: 8),
-              Text(
-                'Doi voucher that bai',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+              const Icon(Icons.error_outline, color: AppColors.error, size: 24),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  context.t('reward_exchange_error_title'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
             ],
@@ -315,9 +321,9 @@ class _RewardDetailViewState extends State<RewardDetailView> {
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
-                  'Dong',
-                  style: TextStyle(
+                child: Text(
+                  context.t('common_done'),
+                  style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),

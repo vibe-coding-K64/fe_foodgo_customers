@@ -6,7 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
-import '../../../core/services/nominatim_service.dart';
+import '../../../core/utils/snackbar_helper.dart';
 import '../../../core/services/nominatim_service.dart';
 
 ///Man hinh chon vi tri tren ban do.
@@ -161,8 +161,10 @@ class _MapPickerPageState extends State<MapPickerPage> {
       _isProgrammaticMove = false;
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.t('address_form_location_error'))),
+        showAppToast(
+          context,
+          message: context.t('address_form_location_error'),
+          type: AppToastType.error,
         );
       }
     } finally {

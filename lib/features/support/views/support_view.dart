@@ -3,7 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/localization/language_service.dart';
-import 'support_chat_view.dart';
+import '../../../core/utils/snackbar_helper.dart';
 
 /// Model mot cau hoi FAQ.
 class FaqItem {
@@ -21,7 +21,7 @@ class FaqItem {
 /// Hien thi:
 ///   - Thanh tim kiem o dau trang.
 ///   - Danh sach FAQ (ExpansionTile - hieu ung accordion).
-///   - Sticky bottom bar voi nut Chat va nut Goi tong dai.
+///   - Sticky bottom bar voi nut Goi tong dai.
 ///
 /// Duoc goi tu:
 ///   - Tab Tai khoan (ProfileView): bam "Ho tro"
@@ -83,18 +83,7 @@ class _SupportViewState extends State<SupportView> {
     }).toList();
   }
 
-  /// Xu ly bam nut Chat.
-  void _onChatTap() {
-    debugPrint('SupportView: Mo man hinh chat voi nhan vien, ma don hang: [${widget.orderId ?? "khong co"}]');
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => SupportChatView(orderId: widget.orderId),
-      ),
-    );
-  }
-
-  /// Xu ly bam nut Goi tong dai.
+  /// Nut goi tong dai.
   Future<void> _onCallTap() async {
     debugPrint('SupportView: Nguoi dung bam nut Goi tong dai');
     final phoneNumber = AppStrings.hotlineNumber;
@@ -103,13 +92,11 @@ class _SupportViewState extends State<SupportView> {
       await launchUrl(uri);
     } else {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Khong the goi den so $phoneNumber'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
+        showAppToast(
+          context,
+          message: 'Khong the goi den so $phoneNumber',
+          type: AppToastType.error,
+          duration: const Duration(seconds: 2),
         );
       }
     }
@@ -335,7 +322,7 @@ class _SupportViewState extends State<SupportView> {
     );
   }
 
-  /// Sticky Bottom Bar voi 2 nut.
+  /// Sticky Bottom Bar chi voi nut goi.
   Widget _buildStickyBottomBar(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     return Container(
@@ -353,7 +340,6 @@ class _SupportViewState extends State<SupportView> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Dong chu "Can ho tro them?"
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Text(
@@ -364,79 +350,36 @@ class _SupportViewState extends State<SupportView> {
               ),
             ),
           ),
-          // 2 nut.
-          Row(
-            children: [
-              // Nut Chat (Outline).
-              Expanded(
-                child: GestureDetector(
-                  onTap: _onChatTap,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: AppColors.primary,
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.chat_bubble_outline,
-                          color: AppColors.primary,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          context.t('support_chat_btn'),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ],
+          // Nut Goi (full-width).
+          GestureDetector(
+            onTap: _onCallTap,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.phone_outlined,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    context.t('support_call_btn'),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(width: 12),
-              // Nut Goi (Elevated).
-              Expanded(
-                child: GestureDetector(
-                  onTap: _onCallTap,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.phone_outlined,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          context.t('support_call_btn'),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),

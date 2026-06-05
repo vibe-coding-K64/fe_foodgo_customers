@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/utils/snackbar_helper.dart';
 import '../models/payment_method_model.dart';
 import '../services/payment_service.dart';
 
@@ -251,13 +252,11 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.t('payment_add_card_saved')),
-          backgroundColor: AppColors.primary,
-          duration: const Duration(seconds: 1),
-          behavior: SnackBarBehavior.floating,
-        ),
+      showAppToast(
+        context,
+        message: context.t('payment_add_card_saved'),
+        type: AppToastType.success,
+        duration: const Duration(seconds: 1),
       );
 
       widget.onConfirm?.call(method!);
@@ -266,13 +265,11 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
       debugPrint('AddPaymentMethod: Loi them the - $e');
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
-          backgroundColor: AppColors.error,
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
+      showAppToast(
+        context,
+        message: e.toString().replaceFirst('Exception: ', ''),
+        type: AppToastType.error,
+        duration: const Duration(seconds: 2),
       );
     } finally {
       if (mounted) {
@@ -296,13 +293,11 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.t('payment_add_wallet_linked')),
-          backgroundColor: AppColors.primary,
-          duration: const Duration(seconds: 1),
-          behavior: SnackBarBehavior.floating,
-        ),
+      showAppToast(
+        context,
+        message: context.t('payment_add_wallet_linked'),
+        type: AppToastType.success,
+        duration: const Duration(seconds: 1),
       );
 
       widget.onConfirm?.call(method!);
@@ -311,13 +306,11 @@ class _AddPaymentMethodViewState extends State<AddPaymentMethodView> {
       debugPrint('AddPaymentMethod: Loi lien ket vi - $e');
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
-          backgroundColor: AppColors.error,
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
+      showAppToast(
+        context,
+        message: e.toString().replaceFirst('Exception: ', ''),
+        type: AppToastType.error,
+        duration: const Duration(seconds: 2),
       );
     } finally {
       if (mounted) {

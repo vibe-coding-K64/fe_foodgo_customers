@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/utils/snackbar_helper.dart';
 import '../models/address_model.dart';
 import '../services/address_service.dart';
 import 'map_picker_view.dart';
@@ -239,13 +240,11 @@ class _AddressFormViewState extends State<AddressFormView> {
           'AddressFormView: Da luu dia chi [${savedAddress.id}] thanh cong');
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.t('address_form_saved')),
-            backgroundColor: AppColors.primary,
-            duration: const Duration(seconds: 1),
-            behavior: SnackBarBehavior.floating,
-          ),
+        showAppToast(
+          context,
+          message: context.t('address_form_saved'),
+          type: AppToastType.success,
+          duration: const Duration(seconds: 1),
         );
 
         widget.onSave?.call(savedAddress);
@@ -262,17 +261,13 @@ class _AddressFormViewState extends State<AddressFormView> {
     } catch (e) {
       debugPrint('AddressFormView: Loi khi luu dia chi - $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.isEditMode
-                  ? context.t('address_error_update')
-                  : context.t('address_error_create'),
-            ),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
+        showAppToast(
+          context,
+          message: widget.isEditMode
+              ? context.t('address_error_update')
+              : context.t('address_error_create'),
+          type: AppToastType.error,
+          duration: const Duration(seconds: 2),
         );
       }
     } finally {

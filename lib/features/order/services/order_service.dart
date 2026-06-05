@@ -204,10 +204,14 @@ class OrderService {
           final storeData = storeDoc.data()!;
           final storeAvatar = storeData['avtUrl'] as String?;
           final storeAddress = storeData['address'] as String?;
-          if (storeAvatar != null || storeAddress != null) {
+          final storeLat = (storeData['lat'] as num?)?.toDouble();
+          final storeLng = (storeData['lng'] as num?)?.toDouble();
+          if (storeAvatar != null || storeAddress != null || storeLat != null) {
             order = order.copyWith(
               storeAvatar: storeAvatar ?? order.storeAvatar,
               storeAddress: storeAddress ?? order.storeAddress,
+              storeLat: storeLat ?? order.storeLat,
+              storeLng: storeLng ?? order.storeLng,
             );
           }
         }

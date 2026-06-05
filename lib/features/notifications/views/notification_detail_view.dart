@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/utils/snackbar_helper.dart';
 import '../models/notification_model.dart';
 
 /// Man hinh Chi tiet thong bao.
@@ -74,11 +75,16 @@ class NotificationDetailView extends StatelessWidget {
   /// Format thoi gian thanh chuoi "X gio truoc - dd/MM/yyyy".
   String _formatDateTime(BuildContext context, DateTime dateTime) {
     final now = DateTime.now();
-    final difference = now.difference(dateTime);
+    final createdUtc = dateTime.toUtc();
+    final nowUtc = now.toUtc();
+    final difference = nowUtc.difference(createdUtc);
 
     String timeAgo;
     if (difference.inMinutes < 1) {
       timeAgo = context.t('notification_time_just_now');
+    } else if (difference.inMinutes < 60) {
+      timeAgo = context.t('notification_time_minutes_ago')
+          .replaceAll('\$1', difference.inMinutes.toString());
     } else if (difference.inHours < 24) {
       timeAgo = context.t('notification_time_hours_ago')
           .replaceAll('\$1', difference.inHours.toString());
@@ -86,8 +92,10 @@ class NotificationDetailView extends StatelessWidget {
       timeAgo = context.t('notification_time_days_ago')
           .replaceAll('\$1', difference.inDays.toString());
     } else {
-      timeAgo = context.t('notification_time_days_ago')
-          .replaceAll('\$1', difference.inDays.toString());
+      final day = dateTime.day.toString().padLeft(2, '0');
+      final month = dateTime.month.toString().padLeft(2, '0');
+      final year = dateTime.year;
+      return '$day/$month/$year';
     }
 
     final day = dateTime.day.toString().padLeft(2, '0');
@@ -102,23 +110,19 @@ class NotificationDetailView extends StatelessWidget {
       case 2:
         debugPrint('NotificationDetail: Nguoi dung bam Xem don hang [${notification.referenceId}]');
         // TODO: Chuyen sang trang chi tiet don hang voi referenceId.
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Dang mo chi tiet don hang #${notification.referenceId}'),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showAppToast(
+          context,
+          message: 'Dang mo chi tiet don hang #${notification.referenceId}',
+          type: AppToastType.success,
         );
         break;
       case 1:
         debugPrint('NotificationDetail: Nguoi dung bam Dung voucher [${notification.referenceId}]');
         // TODO: Chuyen sang trang voucher / khuyen mai.
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Dang mo voucher #${notification.referenceId}'),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showAppToast(
+          context,
+          message: 'Dang mo voucher #${notification.referenceId}',
+          type: AppToastType.success,
         );
         break;
       case 0:

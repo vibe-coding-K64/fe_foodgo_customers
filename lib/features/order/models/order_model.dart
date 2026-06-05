@@ -112,8 +112,12 @@ class OrderModel {
   final String? driverName;
   final String? driverPhone;
   final String? vehiclePlate;
+  final double? driverLat;
+  final double? driverLng;
   final String? storeAvatar;
   final String? storeAddress;
+  final double? storeLat;
+  final double? storeLng;
   final String? userAvatar;
   final String? addressId;
   final String? addressName;
@@ -143,8 +147,12 @@ class OrderModel {
     this.driverName,
     this.driverPhone,
     this.vehiclePlate,
+    this.driverLat,
+    this.driverLng,
     this.storeAvatar,
     this.storeAddress,
+    this.storeLat,
+    this.storeLng,
     this.userAvatar,
     this.addressId,
     this.addressName,
@@ -236,8 +244,12 @@ class OrderModel {
         driverName: _parseStringNullable(data['driverName']),
         driverPhone: _parseStringNullable(data['driverPhone']),
         vehiclePlate: _parseStringNullable(data['vehiclePlate']),
+        driverLat: (data['driverLat'] as num?)?.toDouble(),
+        driverLng: (data['driverLng'] as num?)?.toDouble(),
         storeAvatar: _parseStringNullable(data['storeAvatar']),
         storeAddress: _parseStringNullable(data['storeAddress']),
+        storeLat: (data['storeLat'] as num?)?.toDouble(),
+        storeLng: (data['storeLng'] as num?)?.toDouble(),
         userAvatar: _parseStringNullable(data['userAvatar']),
         addressId: _parseStringNullable(data['addressId']),
         addressName: _parseStringNullable(data['addressName']),
@@ -282,8 +294,16 @@ class OrderModel {
   bool get isCancelled => status == 4;
 
   OrderModel copyWith({
+    String? driverId,
+    String? driverName,
+    String? driverPhone,
+    String? vehiclePlate,
+    double? driverLat,
+    double? driverLng,
     String? storeAvatar,
     String? storeAddress,
+    double? storeLat,
+    double? storeLng,
     String? userAvatar,
     String? addressId,
     String? addressName,
@@ -309,12 +329,16 @@ class OrderModel {
       createdAt: createdAt,
       note: note,
       orderCode: orderCode,
-      driverId: driverId,
-      driverName: driverName,
-      driverPhone: driverPhone,
-      vehiclePlate: vehiclePlate,
+      driverId: driverId ?? this.driverId,
+      driverName: driverName ?? this.driverName,
+      driverPhone: driverPhone ?? this.driverPhone,
+      vehiclePlate: vehiclePlate ?? this.vehiclePlate,
+      driverLat: driverLat ?? this.driverLat,
+      driverLng: driverLng ?? this.driverLng,
       storeAvatar: storeAvatar ?? this.storeAvatar,
       storeAddress: storeAddress ?? this.storeAddress,
+      storeLat: storeLat ?? this.storeLat,
+      storeLng: storeLng ?? this.storeLng,
       userAvatar: userAvatar ?? this.userAvatar,
       addressId: addressId ?? this.addressId,
       addressName: addressName ?? this.addressName,

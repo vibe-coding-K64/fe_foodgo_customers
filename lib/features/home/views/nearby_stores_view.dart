@@ -6,11 +6,14 @@ import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/state/cart_state.dart';
+import '../../../core/utils/snackbar_helper.dart';
 import '../../../core/utils/vietnamese_normalizer.dart';
 import '../../../core/utils/format_currency.dart';
 import '../../home/models/store_model.dart';
 import '../../restaurant/views/restaurant_detail_view.dart';
 import '../../store/services/store_service.dart';
+import '../../cart/views/cart_view.dart';
 import 'widgets/app_search_bar.dart';
 
 /// Trang hien thi tat ca quan gan day.
@@ -141,12 +144,10 @@ class _NearbyStoresViewState extends State<NearbyStoresView> {
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
+    showAppToast(
+      context,
+      message: message,
+      type: AppToastType.info,
     );
   }
 
@@ -197,12 +198,57 @@ class _NearbyStoresViewState extends State<NearbyStoresView> {
         foregroundColor: AppColors.textPrimary,
         surfaceTintColor: Colors.transparent,
         actions: [
+          ListenableBuilder(
+            listenable: CartState.of(context),
+            builder: (context, _) {
+              final count = CartState.of(context).itemCount;
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.shopping_cart_outlined),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const CartView(),
+                        ),
+                      );
+                    },
+                  ),
+                  if (count > 0)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: AppColors.error,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          count > 99 ? '99+' : count.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
           IconButton(
             icon: Icon(_showMap ? Icons.list : Icons.map_outlined),
             onPressed: () {
               setState(() => _showMap = !_showMap);
               if (_showMap) {
-                // Lay GPS khi chuyen sang che do map.
                 _fetchUserLocation();
               }
             },

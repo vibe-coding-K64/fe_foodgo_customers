@@ -88,6 +88,8 @@ flutter:
     - lib/core/localization/app_vi.json
     - lib/core/localization/app_en.json
     - asset/img/logo.png
+    - asset/icon/sus.png
+    - asset/icon/err.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/state/cart_state.dart';
 import '../../../core/utils/vietnamese_normalizer.dart';
 import '../../../core/utils/format_currency.dart';
 import '../../home/models/product_model.dart';
 import '../../product/views/product_detail_bottom_sheet.dart';
 import '../../store/services/product_service.dart';
+import '../../cart/views/cart_view.dart';
 import 'widgets/app_search_bar.dart';
 
 /// Trang hien thi tat ca mon an noi bat.
@@ -78,6 +80,54 @@ class _FeaturedProductsViewState extends State<FeaturedProductsView> {
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         surfaceTintColor: Colors.transparent,
+        actions: [
+          ListenableBuilder(
+            listenable: CartState.of(context),
+            builder: (context, _) {
+              final count = CartState.of(context).itemCount;
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.shopping_cart_outlined),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const CartView(),
+                        ),
+                      );
+                    },
+                  ),
+                  if (count > 0)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: AppColors.error,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          count > 99 ? '99+' : count.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [

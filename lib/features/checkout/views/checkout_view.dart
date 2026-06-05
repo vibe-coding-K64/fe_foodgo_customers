@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:fe_foodgo_customers/core/constants/app_colors.dart';
 import 'package:fe_foodgo_customers/core/localization/language_service.dart';
 import 'package:fe_foodgo_customers/core/utils/auth_storage.dart';
+import 'package:fe_foodgo_customers/core/utils/snackbar_helper.dart';
 import 'package:fe_foodgo_customers/features/address/models/address_model.dart';
 import 'package:fe_foodgo_customers/features/cart/models/cart_item_model.dart';
 import 'package:fe_foodgo_customers/features/address/services/address_service.dart';
@@ -431,15 +432,10 @@ class _CheckoutViewState extends State<CheckoutView> {
         if (removedShop) _selectedShopVoucher = '';
         if (removedFreeship) _selectedFreeshipVoucher = '';
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Voucher khong con ap dung do gia tri don hang giam',
-            style: const TextStyle(color: Colors.white),
-          ),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
+      showAppToast(
+        context,
+        message: 'Voucher khong con ap dung do gia tri don hang giam',
+        type: AppToastType.error,
       );
     }
   }
@@ -828,12 +824,10 @@ class _CheckoutViewState extends State<CheckoutView> {
   }
 
   void _showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.error,
-        behavior: SnackBarBehavior.floating,
-      ),
+    showAppToast(
+      context,
+      message: message,
+      type: AppToastType.error,
     );
   }
 

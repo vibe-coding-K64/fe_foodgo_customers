@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
+import '../../../../core/utils/snackbar_helper.dart';
 import '../services/auth_service.dart';
 import 'otp_verification_view.dart';
 
@@ -54,22 +55,18 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
         );
       } on AuthException catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showAppToast(
+          context,
+          message: e.message,
+          type: AppToastType.error,
         );
       } catch (e) {
         if (!mounted) return;
         debugPrint('ForgotPasswordView: Loi bat ngooi = $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Da xay ra loi, vui long thu lai sau'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showAppToast(
+          context,
+          message: 'Da xay ra loi, vui long thu lai sau',
+          type: AppToastType.error,
         );
       } finally {
         if (mounted) {

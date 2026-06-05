@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/utils/snackbar_helper.dart';
 import '../models/payment_method_model.dart';
 import '../services/payment_service.dart';
 import 'add_payment_method_view.dart';
@@ -32,13 +33,11 @@ class _PaymentMethodsViewState extends State<PaymentMethodsView> {
     } catch (e) {
       debugPrint('PaymentMethods: Loi dat phuong thuc mac dinh - $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(LanguageService.translate('payment_error_set_default')),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
+        showAppToast(
+          context,
+          message: LanguageService.translate('payment_error_set_default'),
+          type: AppToastType.error,
+          duration: const Duration(seconds: 2),
         );
       }
     }
@@ -73,25 +72,21 @@ class _PaymentMethodsViewState extends State<PaymentMethodsView> {
                 debugPrint(
                     'PaymentMethods: Da xoa phuong thuc [${method.id}]');
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(ctx.t('payment_deleted')),
-                      backgroundColor: AppColors.textSecondary,
-                      duration: const Duration(seconds: 2),
-                      behavior: SnackBarBehavior.floating,
-                    ),
+                  showAppToast(
+                    context,
+                    message: ctx.t('payment_deleted'),
+                    type: AppToastType.info,
+                    duration: const Duration(seconds: 2),
                   );
                 }
               } catch (e) {
                 debugPrint('PaymentMethods: Loi xoa phuong thuc - $e');
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(ctx.t('payment_error_delete')),
-                      backgroundColor: AppColors.error,
-                      duration: const Duration(seconds: 2),
-                      behavior: SnackBarBehavior.floating,
-                    ),
+                  showAppToast(
+                    context,
+                    message: ctx.t('payment_error_delete'),
+                    type: AppToastType.error,
+                    duration: const Duration(seconds: 2),
                   );
                 }
               }

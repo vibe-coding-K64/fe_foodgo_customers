@@ -185,7 +185,9 @@ class NotificationCard extends StatelessWidget {
   /// Chuyen doi thoi gian thanh chuoi hien thi.
   String _formatTime(BuildContext context, DateTime dateTime) {
     final now = DateTime.now();
-    final difference = now.difference(dateTime);
+    final createdUtc = dateTime.toUtc();
+    final nowUtc = now.toUtc();
+    final difference = nowUtc.difference(createdUtc);
 
     if (difference.inMinutes < 1) {
       return context.t('notification_time_just_now');

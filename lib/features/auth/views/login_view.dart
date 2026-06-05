@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
 import '../../../../core/state/cart_state.dart';
+import '../../../../core/utils/snackbar_helper.dart';
 import '../../../../features/main/views/main_view.dart';
 import '../services/auth_service.dart';
 import 'register_view.dart';
@@ -81,25 +82,21 @@ class _LoginViewState extends State<LoginView> {
     } on AuthException catch (e) {
       // Loi tu AuthService - hien thi thong bao.
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 3),
-        ),
+      showAppToast(
+        context,
+        message: e.message,
+        type: AppToastType.error,
+        duration: const Duration(seconds: 3),
       );
     } catch (e) {
       // Loi khong xac dinh.
       if (!mounted) return;
       debugPrint('LoginView: Loi bat ngooi khi dang nhap = $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Da xay ra loi, vui long thu lai sau'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 3),
-        ),
+      showAppToast(
+        context,
+        message: 'Da xay ra loi, vui long thu lai sau',
+        type: AppToastType.error,
+        duration: const Duration(seconds: 3),
       );
     } finally {
       if (mounted) {

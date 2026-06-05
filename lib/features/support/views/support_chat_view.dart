@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/utils/snackbar_helper.dart';
 
 /// Loai nguoi gui tin nhan.
 enum MessageSender {
@@ -182,13 +183,11 @@ class _SupportChatViewState extends State<SupportChatView> {
   /// Xu ly bam nut dinh kem.
   void _onAttachment() {
     debugPrint('SupportChat: Nguoi dung bam nut dinh kem');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.t('chat_attachment')),
-        backgroundColor: AppColors.primary,
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-      ),
+    showAppToast(
+      context,
+      message: context.t('chat_attachment'),
+      type: AppToastType.success,
+      duration: const Duration(seconds: 1),
     );
   }
 

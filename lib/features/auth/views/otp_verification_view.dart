@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
+import '../../../../core/utils/snackbar_helper.dart';
 import '../services/auth_service.dart';
 import '../../../../features/main/views/main_view.dart';
 import 'reset_password_view.dart';
@@ -106,33 +107,27 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
       await AuthService.resendOtp(email);
       _startCountdown();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.t('auth_otp_resent')),
-          backgroundColor: AppColors.primary,
-          behavior: SnackBarBehavior.floating,
-        ),
+      showAppToast(
+        context,
+        message: context.t('auth_otp_resent'),
+        type: AppToastType.success,
       );
     } on AuthException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
+      showAppToast(
+        context,
+        message: e.message,
+        type: AppToastType.error,
       );
     }
   }
 
   Future<void> _onConfirmPressed() async {
     if (!_isOtpComplete) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.t('auth_otp_empty')),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
+      showAppToast(
+        context,
+        message: context.t('auth_otp_empty'),
+        type: AppToastType.error,
       );
       return;
     }
@@ -170,23 +165,19 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
     } on AuthException catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
+      showAppToast(
+        context,
+        message: e.message,
+        type: AppToastType.error,
       );
     } catch (e) {
       if (!mounted) return;
       debugPrint('OtpVerificationView: Loi bat ngooi = $e');
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Da xay ra loi, vui long thu lai'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
+      showAppToast(
+        context,
+        message: 'Da xay ra loi, vui long thu lai',
+        type: AppToastType.error,
       );
     } finally {
       if (mounted && !Navigator.of(context).canPop()) {

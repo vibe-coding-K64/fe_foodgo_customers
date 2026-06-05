@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/utils/snackbar_helper.dart';
 import '../models/user_model.dart';
 import '../services/profile_service.dart';
 
@@ -125,7 +126,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                           color: AppColors.textPrimary,
                         ),
                         decoration: InputDecoration(
-                          hintText: 'Nhập mật khẩu',
+                          hintText: context.t('edit_password_hint_field'),
                           hintStyle: const TextStyle(
                             fontSize: 15,
                             color: AppColors.textHint,
@@ -184,13 +185,11 @@ class _EditProfileViewState extends State<EditProfileView> {
                   onPressed: () {
                     final pwd = pwdController.text.trim();
                     if (pwd.isEmpty) {
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        SnackBar(
-                          content: Text(context.t('edit_error_pwd_empty')),
-                          backgroundColor: AppColors.error,
-                          duration: const Duration(seconds: 2),
-                          behavior: SnackBarBehavior.floating,
-                        ),
+                      showAppToast(
+                        dialogContext,
+                        message: context.t('edit_error_pwd_empty'),
+                        type: AppToastType.error,
+                        duration: const Duration(seconds: 2),
                       );
                       return;
                     }
@@ -236,13 +235,11 @@ class _EditProfileViewState extends State<EditProfileView> {
 
     if (!hasNameChanged && !hasEmailChanged && !hasAvatarChanged) {
       debugPrint('EditProfile: Khong co thay doi nao');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.t('edit_no_changes')),
-          backgroundColor: AppColors.primary,
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
+      showAppToast(
+        context,
+        message: context.t('edit_no_changes'),
+        type: AppToastType.success,
+        duration: const Duration(seconds: 2),
       );
       return;
     }
@@ -280,13 +277,11 @@ class _EditProfileViewState extends State<EditProfileView> {
         _newAvatarFile = null;
         setState(() {});
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.t('edit_error_update_failed')),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-          ),
+        showAppToast(
+          context,
+          message: context.t('edit_error_update_failed'),
+          type: AppToastType.error,
+          duration: const Duration(seconds: 3),
         );
       }
     } finally {
@@ -367,7 +362,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                       // Section: Thông tin cá nhân
                       _buildSectionHeader(
                         icon: Icons.person_outline,
-                        title: 'Thông tin cá nhân',
+                        title: context.t('edit_personal_info'),
                       ),
                       const SizedBox(height: 12),
                       _buildFormCard(),
@@ -377,7 +372,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                       // Section: Liên hệ
                       _buildSectionHeader(
                         icon: Icons.contact_phone_outlined,
-                        title: 'Liên hệ',
+                        title: context.t('edit_contact'),
                       ),
                       const SizedBox(height: 12),
                       _buildContactCard(),
@@ -620,13 +615,11 @@ class _EditProfileViewState extends State<EditProfileView> {
     } catch (e) {
       debugPrint('EditProfile: Loi chon anh - $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.t('edit_pick_avatar_error')),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
+        showAppToast(
+          context,
+          message: context.t('edit_pick_avatar_error'),
+          type: AppToastType.error,
+          duration: const Duration(seconds: 2),
         );
       }
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/utils/snackbar_helper.dart';
 import '../models/address_model.dart';
 import '../services/address_service.dart';
 import 'address_form_view.dart';
@@ -84,13 +85,11 @@ class _AddressManagementViewState extends State<AddressManagementView> {
     } catch (e) {
       debugPrint('AddressManagement: Loi dat dia chi mac dinh - $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(LanguageService.translate('address_error_set_default')),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
+        showAppToast(
+          context,
+          message: LanguageService.translate('address_error_set_default'),
+          type: AppToastType.error,
+          duration: const Duration(seconds: 2),
         );
       }
     }
@@ -126,25 +125,21 @@ class _AddressManagementViewState extends State<AddressManagementView> {
                     'AddressManagement: Da xoa dia chi [${address.id}]');
                 await _loadAddresses();
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(LanguageService.translate('address_deleted')),
-                      backgroundColor: AppColors.textSecondary,
-                      duration: const Duration(seconds: 2),
-                      behavior: SnackBarBehavior.floating,
-                    ),
+                  showAppToast(
+                    context,
+                    message: LanguageService.translate('address_deleted'),
+                    type: AppToastType.info,
+                    duration: const Duration(seconds: 2),
                   );
                 }
               } catch (e) {
                 debugPrint('AddressManagement: Loi xoa dia chi - $e');
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(LanguageService.translate('address_error_delete')),
-                      backgroundColor: AppColors.error,
-                      duration: const Duration(seconds: 2),
-                      behavior: SnackBarBehavior.floating,
-                    ),
+                  showAppToast(
+                    context,
+                    message: LanguageService.translate('address_error_delete'),
+                    type: AppToastType.error,
+                    duration: const Duration(seconds: 2),
                   );
                 }
               }

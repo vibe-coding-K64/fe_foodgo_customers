@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:fe_foodgo_customers/core/constants/app_colors.dart';
 import 'package:fe_foodgo_customers/core/localization/language_service.dart';
+import 'package:fe_foodgo_customers/core/utils/snackbar_helper.dart';
 import 'package:fe_foodgo_customers/features/order/models/order_model.dart';
 import 'package:fe_foodgo_customers/features/order/services/order_service.dart';
 import 'package:fe_foodgo_customers/features/checkout/views/checkout_view.dart';
@@ -183,16 +185,12 @@ class _OrderDetailViewState extends State<OrderDetailView> {
           OutlinedButton.icon(
             onPressed: () {
               debugPrint('OrderDetailView: Sao chep ma don hang [${order.id}]');
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${context.t('order_id')}: #${order.id} '
+              showAppToast(
+                context,
+                message: '${context.t('order_id')}: #${order.id} '
                     '${context.t('order_copy')}',
-                  ),
-                  backgroundColor: AppColors.primary,
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 1),
-                ),
+                type: AppToastType.success,
+                duration: const Duration(seconds: 1),
               );
             },
             icon: const Icon(Icons.copy, size: 16),
@@ -1146,9 +1144,18 @@ class _OrderDetailViewState extends State<OrderDetailView> {
                             MaterialPageRoute(
                               builder: (context) => OrderTrackingMapView(
                                 orderId: order.id,
+                                driverId: order.driverId ?? '',
                                 driverName: order.driverName ?? '',
                                 driverPhone: order.driverPhone ?? '',
                                 vehiclePlate: order.vehiclePlate ?? '',
+                                driverLat: order.driverLat,
+                                driverLng: order.driverLng,
+                                storeLat: order.storeLat,
+                                storeLng: order.storeLng,
+                                storeName: order.storeName,
+                                addressLat: order.addressLat,
+                                addressLng: order.addressLng,
+                                receiverName: order.receiverName ?? order.addressName,
                               ),
                             ),
                           );
@@ -1167,36 +1174,17 @@ class _OrderDetailViewState extends State<OrderDetailView> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          debugPrint(
-                            'OrderDetailView: Chat voi tai xe [${order.driverName}]',
-                          );
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => DriverChatView(
-                                chat: DriverChatModel(
-                                  driverName: order.driverName ?? '',
-                                  vehiclePlate: order.vehiclePlate ?? '',
-                                  driverPhone: order.driverPhone ?? '',
-                                  driverAvatarUrl: '',
-                                  messages: const [],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                        label: Text(context.t('order_chat_driver')),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _callDriver(context, order.driverPhone ?? ''),
+                        icon: const Icon(Icons.phone_outlined, size: 18),
+                        label: Text(context.t('order_call_driver')),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          elevation: 0,
                         ),
                       ),
                     ),
@@ -1445,6 +1433,23 @@ class _OrderDetailViewState extends State<OrderDetailView> {
   ///=============================================================================
   /// UTILITIES
   ///=============================================================================
+
+  Future<void> _callDriver(BuildContext context, String phone) async {
+    if (phone.isEmpty) return;
+    final uri = Uri(scheme: 'tel', path: phone);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      if (context.mounted) {
+        showAppToast(
+          context,
+          message: context.t('error_cannot_call'),
+          type: AppToastType.error,
+          duration: const Duration(seconds: 2),
+        );
+      }
+    }
+  }
 
   String _formatPrice(double price, BuildContext ctx) {
     if (price >= 1000) {

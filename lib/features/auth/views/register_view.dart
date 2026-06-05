@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
+import '../../../../core/utils/snackbar_helper.dart';
 import '../services/auth_service.dart';
 import 'otp_verification_view.dart';
 
@@ -95,23 +96,19 @@ class _RegisterViewState extends State<RegisterView> {
       } on AuthException catch (e) {
         if (!mounted) return;
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showAppToast(
+          context,
+          message: e.message,
+          type: AppToastType.error,
         );
       } catch (e) {
         if (!mounted) return;
         debugPrint('RegisterView: Loi bat ngooi khi dang ky = $e');
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Da xay ra loi, vui long thu lai'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showAppToast(
+          context,
+          message: 'Da xay ra loi, vui long thu lai',
+          type: AppToastType.error,
         );
       }
     }

@@ -213,21 +213,21 @@ class _SearchResultViewState extends State<SearchResultView> {
       case CartAddResult.outOfStock:
         showTopSnackBar(
           context,
-          message: cartState.errorMessage ?? 'Mon an dang het hang.',
+          message: cartState.errorMessage ?? context.t('search_out_of_stock'),
           backgroundColor: AppColors.error,
         );
         break;
       case CartAddResult.notFound:
         showTopSnackBar(
           context,
-          message: cartState.errorMessage ?? 'San pham khong ton tai.',
+          message: cartState.errorMessage ?? context.t('search_product_not_found'),
           backgroundColor: AppColors.error,
         );
         break;
       case CartAddResult.otherError:
         showTopSnackBar(
           context,
-          message: cartState.errorMessage ?? 'Loi them vao gio hang.',
+          message: cartState.errorMessage ?? context.t('search_add_error'),
           backgroundColor: AppColors.error,
         );
         break;
@@ -237,7 +237,7 @@ class _SearchResultViewState extends State<SearchResultView> {
   void _showDifferentStoreDialog(
       CartState cartState, SearchResultItem item, ProductModel product) {
     final message = cartState.differentStoreErrorMessage ??
-        'Gio hang hien co mon tu cua hang khac. Ban co muon xoa gio hang hien tai de them mon nay?';
+        context.t('cart_different_store_message');
 
     bool dialogIsAdding = false;
 
@@ -246,13 +246,13 @@ class _SearchResultViewState extends State<SearchResultView> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Cua hang khac'),
+          title: Text(context.t('cart_different_store_title')),
           content: Text(message),
           actions: [
             TextButton(
               onPressed: dialogIsAdding ? null : () => Navigator.pop(ctx),
               child: Text(
-                'Huy',
+                context.t('common_cancel'),
                 style: TextStyle(
                   color: dialogIsAdding
                       ? AppColors.textHint
@@ -289,7 +289,7 @@ class _SearchResultViewState extends State<SearchResultView> {
                       } else {
                         showTopSnackBar(
                           context,
-                          message: cartState.errorMessage ?? 'Loi them vao gio hang.',
+                          message: cartState.errorMessage ?? context.t('search_add_error'),
                           backgroundColor: AppColors.error,
                         );
                       }
@@ -310,7 +310,7 @@ class _SearchResultViewState extends State<SearchResultView> {
                         color: Colors.white,
                       ),
                     )
-                  : const Text('Xoa va them moi'),
+                  : Text(context.t('cart_different_store_confirm')),
             ),
           ],
         ),

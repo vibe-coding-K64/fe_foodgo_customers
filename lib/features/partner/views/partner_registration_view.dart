@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/utils/snackbar_helper.dart';
 import '../../address/views/map_picker_view.dart';
 
 /// Loai doi tac dang ky.
@@ -155,13 +156,11 @@ class _PartnerRegistrationViewState extends State<PartnerRegistrationView> {
     debugPrint(
         'PartnerRegistration: Gui yeu cau - $data');
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.t('partner_submit_success')),
-        backgroundColor: AppColors.primary,
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
+    showAppToast(
+      context,
+      message: context.t('partner_submit_success'),
+      type: AppToastType.success,
+      duration: const Duration(seconds: 2),
     );
 
     Navigator.pop(context, data);

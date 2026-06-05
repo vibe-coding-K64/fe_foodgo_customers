@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/utils/snackbar_helper.dart';
+import '../../profile/services/profile_service.dart';
 
 /// Man hinh Doi mat khau.
 ///
@@ -11,8 +12,7 @@ import '../../../core/localization/language_service.dart';
 ///   - Xac nhan mat khau moi.
 ///
 /// Moi truong can: Bieu tuong mat (con mat) de bat/tat hien thi.
-/// Khi bam "Gui yeu cau": Hien AlertDialog nhap OTP 6 so.
-/// Khi bam "Xac nhan" o Popup: Hien SnackBar thanh cong.
+/// Khi bam "Gui yeu cau": Goi PUT /api/customers/password.
 ///
 /// Duoc goi tu:
 ///   - SettingsView: bam "Doi mat khau"
@@ -24,6 +24,9 @@ class ChangePasswordView extends StatefulWidget {
 }
 
 class _ChangePasswordViewState extends State<ChangePasswordView> {
+  /// Service quan ly ho so.
+  final ProfileService _profileService = const ProfileService();
+
   /// Controller o nhap mat khau hien tai.
   final _oldPwdController = TextEditingController();
 
@@ -32,9 +35,6 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
 
   /// Controller o xac nhan mat khau moi.
   final _confirmPwdController = TextEditingController();
-
-  /// Controller o nhap OTP.
-  final _otpController = TextEditingController();
 
   /// Trang thai an/hoi mat khau hien tai.
   bool _isOldPwdVisible = false;
@@ -53,7 +53,6 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
     _oldPwdController.dispose();
     _newPwdController.dispose();
     _confirmPwdController.dispose();
-    _otpController.dispose();
     super.dispose();
   }
 
@@ -112,8 +111,10 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
     );
   }
 
-  /// Xu ly khi bam "Gui yeu cau".
-  void _onSubmit() {
+  /// Xu ly khi bam "Gui yeu cau" — goi API doi mat khau truc tiep.
+  Future<void> _onSubmit() async {
+    if (_isSubmitting) return;
+
     final oldPwd = _oldPwdController.text.trim();
     final newPwd = _newPwdController.text.trim();
     final confirmPwd = _confirmPwdController.text.trim();
@@ -121,13 +122,11 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
     // Kiem tra rong.
     if (oldPwd.isEmpty || newPwd.isEmpty || confirmPwd.isEmpty) {
       debugPrint('ChangePassword: Co o nhap bi trong');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.t('pwd_error_empty')),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
+      showAppToast(
+        context,
+        message: context.t('pwd_error_empty'),
+        type: AppToastType.error,
+        duration: const Duration(seconds: 2),
       );
       return;
     }
@@ -135,176 +134,70 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
     // Kiem tra mat khau moi khớp xac nhan.
     if (newPwd != confirmPwd) {
       debugPrint('ChangePassword: Mat khau xac nhan khong khop');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.t('pwd_error_mismatch')),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
+      showAppToast(
+        context,
+        message: context.t('pwd_error_mismatch'),
+        type: AppToastType.error,
+        duration: const Duration(seconds: 2),
+      );
+      return;
+    }
+
+    // Kiem tra do dai mat khau moi (theo validation backend: toi thieu 6 ky tu).
+    if (newPwd.length < 6) {
+      debugPrint('ChangePassword: Mat khau moi qua ngan');
+      showAppToast(
+        context,
+        message: context.t('pwd_error_too_short'),
+        type: AppToastType.error,
+        duration: const Duration(seconds: 2),
       );
       return;
     }
 
     debugPrint('ChangePassword: Gui yeu cau doi mat khau');
-    _showOtpDialog(context);
-  }
 
-  /// Hien AlertDialog nhap ma OTP 6 so.
-  void _showOtpDialog(BuildContext ctx) {
-    // Reset o nhap OTP moi lan mo.
-    _otpController.clear();
+    setState(() => _isSubmitting = true);
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Text(
-            ctx.t('pwd_otp_title'),
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Mo ta.
-              Text(
-                ctx.t('pwd_otp_desc'),
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              // O nhap OTP.
-              TextField(
-                controller: _otpController,
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                maxLength: 6,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 8,
-                  color: AppColors.textPrimary,
-                ),
-                decoration: InputDecoration(
-                  hintText: '------',
-                  hintStyle: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 8,
-                    color: AppColors.textHint.withAlpha(100),
-                  ),
-                  counterText: '',
-                  filled: true,
-                  fillColor: AppColors.surfaceVariant,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(
-                      color: AppColors.primary,
-                      width: 2,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            // Nut huy (phia trai).
-            TextButton(
-              onPressed: () {
-                debugPrint('ChangePassword: Nguoi dung huy nhap OTP');
-                Navigator.pop(dialogContext);
-              },
-              child: Text(
-                ctx.t('common_cancel'),
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Nut xac nhan (phia phai, xanh la).
-            ElevatedButton(
-              onPressed: () {
-                debugPrint('ChangePassword: Nguoi dung xac nhan OTP');
-                Navigator.pop(dialogContext);
-                _onPasswordChanged();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Text(
-                ctx.t('pwd_otp_confirm'),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-          actionsAlignment: MainAxisAlignment.spaceBetween,
-          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        );
-      },
-    );
-  }
+    try {
+      await _profileService.changePassword(
+        oldPassword: oldPwd,
+        newPassword: newPwd,
+      );
 
-  /// Xu ly sau khi xac thuc OTP thanh cong.
-  void _onPasswordChanged() {
-    // Xoa noi dung form.
-    _oldPwdController.clear();
-    _newPwdController.clear();
-    _confirmPwdController.clear();
+      debugPrint('ChangePassword: Doi mat khau thanh cong');
 
-    debugPrint('ChangePassword: Doi mat khau thanh cong');
+      // Xoa noi dung form.
+      _oldPwdController.clear();
+      _newPwdController.clear();
+      _confirmPwdController.clear();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.t('pwd_success_msg')),
-        backgroundColor: AppColors.primary,
+      if (!mounted) return;
+
+      showAppToast(
+        context,
+        message: context.t('pwd_success_msg'),
+        type: AppToastType.success,
         duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+      );
 
-    // Quay ve man hinh truoc.
-    Navigator.pop(context);
+      Navigator.pop(context);
+    } catch (e) {
+      debugPrint('ChangePassword: Loi doi mat khau - $e');
+      if (!mounted) return;
+
+      final message = e.toString().replaceFirst('Exception: ', '');
+      showAppToast(
+        context,
+        message: message,
+        type: AppToastType.error,
+        duration: const Duration(seconds: 3),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   @override
@@ -433,13 +326,22 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
                   ),
                   elevation: 0,
                 ),
-                child: Text(
-                  context.t('pwd_submit_btn'),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: _isSubmitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        context.t('pwd_submit_btn'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
               ),
             ),
           ],

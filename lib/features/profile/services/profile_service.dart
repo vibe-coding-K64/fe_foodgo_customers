@@ -253,6 +253,50 @@ class ProfileService {
     }
   }
 
+  /// Đổi mật khẩu người dùng đã đăng nhập.
+  ///
+  /// Gọi PUT /api/customers/password
+  /// Body: { oldPassword, newPassword }
+  /// - newPassword phải tối thiểu 6 ký tự (validate phía BE).
+  /// - Trả về null nếu thành công, throw Exception nếu thất bại.
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    try {
+      debugPrint('ProfileService: Đổi mật khẩu');
+
+      final response = await ApiClient.put<Map<String, dynamic>>(
+        '/customers/password',
+        data: {
+          'oldPassword': oldPassword,
+          'newPassword': newPassword,
+        },
+        options: _authOptions(),
+      );
+
+      final data = response.data;
+      if (data == null) {
+        throw Exception('Không nhận được phản hồi từ server.');
+      }
+
+      final success = data['success'] as bool? ?? false;
+      if (!success) {
+        final message = data['message'] as String? ?? 'Đổi mật khẩu thất bại.';
+        throw Exception(message);
+      }
+
+      debugPrint('ProfileService: Đổi mật khẩu thành công');
+    } on DioException catch (e) {
+      final message = _handleDioError(e);
+      debugPrint('ProfileService: lỗi đổi mật khẩu - $message');
+      throw Exception(message);
+    } catch (e) {
+      debugPrint('ProfileService: lỗi đổi mật khẩu - $e');
+      rethrow;
+    }
+  }
+
   /// Lay thong ke nguoi dung (don hang, voucher, diem) tu Firestore.
   Future<ProfileStats> getUserStats() async {
     final userId = AuthStorage.getUserId();
