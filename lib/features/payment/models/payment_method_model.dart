@@ -1,13 +1,42 @@
-/// Loai phuong thuc thanh toan.
+/// Loai phuong thuc thanh toan (map tu int cua Firestore).
+/// Firestore: 1 = Tien mat, 2 = Vi dien tu, 3 = The ngan hang.
 enum PaymentMethodType {
-  /// Thanh toan tien mat (COD).
+  /// Thanh toan tien mat (COD) - gia tri int 1.
   cash,
 
-  /// The tin dung / ghi no (Visa, Mastercard...).
-  card,
-
-  /// Vi dien tu (MoMo, ZaloPay...).
+  /// Vi dien tu (MoMo, ZaloPay...) - gia tri int 2.
   wallet,
+
+  /// The tin dung / ghi no (Visa, Mastercard...) - gia tri int 3.
+  card,
+}
+
+extension PaymentMethodTypeExtension on PaymentMethodType {
+  /// Chuyen enum thanh int de ghi xuong Firestore.
+  int toInt() {
+    switch (this) {
+      case PaymentMethodType.cash:
+        return 1;
+      case PaymentMethodType.wallet:
+        return 2;
+      case PaymentMethodType.card:
+        return 3;
+    }
+  }
+
+  /// Tao PaymentMethodType tu int cua Firestore.
+  static PaymentMethodType fromInt(int value) {
+    switch (value) {
+      case 1:
+        return PaymentMethodType.cash;
+      case 2:
+        return PaymentMethodType.wallet;
+      case 3:
+        return PaymentMethodType.card;
+      default:
+        return PaymentMethodType.cash;
+    }
+  }
 }
 
 /// Loai the cu the (chi dung voi type = card).
@@ -19,6 +48,40 @@ enum CardBrand {
   unknown,
 }
 
+extension CardBrandExtension on CardBrand {
+  /// Chuyen enum thanh string de ghi xuong Firestore.
+  String toFirestoreString() {
+    switch (this) {
+      case CardBrand.visa:
+        return 'visa';
+      case CardBrand.mastercard:
+        return 'mastercard';
+      case CardBrand.jcb:
+        return 'jcb';
+      case CardBrand.amex:
+        return 'amex';
+      case CardBrand.unknown:
+        return 'unknown';
+    }
+  }
+
+  /// Tao CardBrand tu string cua Firestore.
+  static CardBrand fromString(String? value) {
+    switch (value?.toLowerCase()) {
+      case 'visa':
+        return CardBrand.visa;
+      case 'mastercard':
+        return CardBrand.mastercard;
+      case 'jcb':
+        return CardBrand.jcb;
+      case 'amex':
+        return CardBrand.amex;
+      default:
+        return CardBrand.unknown;
+    }
+  }
+}
+
 /// Loai vi dien tu (chi dung voi type = wallet).
 enum WalletBrand {
   momo,
@@ -28,89 +91,147 @@ enum WalletBrand {
   unknown,
 }
 
-/// Model phuong thuc thanh toan.
+extension WalletBrandExtension on WalletBrand {
+  /// Chuyen enum thanh string de ghi xuong Firestore.
+  String toFirestoreString() {
+    switch (this) {
+      case WalletBrand.momo:
+        return 'momo';
+      case WalletBrand.zalopay:
+        return 'zalopay';
+      case WalletBrand.vnpay:
+        return 'vnpay';
+      case WalletBrand.zalo:
+        return 'zalo';
+      case WalletBrand.unknown:
+        return 'unknown';
+    }
+  }
+
+  /// Tao WalletBrand tu string cua Firestore.
+  static WalletBrand fromString(String? value) {
+    switch (value?.toLowerCase()) {
+      case 'momo':
+        return WalletBrand.momo;
+      case 'zalopay':
+        return WalletBrand.zalopay;
+      case 'vnpay':
+        return WalletBrand.vnpay;
+      case 'zalo':
+        return WalletBrand.zalo;
+      default:
+        return WalletBrand.unknown;
+    }
+  }
+}
+
+/// Model phuong thuc thanh toan tu API backend.
 class PaymentMethodModel {
   final String id;
+  final String name;
   final PaymentMethodType type;
+  final String details;
   final bool isDefault;
+  final String? cardBrand;
+  final String? last4Digits;
+  final String? walletBrand;
+  final bool isLinked;
   final DateTime createdAt;
-
-  // Chi dung voi type = card.
-  final CardBrand? cardBrand;
-  final String? last4Digits; // 4 chu so cuoi the.
-
-  // Chi dung voi type = wallet.
-  final WalletBrand? walletBrand;
-  final bool isLinked; // da lien ket hay chua.
+  final DateTime? updatedAt;
 
   const PaymentMethodModel({
     required this.id,
+    required this.name,
     required this.type,
+    this.details = '',
     this.isDefault = false,
-    required this.createdAt,
     this.cardBrand,
     this.last4Digits,
     this.walletBrand,
     this.isLinked = false,
+    required this.createdAt,
+    this.updatedAt,
   });
 
-  PaymentMethodModel copyWith({
-    String? id,
-    PaymentMethodType? type,
-    bool? isDefault,
-    DateTime? createdAt,
-    CardBrand? cardBrand,
-    String? last4Digits,
-    WalletBrand? walletBrand,
-    bool? isLinked,
-  }) {
+  /// Parse tu JSON cua API /api/payments.
+  factory PaymentMethodModel.fromJson(Map<String, dynamic> json) {
+    final typeStr = json['type'] as String? ?? 'cash';
+
     return PaymentMethodModel(
-      id: id ?? this.id,
-      type: type ?? this.type,
-      isDefault: isDefault ?? this.isDefault,
-      createdAt: createdAt ?? this.createdAt,
-      cardBrand: cardBrand ?? this.cardBrand,
-      last4Digits: last4Digits ?? this.last4Digits,
-      walletBrand: walletBrand ?? this.walletBrand,
-      isLinked: isLinked ?? this.isLinked,
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      type: _typeFromString(typeStr),
+      details: json['details'] as String? ?? '',
+      isDefault: json['isDefault'] as bool? ?? false,
+      cardBrand: json['cardBrand'] as String?,
+      last4Digits: json['last4Digits'] as String?,
+      walletBrand: json['walletBrand'] as String?,
+      isLinked: json['isLinked'] as bool? ?? false,
+      createdAt: _parseDateTime(json['createdAt']),
+      updatedAt: _parseDateTimeNullable(json['updatedAt']),
     );
+  }
+
+  static PaymentMethodType _typeFromString(String value) {
+    switch (value.toLowerCase()) {
+      case 'card':
+        return PaymentMethodType.card;
+      case 'momo':
+      case 'zalo':
+      case 'wallet':
+        return PaymentMethodType.wallet;
+      default:
+        return PaymentMethodType.cash;
+    }
+  }
+
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is DateTime) return value;
+    if (value is String) {
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+    return DateTime.now();
+  }
+
+  static DateTime? _parseDateTimeNullable(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
   }
 
   /// Tra ve ten hien thi cua nha cung cap.
   String get displayName {
     switch (type) {
       case PaymentMethodType.cash:
-        return 'payment_cash';
+        return name.isNotEmpty ? name : 'payment_cash';
       case PaymentMethodType.card:
-        switch (cardBrand) {
-          case CardBrand.visa:
+        switch (cardBrand?.toLowerCase()) {
+          case 'visa':
             return 'payment_visa';
-          case CardBrand.mastercard:
+          case 'mastercard':
             return 'payment_mastercard';
-          case CardBrand.jcb:
-            return 'JCB';
-          case CardBrand.amex:
-            return 'American Express';
           default:
-            return 'payment_card';
+            return name.isNotEmpty ? name : 'payment_card';
         }
       case PaymentMethodType.wallet:
-        switch (walletBrand) {
-          case WalletBrand.momo:
+        switch (walletBrand?.toLowerCase()) {
+          case 'momo':
             return 'payment_momo';
-          case WalletBrand.zalopay:
+          case 'zalopay':
             return 'payment_zalopay';
-          case WalletBrand.vnpay:
+          case 'vnpay':
             return 'payment_vnpay';
           default:
-            return 'payment_wallet';
+            return name.isNotEmpty ? name : 'payment_wallet';
         }
     }
   }
 
-  /// Tra ve chuoi the hien thi (VD: "**** 1234").
+  /// Tra ve chuoi the hien thi (VD: "1234").
   String get maskedNumber {
-    if (last4Digits == null) return '';
-    return '**** $last4Digits';
+    if (last4Digits == null) return details;
+    return last4Digits!;
   }
 }

@@ -15,14 +15,14 @@ class HomeService {
   // STREAM: DANH MUC (Categories)
   // ================================================================
 
-  /// Lay danh sach danh muc (system_categories) theo thoi gian thuc.
-  /// Chi lay nhung ban ghi chua bi xoa mem (deletedAt la null).
+  /// Lay danh sach danh muc (categories) theo thoi gian thuc.
+  /// Chi lay categories he thong (storeId = null).
   /// Sap xep theo field 'order' tang dan (sort in-memory vi khong co index).
   static Stream<List<CategoryModel>> getCategoriesStream() {
     debugPrint('HomeService: Dang lay Stream danh muc tu Firestore');
     return _firestore
-        .collection('system_categories')
-        .where('deletedAt', isNull: true)
+        .collection('categories')
+        .where('storeId', isNull: true)
         .snapshots()
         .handleError((error) {
       debugPrint('HomeService[Loi Stream danh muc]: $error');
@@ -182,6 +182,28 @@ class HomeService {
           .map((doc) => ProductModel.fromFirestore(doc))
           .toList();
     });
+  }
+
+  // ================================================================
+  // ONE-TIME FETCH: SAN PHAM (Products)
+  // ================================================================
+
+  /// Lay thong tin mot san pham theo ID tu Firestore.
+  /// Dung khi can chi tiet day du (optionGroups) cua san pham.
+  static Future<ProductModel?> getProductById(String productId) async {
+    debugPrint('HomeService: Lay san pham [$productId] tu Firestore');
+    try {
+      final doc =
+          await _firestore.collection('products').doc(productId).get();
+      if (!doc.exists) {
+        debugPrint('HomeService: San pham [$productId] khong ton tai');
+        return null;
+      }
+      return ProductModel.fromFirestore(doc);
+    } catch (e) {
+      debugPrint('HomeService[Loi lay san pham $productId]: $e');
+      return null;
+    }
   }
 
   // ================================================================

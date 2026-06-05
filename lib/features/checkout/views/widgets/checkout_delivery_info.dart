@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
-import '../../../profile/models/address_model.dart';
+import '../../../address/models/address_model.dart';
 
 /// Widget hien thi thong tin giao hang o phan checkout.
 /// Hien thi card chua: ten nguoi nhan, SDT, dia chi, thoi gian du kien.
 class CheckoutDeliveryInfo extends StatelessWidget {
   final AddressModel address;
-  final String estimatedTime;
   final VoidCallback? onChangeAddressTap;
 
   const CheckoutDeliveryInfo({
     super.key,
     required this.address,
-    required this.estimatedTime,
     this.onChangeAddressTap,
   });
 
@@ -95,7 +93,9 @@ class CheckoutDeliveryInfo extends StatelessWidget {
           Row(
             children: [
               Text(
-                address.name,
+                address.receiverName.isNotEmpty
+                    ? address.receiverName
+                    : 'Khách hàng',
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -110,10 +110,12 @@ class CheckoutDeliveryInfo extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                '0${address.userId.substring(0, 9)}'.replaceAllMapped(
-                  RegExp(r'(\d{4})(\d{3})(\d{3})'),
-                  (match) => '${match[1]} ${match[2]} ${match[3]}',
-                ),
+                address.receiverPhone.isNotEmpty
+                    ? address.receiverPhone.replaceAllMapped(
+                        RegExp(r'(\d{4})(\d{3})(\d{3})'),
+                        (match) => '${match[1]} ${match[2]} ${match[3]}',
+                      )
+                    : '',
                 style: const TextStyle(
                   fontSize: 14,
                   color: AppColors.textSecondary,
@@ -133,33 +135,6 @@ class CheckoutDeliveryInfo extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 10),
-          // Thoi gian du kien giao hang.
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withAlpha(25),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.access_time,
-                  color: AppColors.primary,
-                  size: 14,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${context.t('checkout_estimated_time')}: $estimatedTime',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );

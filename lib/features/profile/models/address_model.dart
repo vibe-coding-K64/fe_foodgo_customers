@@ -80,4 +80,20 @@ class AddressModel {
       deletedAt: deletedAt ?? this.deletedAt,
     );
   }
+
+  /// Tao AddressModel (model cu) tu AddressModel moi.
+  /// Dung de dam bao dong nhat khi AddressFormView tra ve model cu.
+  factory AddressModel.fromNewModel(newModel) {
+    return AddressModel(
+      id: newModel.id as String,
+      userId: newModel.receiverPhone ?? '',
+      name: newModel.label as String,
+      address: newModel.addressText as String,
+      lat: (newModel.lat as double?) ?? 0,
+      lng: (newModel.lng as double?) ?? 0,
+      isDefault: newModel.isDefault as bool,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
 }

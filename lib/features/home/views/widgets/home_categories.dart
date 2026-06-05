@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/category_model.dart';
 import '../../../../core/localization/language_service.dart';
-import '../../../../core/localization/language_service.dart';
 
 /// Widget hien thi danh muc mon an duoi dang cuon ngang.
 /// Nhan Stream<List<CategoryModel>> va tu dong xu ly 3 trang thai:

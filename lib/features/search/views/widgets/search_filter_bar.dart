@@ -18,7 +18,7 @@ enum SearchSortType {
 ///
 /// Hien thi cac FilterChip ngang, cuon duoc khi nhieu.
 ///
-/// Cac tuy chon: Gia, Danh gia, Sap xep (Gia tang/giam, Danh gia).
+/// Cac tuy chon: Gia, Danh gia, Sap xep (Gia tang/giam).
 class SearchFilterBar extends StatelessWidget {
   /// Lua chon loc hien tai.
   final SearchSortType selectedSort;
@@ -27,8 +27,12 @@ class SearchFilterBar extends StatelessWidget {
   final double? maxPrice;
   /// Lua chon loc theo danh gia.
   final double? minRating;
-  /// Ham goi khi nguoi dung thay doi loc.
+  /// Ham goi khi nguoi dung thay doi sort.
   final ValueChanged<SearchSortType>? onSortChanged;
+  /// Ham goi khi nguoi dung thay doi loc gia.
+  final void Function(double? min, double? max)? onPriceFilterChanged;
+  /// Ham goi khi nguoi dung thay doi loc danh gia.
+  final void Function(double? min)? onRatingFilterChanged;
 
   const SearchFilterBar({
     super.key,
@@ -37,6 +41,8 @@ class SearchFilterBar extends StatelessWidget {
     this.maxPrice,
     this.minRating,
     this.onSortChanged,
+    this.onPriceFilterChanged,
+    this.onRatingFilterChanged,
   });
 
   @override
@@ -79,14 +85,6 @@ class SearchFilterBar extends StatelessWidget {
             isSelected: selectedSort == SearchSortType.priceDesc,
             onTap: () => onSortChanged?.call(SearchSortType.priceDesc),
           ),
-          const SizedBox(width: 8),
-          // Nut Sap xep danh gia cao.
-          _FilterChipButton(
-            label: context.t('search_sort_rating'),
-            icon: Icons.star,
-            isSelected: selectedSort == SearchSortType.ratingDesc,
-            onTap: () => onSortChanged?.call(SearchSortType.ratingDesc),
-          ),
         ],
       ),
     );
@@ -99,9 +97,10 @@ class SearchFilterBar extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (context) => _PriceFilterSheet(
+      builder: (ctx) => _PriceFilterSheet(
         currentMin: minPrice,
         currentMax: maxPrice,
+        onApply: (min, max) => onPriceFilterChanged?.call(min, max),
       ),
     );
   }
@@ -112,7 +111,10 @@ class SearchFilterBar extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (context) => _RatingFilterSheet(currentMin: minRating),
+      builder: (ctx) => _RatingFilterSheet(
+        currentMin: minRating,
+        onApply: (min) => onRatingFilterChanged?.call(min),
+      ),
     );
   }
 }
@@ -173,10 +175,12 @@ class _FilterChipButton extends StatelessWidget {
 class _PriceFilterSheet extends StatefulWidget {
   final double? currentMin;
   final double? currentMax;
+  final void Function(double? min, double? max) onApply;
 
   const _PriceFilterSheet({
     this.currentMin,
     this.currentMax,
+    required this.onApply,
   });
 
   @override
@@ -203,6 +207,22 @@ class _PriceFilterSheetState extends State<_PriceFilterSheet> {
     _minController.dispose();
     _maxController.dispose();
     super.dispose();
+  }
+
+  void _onApply() {
+    final minText = _minController.text.trim();
+    final maxText = _maxController.text.trim();
+    final min = minText.isEmpty ? null : double.tryParse(minText);
+    final max = maxText.isEmpty ? null : double.tryParse(maxText);
+    widget.onApply(min, max);
+    Navigator.pop(context);
+  }
+
+  void _onClear() {
+    _minController.clear();
+    _maxController.clear();
+    widget.onApply(null, null);
+    Navigator.pop(context);
   }
 
   @override
@@ -257,21 +277,14 @@ class _PriceFilterSheetState extends State<_PriceFilterSheet> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                debugPrint('Loc gia: tu ${_minController.text} den ${_maxController.text}');
-                Navigator.pop(context);
-              },
+              onPressed: _onApply,
               child: Text(context.t('common_apply')),
             ),
           ),
           const SizedBox(height: 8),
           Center(
             child: TextButton(
-              onPressed: () {
-                _minController.clear();
-                _maxController.clear();
-                Navigator.pop(context);
-              },
+              onPressed: _onClear,
               child: Text(context.t('common_clear')),
             ),
           ),
@@ -284,8 +297,12 @@ class _PriceFilterSheetState extends State<_PriceFilterSheet> {
 /// Bottom sheet loc theo so sao danh gia.
 class _RatingFilterSheet extends StatefulWidget {
   final double? currentMin;
+  final void Function(double? min) onApply;
 
-  const _RatingFilterSheet({this.currentMin});
+  const _RatingFilterSheet({
+    this.currentMin,
+    required this.onApply,
+  });
 
   @override
   State<_RatingFilterSheet> createState() => _RatingFilterSheetState();
@@ -348,7 +365,7 @@ class _RatingFilterSheetState extends State<_RatingFilterSheet> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                debugPrint('Loc danh gia: $_selectedRating+');
+                widget.onApply(_selectedRating);
                 Navigator.pop(context);
               },
               child: Text(context.t('common_apply')),

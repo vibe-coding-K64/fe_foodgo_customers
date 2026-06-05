@@ -1,21 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/state/cart_state.dart';
+import '../../../core/utils/auth_storage.dart';
+import '../../../core/utils/snackbar_helper.dart';
+import '../../../features/product/views/product_detail_bottom_sheet.dart';
+import '../../../features/restaurant/services/restaurant_service.dart';
 import '../../checkout/views/checkout_view.dart';
-import 'widgets/cart_item_model.dart';
+import '../models/cart_item_model.dart';
 import 'widgets/cart_item_widget.dart';
 import 'widgets/cart_bottom_bar.dart';
 
-/// Man hinh Gio hang (CartView).
-///
-/// Hien thi danh sach mon da chon voi cac chuc nang:
-/// - Checkbox chon/tick mon de tinh tam tinh
-/// - Dismissible (vuot trai xoa mon)
-/// - Bo dem so luong +/-
-/// - Sticky Bottom Bar: chon tat ca, tam tinh chi tien cac mon duoc tick,
-///   nut "Mua hang (X)"
-///
-/// Luong: HomeView [FAB Gio hang] -> CartView -> CheckoutView
 class CartView extends StatefulWidget {
   const CartView({super.key});
 
@@ -24,142 +19,131 @@ class CartView extends StatefulWidget {
 }
 
 class _CartViewState extends State<CartView> {
-  /// Danh sach mon trong gio hang.
-  late List<CartItemViewModel> _items;
-
-  /// Khoi tao du lieu gia cho gio hang.
   @override
   void initState() {
     super.initState();
-    _items = [
-      CartItemViewModel(
-        id: 'cart_001',
-        name: 'Tra Sua Tran Chau Duong',
-        imageUrl: 'https://picsum.photos/seed/milktea1/200',
-        unitPrice: 35000,
-        quantity: 2,
-        isSelected: true,
-        toppings: [
-          CartTopping(name: 'Tran chau', price: 5000),
-          CartTopping(name: 'Thach ca phe', price: 8000),
-        ],
-      ),
-      CartItemViewModel(
-        id: 'cart_002',
-        name: 'Ca phe sua da',
-        imageUrl: 'https://picsum.photos/seed/coffee2/200',
-        unitPrice: 29000,
-        quantity: 1,
-        isSelected: true,
-        toppings: [
-          CartTopping(name: 'Da', price: 0),
-        ],
-      ),
-      CartItemViewModel(
-        id: 'cart_003',
-        name: 'Tra vai Thach Vuive',
-        imageUrl: 'https://picsum.photos/seed/greentea3/200',
-        unitPrice: 42000,
-        quantity: 1,
-        isSelected: true,
-        toppings: [
-          CartTopping(name: 'Trai cay', price: 12000),
-          CartTopping(name: 'Pudding', price: 6000),
-        ],
-      ),
-      CartItemViewModel(
-        id: 'cart_004',
-        name: 'Banh mi cha bong',
-        imageUrl: 'https://picsum.photos/seed/baguette4/200',
-        unitPrice: 25000,
-        quantity: 1,
-        isSelected: false,
-        toppings: [],
-      ),
-    ];
-  }
-
-  /// Tinh tam tinh chi tong tien cac mon dang duoc tick.
-  double get _subtotal {
-    return _items
-        .where((item) => item.isSelected)
-        .fold<double>(0, (sum, item) => sum + item.totalPrice);
-  }
-
-  /// Dem so mon dang duoc tick.
-  int get _selectedCount {
-    return _items.where((item) => item.isSelected).length;
-  }
-
-  /// Kiem tra tat ca duoc tick chua.
-  bool get _isAllSelected {
-    return _items.isNotEmpty && _items.every((item) => item.isSelected);
-  }
-
-  /// Xu ly khi bam checkbox chon tat ca.
-  void _onToggleSelectAll() {
-    final newValue = !_isAllSelected;
-    setState(() {
-      for (final item in _items) {
-        item.isSelected = newValue;
-      }
-    });
-    debugPrint('CartView: Chon tat ca = $newValue');
-  }
-
-  /// Xu ly khi bam checkbox cua mot mon.
-  void _onToggleItem(int index, bool selected) {
-    setState(() {
-      _items[index].isSelected = selected;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startListening();
     });
   }
 
-  /// Xu ly khi tang so luong.
-  void _onIncrease(int index) {
-    setState(() {
-      _items[index].quantity++;
-    });
-  }
-
-  /// Xu ly khi giam so luong.
-  void _onDecrease(int index) {
-    if (_items[index].quantity > 1) {
-      setState(() {
-        _items[index].quantity--;
-      });
+  void _startListening() {
+    final userId = AuthStorage.getUserId();
+    if (userId != null && userId.isNotEmpty) {
+      CartState.of(context).startListening(userId);
     }
   }
 
-  /// Xu ly khi vuot xoa mot mon.
-  void _onDismissItem(int index) {
-    final removedItem = _items[index];
-    setState(() {
-      _items.removeAt(index);
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '${removedItem.name} ${context.t('cart_item_removed')}',
+  @override
+  void dispose() {
+    CartState.of(context).stopListening();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            debugPrint('CartView: Nguoi dung bam nut back');
+            Navigator.pop(context);
+          },
         ),
-        backgroundColor: AppColors.textSecondary,
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
+        title: Text(
+          context.t('cart_title'),
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: ListenableBuilder(
+        listenable: CartState.of(context),
+        builder: (context, _) {
+          final cartState = CartState.of(context);
+
+          if (cartState.isLoading) {
+            return _buildLoadingState();
+          }
+
+          if (cartState.errorMessage != null) {
+            return _buildErrorState(cartState.errorMessage!);
+          }
+
+          if (cartState.isEmpty) {
+            return _buildEmptyState();
+          }
+
+          return _CartContent(cartState: cartState);
+        },
       ),
     );
   }
 
-  /// Xu ly khi bam nut "Mua hang".
-  void _onCheckout() {
-    debugPrint('CartView: Chuyen sang trang thanh toan');
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const CheckoutView(),
+  Widget _buildLoadingState() {
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: 3,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (_, __) => const _CartItemSkeleton(),
+    );
+  }
+
+  Widget _buildErrorState(String error) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.red.shade300,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              context.t('error_server'),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade600,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _startListening,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(context.t('common_retry')),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  /// Hien thi giao dien khi gio hang trong.
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
@@ -207,7 +191,10 @@ class _CartViewState extends State<CartView> {
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primary,
                 side: const BorderSide(color: AppColors.primary, width: 1.5),
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -219,115 +206,383 @@ class _CartViewState extends State<CartView> {
       ),
     );
   }
+}
+
+class _CartContent extends StatefulWidget {
+  final CartState cartState;
+
+  const _CartContent({required this.cartState});
+
+  @override
+  State<_CartContent> createState() => _CartContentState();
+}
+
+class _CartContentState extends State<_CartContent> {
+  final Set<String> _selectedIds = {};
+  String? _activeStoreId;
+
+  final Map<String, String> _storeNames = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStoreNames();
+  }
+
+  @override
+  void didUpdateWidget(covariant _CartContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.cartState.items != widget.cartState.items) {
+      _loadStoreNames();
+    }
+  }
+
+  Future<void> _loadStoreNames() async {
+    final uniqueStoreIds =
+        widget.cartState.items.map((e) => e.storeId).toSet();
+
+    for (final storeId in uniqueStoreIds) {
+      if (!_storeNames.containsKey(storeId)) {
+        final store = await RestaurantService.getStoreById(storeId);
+        if (mounted && store != null) {
+          setState(() {
+            _storeNames[storeId] = store.name;
+          });
+        }
+      }
+    }
+  }
+
+  void _onTapItem(CartItemModel item) {
+    final product = item.product;
+    if (product != null && mounted) {
+      showProductDetailSheet(context, product);
+    } else if (mounted) {
+      showTopSnackBar(
+        context,
+        message: 'Khong lay duoc thong tin san pham',
+        backgroundColor: AppColors.error,
+      );
+    }
+  }
+
+  double _itemTotalPrice(CartItemModel item) {
+    return item.totalPriceOf(item.product);
+  }
+
+  double get _subtotal {
+    return widget.cartState.items
+        .where((item) =>
+            _activeStoreId != null &&
+            item.storeId == _activeStoreId &&
+            _selectedIds.contains(item.id))
+        .fold<double>(0, (sum, item) => sum + _itemTotalPrice(item));
+  }
+
+  int get _selectedCount => _selectedIds.length;
+
+  void _onToggleItem(String itemId, bool selected, String itemStoreId) {
+    setState(() {
+      if (selected) {
+        if (_activeStoreId != null && _activeStoreId != itemStoreId) {
+          _selectedIds.clear();
+        }
+        _activeStoreId = itemStoreId;
+        _selectedIds.add(itemId);
+      } else {
+        _selectedIds.remove(itemId);
+        final stillSelected = widget.cartState.items
+            .where((i) => _selectedIds.contains(i.id) && i.storeId == itemStoreId)
+            .toList();
+        if (stillSelected.isEmpty) {
+          _activeStoreId = null;
+        }
+      }
+    });
+  }
+
+  void _onIncrease(CartItemModel item) {
+    final userId = AuthStorage.getUserId();
+    if (userId == null) return;
+    widget.cartState.updateQuantity(userId, item.id, item.quantity + 1);
+  }
+
+  void _onDecrease(CartItemModel item) {
+    final userId = AuthStorage.getUserId();
+    if (userId == null) return;
+    if (item.quantity > 1) {
+      widget.cartState.updateQuantity(userId, item.id, item.quantity - 1);
+    }
+  }
+
+  bool _isStoreFullySelected(String storeId) {
+    final storeItems = widget.cartState.items.where((i) => i.storeId == storeId).toList();
+    return storeItems.isNotEmpty && storeItems.every((i) => _selectedIds.contains(i.id));
+  }
+
+  void _onToggleStoreAll(String storeId) {
+    final storeItems = widget.cartState.items.where((i) => i.storeId == storeId).toList();
+    final isFullySelected = _isStoreFullySelected(storeId);
+
+    setState(() {
+      if (isFullySelected) {
+        for (final item in storeItems) {
+          _selectedIds.remove(item.id);
+        }
+      } else {
+        if (_activeStoreId != null && _activeStoreId != storeId) {
+          _selectedIds.clear();
+        }
+        _activeStoreId = storeId;
+        for (final item in storeItems) {
+          if (!(item.product?.isOutOfStock ?? false)) {
+            _selectedIds.add(item.id);
+          }
+        }
+      }
+      if (_selectedIds.isEmpty) {
+        _activeStoreId = null;
+      }
+    });
+  }
+
+  void _onQuantityChanged(CartItemModel item, int qty) {
+    final userId = AuthStorage.getUserId();
+    if (userId == null) return;
+    widget.cartState.updateQuantity(userId, item.id, qty);
+  }
+
+  void _onDismissItem(CartItemModel item) {
+    final userId = AuthStorage.getUserId();
+    if (userId == null) return;
+    final productName = item.product?.name;
+    _selectedIds.remove(item.id);
+    if (_activeStoreId == item.storeId) {
+      final stillInCart = widget.cartState.items
+          .where((i) => i.id != item.id && i.storeId == item.storeId)
+          .toList();
+      if (stillInCart.isEmpty) {
+        _activeStoreId = null;
+      }
+    }
+    widget.cartState.removeItem(userId, item.id);
+    showTopSnackBar(
+      context,
+      message: '${productName ?? 'Mon an'} ${context.t('cart_item_removed')}',
+      backgroundColor: AppColors.textSecondary,
+    );
+  }
+
+  void _onCheckout() {
+    final selectedItems = widget.cartState.items
+        .where((item) => _selectedIds.contains(item.id))
+        .toList();
+
+    if (selectedItems.isEmpty) {
+      showTopSnackBar(
+        context,
+        message: context.t('cart_checkout_no_selection'),
+        backgroundColor: AppColors.error,
+      );
+      return;
+    }
+
+    debugPrint(
+      'CartView: Chuyen sang trang thanh toan voi ${selectedItems.length} mon da chon',
+    );
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CheckoutView(
+          selectedCartItems: selectedItems,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            debugPrint('CartView: Nguoi dung bam nut back');
-            Navigator.pop(context);
-          },
-        ),
-        title: Text(
-          context.t('cart_title'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          // Nut xoa tat ca (chi hien khi co mon).
-          if (_items.isNotEmpty)
-            IconButton(
-              icon: const Icon(
-                Icons.delete_outline,
-                color: AppColors.error,
-              ),
-              onPressed: () {
-                debugPrint('CartView: Nguoi dung bam xoa tat ca');
-                showDialog(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: Text(
-                      context.t('cart_clear'),
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                      ),
+    final items = widget.cartState.items;
+    final isEmpty = items.isEmpty;
+
+    final grouped = <String, List<CartItemModel>>{};
+    for (final item in items) {
+      grouped.putIfAbsent(item.storeId, () => []).add(item);
+    }
+    final storeIds = grouped.keys.toList();
+
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: storeIds.length,
+            itemBuilder: (context, index) {
+              final storeId = storeIds[index];
+              final storeItems = grouped[storeId]!;
+              final storeName = _storeNames[storeId] ?? '...';
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(
+                      left: 4,
+                      bottom: 8,
+                      top: index > 0 ? 8 : 0,
                     ),
-                    content: Text(
-                      context.t('cart_clear_confirm'),
-                      style: const TextStyle(fontSize: 14),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.store_outlined,
+                          size: 16,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            storeName,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            debugPrint('CartView: Toggle chon tat ca cua hang [$storeName]');
+                            _onToggleStoreAll(storeId);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _isStoreFullySelected(storeId)
+                                  ? AppColors.primary.withValues(alpha: 0.12)
+                                  : AppColors.surfaceVariant,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _isStoreFullySelected(storeId)
+                                      ? Icons.check_box
+                                      : Icons.check_box_outline_blank,
+                                  size: 16,
+                                  color: _isStoreFullySelected(storeId)
+                                      ? AppColors.primary
+                                      : AppColors.textHint,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  context.t('cart_select_all'),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: _isStoreFullySelected(storeId)
+                                        ? AppColors.primary
+                                        : AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: Text(
-                          context.t('common_cancel'),
-                          style: const TextStyle(color: AppColors.textSecondary),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          setState(() {
-                            _items.clear();
-                          });
-                          debugPrint('CartView: Da xoa tat ca mon trong gio hang');
-                        },
-                        child: Text(
-                          context.t('common_delete'),
-                          style: const TextStyle(color: AppColors.error),
-                        ),
-                      ),
-                    ],
                   ),
-                );
-              },
-            ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Danh sach mon.
-          Expanded(
-            child: _items.isEmpty
-                ? _buildEmptyState()
-                : ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _items.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final item = _items[index];
-                      return CartItemWidget(
+                  ...storeItems.map((item) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: CartItemWidget(
                         item: item,
+                        product: item.product,
+                        isSelected: _selectedIds.contains(item.id),
+                        isOutOfStock: item.product?.isOutOfStock ?? false,
                         onSelectionChanged: (selected) =>
-                            _onToggleItem(index, selected),
-                        onIncrease: () => _onIncrease(index),
-                        onDecrease: () => _onDecrease(index),
-                        onDismiss: () => _onDismissItem(index),
-                      );
-                    },
-                  ),
+                            _onToggleItem(item.id, selected, item.storeId),
+                        onIncrease: () => _onIncrease(item),
+                        onDecrease: () => _onDecrease(item),
+                        onDismiss: () => _onDismissItem(item),
+                        onItemTap: () => _onTapItem(item),
+                        onQuantityChanged: (qty) => _onQuantityChanged(item, qty),
+                      ),
+                    );
+                  }),
+                ],
+              );
+            },
           ),
-          // Sticky Bottom Bar (chi hien khi co mon).
-          if (_items.isNotEmpty)
-            CartBottomBar(
-              isAllSelected: _isAllSelected,
-              selectedCount: _selectedCount,
-              totalCount: _items.length,
-              subtotal: _subtotal,
-              onSelectAllChanged: _onToggleSelectAll,
-              onCheckout: _onCheckout,
+        ),
+        if (!isEmpty)
+          CartBottomBar(
+            selectedCount: _selectedCount,
+            subtotal: _subtotal,
+            onCheckout: _onCheckout,
+          ),
+      ],
+    );
+  }
+}
+
+class _CartItemSkeleton extends StatelessWidget {
+  const _CartItemSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(8),
             ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 120,
+                  height: 15,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: 80,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: 60,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

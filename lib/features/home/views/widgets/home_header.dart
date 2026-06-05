@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
+import '../../../../features/address/services/address_service.dart';
+import '../../../../features/address/models/address_model.dart';
 
 /// Widget hien thi banner dia chi o dau trang.
 class HomeHeader extends StatelessWidget {
   final VoidCallback? onEditAddress;
+  final Future<AddressModel?>? addressFuture;
 
-  const HomeHeader({super.key, this.onEditAddress});
+  const HomeHeader({super.key, this.onEditAddress, this.addressFuture});
 
   @override
   Widget build(BuildContext context) {
@@ -37,26 +39,42 @@ class HomeHeader extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.t('home_deliver_to'),
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
+            child: FutureBuilder<AddressModel?>(
+              future: addressFuture ?? const AddressService().getDefaultAddressFromFirestore(),
+              builder: (context, snapshot) {
+                String diaChiHienThi;
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  diaChiHienThi = 'Dang tai dia chi...';
+                } else if (snapshot.hasData && snapshot.data != null) {
+                  diaChiHienThi = snapshot.data!.address;
+                } else {
+                  diaChiHienThi = 'Chua thiet lap dia chi';
+                }
+                return GestureDetector(
+                  onTap: onEditAddress,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        context.t('home_deliver_to'),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        diaChiHienThi,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  context.t('home_default_address'),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+                );
+              },
             ),
           ),
           IconButton(

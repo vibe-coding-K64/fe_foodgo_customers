@@ -64,9 +64,7 @@ class RewardsVoucherCard extends StatelessWidget {
 
   /// Phan ben trai: So % giam gia trong o vuong cam vang.
   Widget _buildLeftSection(BuildContext context, bool isExpired) {
-    final discountText = voucher.isPercentage
-        ? '${voucher.discountValue.toInt()}%'
-        : '${voucher.discountValue.toInt()}K';
+    final discountText = voucher.discountText;
 
     return Container(
       width: 90,
@@ -121,7 +119,19 @@ class RewardsVoucherCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
+          // Mo ta.
+          if (voucher.description.isNotEmpty)
+            Text(
+              voucher.description,
+              style: TextStyle(
+                fontSize: 11,
+                color: isExpired ? AppColors.textHint : AppColors.textSecondary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          const SizedBox(height: 2),
           // Ma code.
           Text(
             voucher.code,
@@ -131,9 +141,18 @@ class RewardsVoucherCard extends StatelessWidget {
               fontFamily: 'monospace',
             ),
           ),
+          const SizedBox(height: 2),
+          // Don toi thieu.
+          Text(
+            '${context.t('reward_min_order')} ${voucher.minOrderValue.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}đ',
+            style: TextStyle(
+              fontSize: 10,
+              color: isExpired ? AppColors.textHint : AppColors.textHint,
+            ),
+          ),
           const SizedBox(height: 4),
           // Han su dung.
-              Row(
+          Row(
             children: [
               Icon(
                 Icons.schedule,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/utils/snackbar_helper.dart';
 import '../models/notification_model.dart';
 
 /// Man hinh Chi tiet thong bao.
@@ -8,7 +9,6 @@ import '../models/notification_model.dart';
 /// Nhan vao mot [NotificationModel] va hien thi day du noi dung.
 ///
 /// Hien thi:
-///   - Banner image (chi voi thong bao khuyen mai).
 ///   - Tieu de, thoi gian, noi dung chi tiet.
 ///   - Nut hanh dong thay doi theo loai thong bao.
 ///
@@ -23,74 +23,79 @@ class NotificationDetailView extends StatelessWidget {
     required this.notification,
   });
 
-  /// Tra ve ten action button dua tren loai thong bao.
-  String _getActionLabel() {
+  /// Lay tieu de hien thi.
+  String _getTitle() {
+    return notification.title;
+  }
+
+  /// Lay noi dung hien thi.
+  String _getBody() {
+    return notification.body;
+  }
+
+  /// Lay nut hanh dong dua tren loai thong bao.
+  String _getActionLabel(BuildContext context) {
     switch (notification.type) {
-      case NotificationType.order:
-        return LanguageService.translate('notif_action_view_order');
-      case NotificationType.promotion:
-        return LanguageService.translate('notif_action_use_voucher');
-      case NotificationType.system:
-        return LanguageService.translate('notif_action_go_home');
+      case 2:
+        return context.t('notif_action_view_order');
+      case 1:
+        return context.t('notif_action_use_voucher');
+      case 0:
+      default:
+        return context.t('notif_action_go_home');
     }
   }
 
-  /// Tra ve ma mau icon dua tren loai thong bao.
+  /// Lay mau icon dua tren loai thong bao.
   Color _getIconColor() {
     switch (notification.type) {
-      case NotificationType.order:
+      case 2:
         return AppColors.info;
-      case NotificationType.promotion:
+      case 1:
         return AppColors.primary;
-      case NotificationType.system:
+      case 0:
+      default:
         return AppColors.textSecondary;
     }
   }
 
-  /// Tra ve icon dua tren loai thong bao.
+  /// Lay icon dua tren loai thong bao.
   IconData _getIcon() {
     switch (notification.type) {
-      case NotificationType.order:
+      case 2:
         return Icons.receipt_long_outlined;
-      case NotificationType.promotion:
+      case 1:
         return Icons.local_offer_outlined;
-      case NotificationType.system:
+      case 0:
+      default:
         return Icons.settings_outlined;
     }
   }
 
-  /// Tra ve URL hinh banner dua tren loai thong bao.
-  /// Chi khuyen mai moi co banner.
-  String? _getBannerUrl() {
-    if (notification.type == NotificationType.promotion) {
-      // Hinh banner khuyen mai tu Unsplash (mon an / giam gia).
-      return 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=80';
-    }
-    return null;
-  }
-
-  /// Tra ve icon trai cho banner (neu co).
-  IconData? _getBannerOverlayIcon() {
-    if (notification.type == NotificationType.promotion) {
-      return Icons.local_offer;
-    }
-    return null;
-  }
-
   /// Format thoi gian thanh chuoi "X gio truoc - dd/MM/yyyy".
-  String _formatDateTime(DateTime dateTime) {
+  String _formatDateTime(BuildContext context, DateTime dateTime) {
     final now = DateTime.now();
-    final difference = now.difference(dateTime);
+    final createdUtc = dateTime.toUtc();
+    final nowUtc = now.toUtc();
+    final difference = nowUtc.difference(createdUtc);
 
     String timeAgo;
     if (difference.inMinutes < 1) {
-      timeAgo = LanguageService.translate('notification_time_just_now');
+      timeAgo = context.t('notification_time_just_now');
+    } else if (difference.inMinutes < 60) {
+      timeAgo = context.t('notification_time_minutes_ago')
+          .replaceAll('\$1', difference.inMinutes.toString());
     } else if (difference.inHours < 24) {
-      timeAgo = LanguageService.translate('notification_time_hours_ago').replaceAll('\$1', difference.inHours.toString());
+      timeAgo = context.t('notification_time_hours_ago')
+          .replaceAll('\$1', difference.inHours.toString());
     } else if (difference.inDays < 7) {
-      timeAgo = LanguageService.translate('notification_time_days_ago').replaceAll('\$1', difference.inDays.toString());
+      timeAgo = context.t('notification_time_days_ago')
+          .replaceAll('\$1', difference.inDays.toString());
     } else {
-      timeAgo = LanguageService.translate('notification_time_days_ago').replaceAll('\$1', difference.inDays.toString());
+      final day = dateTime.day.toString().padLeft(2, '0');
+      final month = dateTime.month.toString().padLeft(2, '0');
+      final year = dateTime.year;
+      return '$day/$month/$year';
     }
 
     final day = dateTime.day.toString().padLeft(2, '0');
@@ -102,29 +107,26 @@ class NotificationDetailView extends StatelessWidget {
   /// Xu ly khi bam nut hanh dong.
   void _onActionTap(BuildContext context) {
     switch (notification.type) {
-      case NotificationType.order:
-        debugPrint('NotificationDetail: Nguoi dung bam Xem don hang');
-        // TODO: Chuyen sang trang chi tiet don hang.
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(LanguageService.translate('notif_action_view_order')),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
+      case 2:
+        debugPrint('NotificationDetail: Nguoi dung bam Xem don hang [${notification.referenceId}]');
+        // TODO: Chuyen sang trang chi tiet don hang voi referenceId.
+        showAppToast(
+          context,
+          message: 'Dang mo chi tiet don hang #${notification.referenceId}',
+          type: AppToastType.success,
         );
         break;
-      case NotificationType.promotion:
-        debugPrint('NotificationDetail: Nguoi dung bam Dung voucher');
+      case 1:
+        debugPrint('NotificationDetail: Nguoi dung bam Dung voucher [${notification.referenceId}]');
         // TODO: Chuyen sang trang voucher / khuyen mai.
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(LanguageService.translate('notif_action_use_voucher')),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showAppToast(
+          context,
+          message: 'Dang mo voucher #${notification.referenceId}',
+          type: AppToastType.success,
         );
         break;
-      case NotificationType.system:
+      case 0:
+      default:
         debugPrint('NotificationDetail: Nguoi dung bam Ve trang chu');
         Navigator.popUntil(context, (route) => route.isFirst);
         break;
@@ -133,8 +135,6 @@ class NotificationDetailView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bannerUrl = _getBannerUrl();
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -148,7 +148,7 @@ class NotificationDetailView extends StatelessWidget {
           },
         ),
         title: Text(
-          LanguageService.translate('notif_detail_title'),
+          context.t('notif_detail_title'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -166,14 +166,10 @@ class NotificationDetailView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Banner hinh anh (chi hien voi khuyen mai).
-                  if (bannerUrl != null) _buildBanner(bannerUrl),
-                  if (bannerUrl != null) const SizedBox(height: 20),
-                  // Tieu de.
-                  _buildTitle(context),
+                  _buildTitle(),
                   const SizedBox(height: 8),
                   // Thoi gian nhan.
-                  _buildTimeLabel(),
+                  _buildTimeLabel(context),
                   const SizedBox(height: 16),
                   // Divider.
                   _buildDivider(),
@@ -192,74 +188,8 @@ class NotificationDetailView extends StatelessWidget {
     );
   }
 
-  /// Widget banner hinh chu nhat bo goc.
-  Widget _buildBanner(String imageUrl) {
-    final overlayIcon = _getBannerOverlayIcon();
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Stack(
-        children: [
-          // Hinh anh.
-          Image.network(
-            imageUrl,
-            width: double.infinity,
-            height: 200,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) {
-              return Container(
-                width: double.infinity,
-                height: 200,
-                color: AppColors.surfaceVariant,
-                child: const Icon(
-                  Icons.image_not_supported_outlined,
-                  size: 48,
-                  color: AppColors.textHint,
-                ),
-              );
-            },
-          ),
-          // Lớp phủ bán trong suốt (tùy chọn, tăng hiệu ứng).
-          Container(
-            width: double.infinity,
-            height: 200,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withAlpha(25),
-                  Colors.black.withAlpha(50),
-                ],
-              ),
-            ),
-          ),
-          // Icon goc trai tren (neu co).
-          if (overlayIcon != null)
-            Positioned(
-              top: 12,
-              left: 12,
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  overlayIcon,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
   /// Widget tieu de thong bao (icon + text, in dam).
-  Widget _buildTitle(BuildContext context) {
+  Widget _buildTitle() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -281,7 +211,7 @@ class NotificationDetailView extends StatelessWidget {
         // Tieu de.
         Expanded(
           child: Text(
-            notification.title,
+            _getTitle(),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -295,9 +225,9 @@ class NotificationDetailView extends StatelessWidget {
   }
 
   /// Widget thoi gian nhan (text xam nho).
-  Widget _buildTimeLabel() {
+  Widget _buildTimeLabel(BuildContext context) {
     return Text(
-      _formatDateTime(notification.createdAt),
+      _formatDateTime(context, notification.createdAt),
       style: const TextStyle(
         fontSize: 13,
         color: AppColors.textSecondary,
@@ -321,7 +251,7 @@ class NotificationDetailView extends StatelessWidget {
   /// Widget noi dung chi tiet.
   Widget _buildBody() {
     return Text(
-      notification.body,
+      _getBody(),
       style: const TextStyle(
         fontSize: 15,
         color: AppColors.textPrimary,
@@ -350,7 +280,7 @@ class NotificationDetailView extends StatelessWidget {
           ),
         ],
       ),
-      child: ElevatedButton(
+        child: ElevatedButton(
         onPressed: () => _onActionTap(context),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
@@ -362,7 +292,7 @@ class NotificationDetailView extends StatelessWidget {
           elevation: 0,
         ),
         child: Text(
-          _getActionLabel(),
+          _getActionLabel(context),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,

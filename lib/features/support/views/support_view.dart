@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../core/localization/language_service.dart';
-import 'support_chat_view.dart';
+import '../../../core/utils/snackbar_helper.dart';
 
 /// Model mot cau hoi FAQ.
 class FaqItem {
@@ -19,7 +21,7 @@ class FaqItem {
 /// Hien thi:
 ///   - Thanh tim kiem o dau trang.
 ///   - Danh sach FAQ (ExpansionTile - hieu ung accordion).
-///   - Sticky bottom bar voi nut Chat va nut Goi tong dai.
+///   - Sticky bottom bar voi nut Goi tong dai.
 ///
 /// Duoc goi tu:
 ///   - Tab Tai khoan (ProfileView): bam "Ho tro"
@@ -71,38 +73,33 @@ class _SupportViewState extends State<SupportView> {
   }
 
   /// Loc danh sach FAQ theo tu khoa tim kiem.
-  List<FaqItem> get _filteredFaqs {
+  List<FaqItem> _getFilteredFaqs(BuildContext context) {
     if (_searchQuery.isEmpty) return _faqItems;
     final query = _searchQuery.toLowerCase();
     return _faqItems.where((faq) {
-      final question = LanguageService.translate(faq.questionKey).toLowerCase();
-      final answer = LanguageService.translate(faq.answerKey).toLowerCase();
+      final question = context.t(faq.questionKey).toLowerCase();
+      final answer = context.t(faq.answerKey).toLowerCase();
       return question.contains(query) || answer.contains(query);
     }).toList();
   }
 
-  /// Xu ly bam nut Chat.
-  void _onChatTap() {
-    debugPrint('SupportView: Mo man hinh chat voi nhan vien, ma don hang: [${widget.orderId ?? "khong co"}]');
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => SupportChatView(orderId: widget.orderId),
-      ),
-    );
-  }
-
-  /// Xu ly bam nut Goi tong dai.
-  void _onCallTap() {
+  /// Nut goi tong dai.
+  Future<void> _onCallTap() async {
     debugPrint('SupportView: Nguoi dung bam nut Goi tong dai');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(LanguageService.translate('support_call_btn')),
-        backgroundColor: AppColors.primary,
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    final phoneNumber = AppStrings.hotlineNumber;
+    final uri = Uri(scheme: 'tel', path: phoneNumber);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      if (mounted) {
+        showAppToast(
+          context,
+          message: 'Khong the goi den so $phoneNumber',
+          type: AppToastType.error,
+          duration: const Duration(seconds: 2),
+        );
+      }
+    }
   }
 
   @override
@@ -120,7 +117,7 @@ class _SupportViewState extends State<SupportView> {
           },
         ),
         title: Text(
-          LanguageService.translate('support_title'),
+          context.t('support_title'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -132,10 +129,10 @@ class _SupportViewState extends State<SupportView> {
       body: Column(
         children: [
           // Thanh tim kiem.
-          _buildSearchBar(),
+          _buildSearchBar(context),
           // Danh sach FAQ.
           Expanded(
-            child: _buildFaqList(),
+            child: _buildFaqList(context),
           ),
           // Sticky bottom bar.
           _buildStickyBottomBar(context),
@@ -145,7 +142,7 @@ class _SupportViewState extends State<SupportView> {
   }
 
   /// Thanh tim kiem o dau trang.
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       color: AppColors.surface,
@@ -162,7 +159,7 @@ class _SupportViewState extends State<SupportView> {
             debugPrint('SupportView: Tu khoa tim kiem = [$value]');
           },
           decoration: InputDecoration(
-            hintText: LanguageService.translate('support_search_hint'),
+            hintText: context.t('support_search_hint'),
             hintStyle: const TextStyle(
               fontSize: 14,
               color: AppColors.textHint,
@@ -210,8 +207,8 @@ class _SupportViewState extends State<SupportView> {
   }
 
   /// Danh sach FAQ su dung ExpansionTile.
-  Widget _buildFaqList() {
-    final filtered = _filteredFaqs;
+  Widget _buildFaqList(BuildContext context) {
+    final filtered = _getFilteredFaqs(context);
 
     if (filtered.isEmpty) {
       return Center(
@@ -233,7 +230,7 @@ class _SupportViewState extends State<SupportView> {
             ),
             const SizedBox(height: 16),
             Text(
-              LanguageService.translate('search_no_results'),
+              context.t('search_no_results'),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -242,7 +239,7 @@ class _SupportViewState extends State<SupportView> {
             ),
             const SizedBox(height: 6),
             Text(
-              LanguageService.translate('support_search_hint'),
+              context.t('support_search_hint'),
               style: const TextStyle(
                 fontSize: 13,
                 color: AppColors.textSecondary,
@@ -259,7 +256,7 @@ class _SupportViewState extends State<SupportView> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(
-            LanguageService.translate('support_faq_title'),
+            context.t('support_faq_title'),
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -272,7 +269,7 @@ class _SupportViewState extends State<SupportView> {
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
             itemCount: filtered.length,
             itemBuilder: (context, index) {
-              return _buildFaqTile(filtered[index], index);
+              return _buildFaqTile(context, filtered[index], index);
             },
           ),
         ),
@@ -281,7 +278,7 @@ class _SupportViewState extends State<SupportView> {
   }
 
   /// Mot item FAQ su dung ExpansionTile.
-  Widget _buildFaqTile(FaqItem faq, int index) {
+  Widget _buildFaqTile(BuildContext context, FaqItem faq, int index) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
@@ -300,7 +297,7 @@ class _SupportViewState extends State<SupportView> {
         iconColor: AppColors.textHint,
         collapsedIconColor: AppColors.textHint,
         title: Text(
-          LanguageService.translate(faq.questionKey),
+          context.t(faq.questionKey),
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -312,7 +309,7 @@ class _SupportViewState extends State<SupportView> {
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              LanguageService.translate(faq.answerKey),
+              context.t(faq.answerKey),
               style: const TextStyle(
                 fontSize: 13,
                 color: AppColors.textSecondary,
@@ -325,7 +322,7 @@ class _SupportViewState extends State<SupportView> {
     );
   }
 
-  /// Sticky Bottom Bar voi 2 nut.
+  /// Sticky Bottom Bar chi voi nut goi.
   Widget _buildStickyBottomBar(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     return Container(
@@ -343,90 +340,46 @@ class _SupportViewState extends State<SupportView> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Dong chu "Can ho tro them?"
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Text(
-              LanguageService.translate('support_need_help'),
+              context.t('support_need_help'),
               style: const TextStyle(
                 fontSize: 13,
                 color: AppColors.textSecondary,
               ),
             ),
           ),
-          // 2 nut.
-          Row(
-            children: [
-              // Nut Chat (Outline).
-              Expanded(
-                child: GestureDetector(
-                  onTap: _onChatTap,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: AppColors.primary,
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.chat_bubble_outline,
-                          color: AppColors.primary,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          LanguageService.translate('support_chat_btn'),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ],
+          // Nut Goi (full-width).
+          GestureDetector(
+            onTap: _onCallTap,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.phone_outlined,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    context.t('support_call_btn'),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(width: 12),
-              // Nut Goi (Elevated).
-              Expanded(
-                child: GestureDetector(
-                  onTap: _onCallTap,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.phone_outlined,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          LanguageService.translate('support_call_btn'),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),

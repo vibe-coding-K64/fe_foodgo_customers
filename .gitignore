@@ -51,3 +51,5 @@ app.*.map.json
 
 # Bỏ qua file cấu hình Firebase
 lib/firebase_options.dart
+# bo qua toan bo thu muc cau hinh cua cursor
+.cursor/

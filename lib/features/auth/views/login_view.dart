@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
+import '../../../../core/state/cart_state.dart';
+import '../../../../core/utils/snackbar_helper.dart';
 import '../../../../features/main/views/main_view.dart';
+import '../services/auth_service.dart';
 import 'register_view.dart';
 import 'forgot_password_view.dart';
 
 /// Man hinh dang nhap (Login).
 ///
 /// Chuc nang:
-///   - Nhap so dien thoai/email va mat khau.
+///   - Nhap email va mat khau.
 ///   - Hien thi/an mat khau.
 ///   - Quen mat khau.
-///   - Dang nhap bang Google, Facebook.
 ///   - Chuyen sang man hinh Dang ky.
 ///
 /// Duoc goi tu:
@@ -25,7 +27,7 @@ class LoginView extends StatefulWidget {
 }
 
 class _LoginViewState extends State<LoginView> {
-  /// Controller cho o nhap so dien thoai/email.
+  /// Controller cho o nhap email.
   final _emailController = TextEditingController();
 
   /// Controller cho o nhap mat khau.
@@ -37,6 +39,9 @@ class _LoginViewState extends State<LoginView> {
   /// Form key de validate form.
   final _formKey = GlobalKey<FormState>();
 
+  /// Trang thai loading khi dang nhap.
+  bool _isLoading = false;
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -47,14 +52,56 @@ class _LoginViewState extends State<LoginView> {
   /// Xu ly bam nut Dang nhap.
   void _onLoginPressed() {
     if (_formKey.currentState?.validate() ?? false) {
-      debugPrint('LoginView: Nguoi dung bam Dang nhap');
-      debugPrint('  So dien thoai/Email: ${_emailController.text}');
-      debugPrint('  Mat khau: [${_passwordController.text.replaceAll(RegExp(r'.'), '*')}]');
-      // Chuyen sang man hinh chinh, xoa toan bo lich su Auth ra khoi stack.
-      Navigator.pushReplacement(
+      _handleLogin();
+    }
+  }
+
+  /// Xu ly dang nhap thuc te: goi AuthService, hien thi loading, xu ly loi.
+  Future<void> _handleLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    debugPrint('LoginView: Nguoi dung bam Dang nhap');
+    debugPrint('  Email: $email');
+
+    setState(() => _isLoading = true);
+
+    try {
+      await AuthService.login(email, password);
+
+      // Reset CartState truoc khi chuyen sang MainView cua user moi.
+      CartState.of(context).reset();
+
+      // Dang nhap thanh cong. Chuyen sang MainView, xoa lich su stack.
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const MainView()),
+        (route) => false,
       );
+    } on AuthException catch (e) {
+      // Loi tu AuthService - hien thi thong bao.
+      if (!mounted) return;
+      showAppToast(
+        context,
+        message: e.message,
+        type: AppToastType.error,
+        duration: const Duration(seconds: 3),
+      );
+    } catch (e) {
+      // Loi khong xac dinh.
+      if (!mounted) return;
+      debugPrint('LoginView: Loi bat ngooi khi dang nhap = $e');
+      showAppToast(
+        context,
+        message: 'Da xay ra loi, vui long thu lai sau',
+        type: AppToastType.error,
+        duration: const Duration(seconds: 3),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -67,40 +114,12 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
-  /// Xu ly bam nut Dang nhap Google.
-  void _onGoogleLoginPressed() {
-      debugPrint('LoginView: Nguoi dung bam Dang nhap Google');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.t('auth_login_google')),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 1),
-      ),
-    );
-  }
-
-  /// Xu ly bam nut Dang nhap Facebook.
-  void _onFacebookLoginPressed() {
-      debugPrint('LoginView: Nguoi dung bam Dang nhap Facebook');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.t('auth_login_facebook')),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 1),
-      ),
-    );
-  }
-
   /// Xu ly bam chuyen sang man hinh Dang ky.
   void _onRegisterTap() {
     debugPrint('LoginView: Chuyen sang man hinh Dang ky');
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const RegisterView(),
-      ),
+      MaterialPageRoute(builder: (context) => const RegisterView()),
     );
   }
 
@@ -109,56 +128,62 @@ class _LoginViewState extends State<LoginView> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 48),
-                // Phan Logo va tieu de.
-                _buildHeader(),
-                const SizedBox(height: 40),
-                // O nhap so dien thoai/email.
-                _buildPhoneEmailField(),
-                const SizedBox(height: 16),
-                // O nhap mat khau.
-                _buildPasswordField(),
-                // Nut Quen mat khau.
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: _onForgotPasswordPressed,
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                    ),
-                    child: Text(
-                      context.t('auth_forgot_password_link'),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w500,
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 48),
+                    // Phan Logo va tieu de.
+                    _buildHeader(),
+                    const SizedBox(height: 40),
+                    // O nhap email.
+                    _buildEmailField(),
+                    const SizedBox(height: 16),
+                    // O nhap mat khau.
+                    _buildPasswordField(),
+                    // Nut Quen mat khau.
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _onForgotPasswordPressed,
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                        ),
+                        child: Text(
+                          context.t('auth_forgot_password_link'),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 24),
+                    // Nut Dang nhap.
+                    _buildLoginButton(),
+                    const SizedBox(height: 32),
+                    // Dong chuyen sang Dang ky.
+                    _buildRegisterFooter(),
+                    const SizedBox(height: 32),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                // Nut Dang nhap.
-                _buildLoginButton(),
-                const SizedBox(height: 24),
-                // Dong chia隔.
-                _buildDivider(),
-                const SizedBox(height: 24),
-                // Nut Dang nhap mang xa hoi.
-                _buildSocialLoginButtons(),
-                const SizedBox(height: 32),
-                // Dong chuyen sang Dang ky.
-                _buildRegisterFooter(),
-                const SizedBox(height: 32),
-              ],
+              ),
             ),
-          ),
+            // Hien thi loading overlay khi dang xu ly.
+            if (_isLoading)
+              Container(
+                color: Colors.black.withOpacity(0.3),
+                child: const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -177,10 +202,14 @@ class _LoginViewState extends State<LoginView> {
             color: AppColors.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: const Icon(
-            Icons.restaurant_menu,
-            size: 48,
-            color: AppColors.primary,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Image.asset(
+              'asset/img/logo.png',
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
+            ),
           ),
         ),
         const SizedBox(height: 20),
@@ -196,18 +225,15 @@ class _LoginViewState extends State<LoginView> {
         const SizedBox(height: 8),
         Text(
           context.t('auth_login_subtitle'),
-          style: const TextStyle(
-            fontSize: 15,
-            color: AppColors.textSecondary,
-          ),
+          style: const TextStyle(fontSize: 15, color: AppColors.textSecondary),
           textAlign: TextAlign.center,
         ),
       ],
     );
   }
 
-  /// O nhap so dien thoai hoac email.
-  Widget _buildPhoneEmailField() {
+  /// O nhap email.
+  Widget _buildEmailField() {
     return TextFormField(
       controller: _emailController,
       keyboardType: TextInputType.emailAddress,
@@ -219,13 +245,16 @@ class _LoginViewState extends State<LoginView> {
           color: AppColors.textSecondary,
         ),
         prefixIcon: const Icon(
-          Icons.person_outline,
+          Icons.email_outlined,
           color: AppColors.textSecondary,
           size: 22,
         ),
         filled: true,
         fillColor: AppColors.surface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.border),
@@ -279,17 +308,24 @@ class _LoginViewState extends State<LoginView> {
             setState(() {
               _obscurePassword = !_obscurePassword;
             });
-            debugPrint('LoginView: ${_obscurePassword ? "An" : "Hien"} mat khau');
+            debugPrint(
+              'LoginView: ${_obscurePassword ? "An" : "Hien"} mat khau',
+            );
           },
           icon: Icon(
-            _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+            _obscurePassword
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
             color: AppColors.textSecondary,
             size: 22,
           ),
         ),
         filled: true,
         fillColor: AppColors.surface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.border),
@@ -339,83 +375,9 @@ class _LoginViewState extends State<LoginView> {
         ),
         child: Text(
           context.t('auth_login_btn'),
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
-    );
-  }
-
-  /// Dong chia隔 giua Dang nhap va Mang xa hoi.
-  Widget _buildDivider() {
-    return Row(
-      children: [
-        const Expanded(child: Divider(color: AppColors.divider, thickness: 1)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            context.t('auth_or_label'),
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ),
-        const Expanded(child: Divider(color: AppColors.divider, thickness: 1)),
-      ],
-    );
-  }
-
-  /// 2 nut Dang nhap Google va Facebook.
-  Widget _buildSocialLoginButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: _onGoogleLoginPressed,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.textPrimary,
-              side: const BorderSide(color: AppColors.border),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            icon: const Icon(Icons.g_mobiledata, size: 24),
-            label: Text(
-              context.t('auth_google_label'),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: _onFacebookLoginPressed,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.textPrimary,
-              side: const BorderSide(color: AppColors.border),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            icon: const Icon(Icons.facebook, size: 22, color: Colors.blue),
-            label: Text(
-              context.t('auth_facebook_label'),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -426,10 +388,7 @@ class _LoginViewState extends State<LoginView> {
       children: [
         Text(
           context.t('auth_dont_have_account'),
-          style: const TextStyle(
-            fontSize: 14,
-            color: AppColors.textSecondary,
-          ),
+          style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
         ),
         const SizedBox(width: 4),
         GestureDetector(

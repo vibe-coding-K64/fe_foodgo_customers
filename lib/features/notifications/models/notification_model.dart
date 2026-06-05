@@ -1,21 +1,40 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 /// Enum phan loai thong bao.
+///
+/// Map voi Firestore (so nguyen):
+///   0: He thong
+///   1: Khuyen mai
+///   2: Cap nhat don hang
 enum NotificationType {
-  /// Cap nhat trang thai don hang.
-  order,
+  /// Thong bao he thong.
+  system,
 
   /// Khuyen mai, uu dai.
   promotion,
 
-  /// Thong bao he thong.
-  system,
+  /// Cap nhat trang thai don hang.
+  order,
 }
 
 /// Model thong bao nguoi dung.
+///
+/// Su dung cho sub-collection `customer_profiles/{userId}/notifications`.
 class NotificationModel {
   final String id;
-  final NotificationType type;
+
+  /// Loai thong bao: 0 = He thong, 1 = Khuyen mai, 2 = Don hang.
+  final int type;
+
+  /// Tieu de thong bao.
   final String title;
+
+  /// Noi dung thong bao.
   final String body;
+
+  /// ID tham chieu (ma don hang, ma voucher, ...).
+  final String referenceId;
+
   final DateTime createdAt;
   final bool isRead;
 
@@ -24,9 +43,49 @@ class NotificationModel {
     required this.type,
     required this.title,
     required this.body,
+    required this.referenceId,
     required this.createdAt,
-    this.isRead = false,
+    required this.isRead,
   });
+
+  /// Lay enum [NotificationType] tu so type.
+  NotificationType get notificationType {
+    switch (type) {
+      case 0:
+        return NotificationType.system;
+      case 1:
+        return NotificationType.promotion;
+      case 2:
+        return NotificationType.order;
+      default:
+        return NotificationType.system;
+    }
+  }
+
+  /// Khoi tao tu Firestore document.
+  factory NotificationModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+
+    DateTime parsedDate;
+    final rawDate = data['createdAt'];
+    if (rawDate is Timestamp) {
+      parsedDate = rawDate.toDate();
+    } else if (rawDate is DateTime) {
+      parsedDate = rawDate;
+    } else {
+      parsedDate = DateTime.now();
+    }
+
+    return NotificationModel(
+      id: doc.id,
+      type: (data['type'] as num?)?.toInt() ?? 0,
+      title: data['title'] as String? ?? '',
+      body: data['body'] as String? ?? '',
+      referenceId: data['referenceId'] as String? ?? '',
+      createdAt: parsedDate,
+      isRead: data['isRead'] as bool? ?? false,
+    );
+  }
 
   /// Tao ban sao da danh dau la da doc.
   NotificationModel markAsRead() {
@@ -35,6 +94,7 @@ class NotificationModel {
       type: type,
       title: title,
       body: body,
+      referenceId: referenceId,
       createdAt: createdAt,
       isRead: true,
     );

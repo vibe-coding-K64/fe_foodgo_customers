@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FoodGo</title>
+  <style>
+    body { font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #fff; }
+    .msg { text-align: center; color: #555; }
+    .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #FF6B2B; border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="msg">
+    <p>Đang mở FoodGo...</p>
+    <div class="spinner"></div>
+    <p><small>Nếu app không mở, hãy cài FoodGo trước từ CH Play / App Store.</small></p>
+  </div>
+  <script>
+    (function () {
+      var path = window.location.pathname; // e.g. /product/prod_001
+      var host = window.location.hostname;  // food-go-17a5d.web.app
+
+      // Build the custom scheme link
+      var schemeLink = 'foodgo://' + path.substring(1); // foodgo://product/prod_001
+
+      // Try to open the app via custom scheme
+      // On Android (Chrome 93+): use intent:// via <a> click simulation
+      var ua = navigator.userAgent;
+      var isAndroid = /Android/.test(ua);
+      var isIOS = /iPhone|iPad|iPod/.test(ua);
+
+      if (isAndroid) {
+        // Android: use intent redirect if hosted on same domain, otherwise try location
+        // The intent:// protocol works if we had a custom domain
+        // For web.app domain, fallback to direct scheme
+        window.location.replace(schemeLink);
+      } else {
+        // iOS / others: direct scheme redirect
+        window.location.replace(schemeLink);
+      }
+
+      // Fallback: if scheme doesn't work after 500ms, show message
+      // (iOS Safari will block automatic redirects — user may need to tap)
+      setTimeout(function () {
+        document.querySelector('.spinner').style.display = 'none';
+        document.querySelector('.msg').innerHTML =
+          '<p>Không thể mở app tự động.</p>' +
+          '<p><a href="' + schemeLink + '">Nhấn vào đây để mở FoodGo</a></p>';
+      }, 1000);
+    })();
+  </script>
+</body>
+</html>

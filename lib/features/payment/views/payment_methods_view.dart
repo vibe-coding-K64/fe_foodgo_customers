@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/utils/snackbar_helper.dart';
 import '../models/payment_method_model.dart';
+import '../services/payment_service.dart';
 import 'add_payment_method_view.dart';
 import 'widgets/payment_method_card.dart';
 
@@ -20,126 +22,77 @@ class PaymentMethodsView extends StatefulWidget {
 }
 
 class _PaymentMethodsViewState extends State<PaymentMethodsView> {
-  /// Danh sach phuong thuc thanh toan.
-  late List<PaymentMethodModel> _methods;
+  /// Service quan ly phuong thuc thanh toan.
+  final PaymentService _paymentService = const PaymentService();
 
-  @override
-  void initState() {
-    super.initState();
-    _methods = _buildMockData();
-  }
-
-  /// Tao danh sach mock gom: 1 the Visa, 1 vi MoMo da lien ket.
-  List<PaymentMethodModel> _buildMockData() {
-    return [
-      // Nhom 1: Tien mat (COD) - mac dinh, khong the xoa.
-      PaymentMethodModel(
-        id: 'pm_cash_001',
-        type: PaymentMethodType.cash,
-        isDefault: true,
-        createdAt: DateTime.now(),
-      ),
-      // Nhom 2: The Visa.
-      PaymentMethodModel(
-        id: 'pm_card_visa_001',
-        type: PaymentMethodType.card,
-        isDefault: false,
-        createdAt: DateTime.now(),
-        cardBrand: CardBrand.visa,
-        last4Digits: '4242',
-      ),
-      // Nhom 2: The Mastercard.
-      PaymentMethodModel(
-        id: 'pm_card_mc_001',
-        type: PaymentMethodType.card,
-        isDefault: false,
-        createdAt: DateTime.now(),
-        cardBrand: CardBrand.mastercard,
-        last4Digits: '8888',
-      ),
-      // Nhom 3: Vi MoMo da lien ket.
-      PaymentMethodModel(
-        id: 'pm_wallet_momo_001',
-        type: PaymentMethodType.wallet,
-        isDefault: false,
-        createdAt: DateTime.now(),
-        walletBrand: WalletBrand.momo,
-        isLinked: true,
-      ),
-      // Nhom 3: Vi ZaloPay chua lien ket.
-      PaymentMethodModel(
-        id: 'pm_wallet_zalo_001',
-        type: PaymentMethodType.wallet,
-        isDefault: false,
-        createdAt: DateTime.now(),
-        walletBrand: WalletBrand.zalopay,
-        isLinked: false,
-      ),
-    ];
-  }
-
-  /// Lay danh sach nhom da duoc phan loai.
-  Map<PaymentMethodType, List<PaymentMethodModel>> get _groupedMethods {
-    final groups = <PaymentMethodType, List<PaymentMethodModel>>{};
-    for (final method in _methods) {
-      groups.putIfAbsent(method.type, () => []).add(method);
-    }
-    return groups;
-  }
-
-  /// Dat mot phuong thuc lam mac dinh.
-  void _onSelectDefault(String methodId) {
-    setState(() {
-      for (int i = 0; i < _methods.length; i++) {
-        _methods[i] = _methods[i].copyWith(
-          isDefault: _methods[i].id == methodId,
+  /// Dat mot phuong thuc lam mac dinh thong qua Firebase.
+  void _onSelectDefault(String methodId) async {
+    try {
+      await _paymentService.setDefaultPayment(methodId);
+      debugPrint('PaymentMethods: Dat [$methodId] lam mac dinh');
+    } catch (e) {
+      debugPrint('PaymentMethods: Loi dat phuong thuc mac dinh - $e');
+      if (mounted) {
+        showAppToast(
+          context,
+          message: LanguageService.translate('payment_error_set_default'),
+          type: AppToastType.error,
+          duration: const Duration(seconds: 2),
         );
       }
-    });
-    debugPrint('PaymentMethods: Dat [$methodId] lam mac dinh');
+    }
   }
 
-  /// Xoa mot phuong thuc thanh toan.
-  void _onDelete(PaymentMethodModel method) {
+  /// Xoa mot phuong thuc thanh toan khoi Firebase.
+  void _onDelete(BuildContext ctx, PaymentMethodModel method) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         title: Text(
-          LanguageService.translate('payment_delete'),
+          ctx.t('payment_delete'),
           style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
         ),
         content: Text(
-          LanguageService.translate('payment_delete_confirm'),
+          ctx.t('payment_delete_confirm'),
           style: const TextStyle(fontSize: 14),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () => Navigator.pop(dialogCtx),
             child: Text(
-              LanguageService.translate('common_cancel'),
+              ctx.t('common_cancel'),
               style: const TextStyle(color: AppColors.textSecondary),
             ),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              setState(() {
-                _methods.removeWhere((m) => m.id == method.id);
-              });
-              debugPrint(
-                  'PaymentMethods: Da xoa phuong thuc [${method.id}]');
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content:
-                      Text(LanguageService.translate('payment_deleted')),
-                  backgroundColor: AppColors.textSecondary,
-                  duration: const Duration(seconds: 2),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
+            onPressed: () async {
+              Navigator.pop(dialogCtx);
+              try {
+                await _paymentService.deletePayment(method.id);
+                debugPrint(
+                    'PaymentMethods: Da xoa phuong thuc [${method.id}]');
+                if (mounted) {
+                  showAppToast(
+                    context,
+                    message: ctx.t('payment_deleted'),
+                    type: AppToastType.info,
+                    duration: const Duration(seconds: 2),
+                  );
+                }
+              } catch (e) {
+                debugPrint('PaymentMethods: Loi xoa phuong thuc - $e');
+                if (mounted) {
+                  showAppToast(
+                    context,
+                    message: ctx.t('payment_error_delete'),
+                    type: AppToastType.error,
+                    duration: const Duration(seconds: 2),
+                  );
+                }
+              }
             },
             child: Text(
-              LanguageService.translate('common_delete'),
+              ctx.t('common_delete'),
               style: const TextStyle(color: AppColors.error),
             ),
           ),
@@ -158,9 +111,7 @@ class _PaymentMethodsViewState extends State<PaymentMethodsView> {
           onConfirm: (method) {
             debugPrint(
                 'PaymentMethods: Da them phuong thuc [${method.id}]');
-            setState(() {
-              _methods.add(method);
-            });
+            // StreamBuilder se tu dong cap nhat khi Firestore thay doi.
           },
         ),
       ),
@@ -186,7 +137,7 @@ class _PaymentMethodsViewState extends State<PaymentMethodsView> {
           },
         ),
         title: Text(
-          LanguageService.translate('payment_title'),
+          context.t('payment_title'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -198,9 +149,27 @@ class _PaymentMethodsViewState extends State<PaymentMethodsView> {
       body: Column(
         children: [
           Expanded(
-            child: _methods.isEmpty
-                ? _buildEmptyState()
-                : _buildMethodsList(),
+            child: StreamBuilder<List<PaymentMethodModel>>(
+              stream: _paymentService.getPaymentMethodsStream(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.primary,
+                    ),
+                  );
+                }
+                if (snapshot.hasError) {
+                  debugPrint('PaymentMethods: Loi StreamBuilder - ${snapshot.error}');
+                  return _buildEmptyState();
+                }
+                final methods = snapshot.data ?? [];
+                if (methods.isEmpty) {
+                  return _buildEmptyState();
+                }
+                return _buildMethodsList(methods);
+              },
+            ),
           ),
           _buildStickyBottomBar(context),
         ],
@@ -230,7 +199,7 @@ class _PaymentMethodsViewState extends State<PaymentMethodsView> {
             ),
             const SizedBox(height: 16),
             Text(
-              LanguageService.translate('payment_title'),
+              context.t('payment_title'),
               style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
@@ -239,7 +208,7 @@ class _PaymentMethodsViewState extends State<PaymentMethodsView> {
             ),
             const SizedBox(height: 8),
             Text(
-              LanguageService.translate('payment_add_new'),
+              context.t('payment_add_new'),
               style: const TextStyle(
                 fontSize: 14,
                 color: AppColors.textSecondary,
@@ -253,74 +222,97 @@ class _PaymentMethodsViewState extends State<PaymentMethodsView> {
   }
 
   /// Danh sach phuong thuc, chia theo nhom.
-  Widget _buildMethodsList() {
-    final groups = _groupedMethods;
-    final order = [
-      PaymentMethodType.cash,
-      PaymentMethodType.card,
-      PaymentMethodType.wallet,
-    ];
+  Widget _buildMethodsList(List<PaymentMethodModel> methods) {
+    // Phan loai thanh 3 nhom: cash, card, wallet.
+    final cashMethods = methods.where((m) => m.type == PaymentMethodType.cash).toList();
+    final cardMethods = methods.where((m) => m.type == PaymentMethodType.card).toList();
+    final walletMethods = methods.where((m) => m.type == PaymentMethodType.wallet).toList();
 
-    return ListView.builder(
+    return ListView(
       padding: const EdgeInsets.all(16),
-      itemCount: order.length,
-      itemBuilder: (context, sectionIndex) {
-        final type = order[sectionIndex];
-        final items = groups[type];
-        if (items == null || items.isEmpty) {
-          return const SizedBox.shrink();
-        }
+      children: [
+        // Nhom Tien mat.
+        if (cashMethods.isNotEmpty) ...[
+          _buildSection(
+            context,
+            PaymentMethodType.cash,
+            cashMethods,
+          ),
+          const SizedBox(height: 16),
+        ],
+        // Nhom The.
+        if (cardMethods.isNotEmpty) ...[
+          _buildSection(
+            context,
+            PaymentMethodType.card,
+            cardMethods,
+          ),
+          const SizedBox(height: 16),
+        ],
+        // Nhom Vi dien tu.
+        if (walletMethods.isNotEmpty) ...[
+          _buildSection(
+            context,
+            PaymentMethodType.wallet,
+            walletMethods,
+          ),
+        ],
+      ],
+    );
+  }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Tieu de nhom.
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Text(
-                _getGroupTitle(type),
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
-                  letterSpacing: 0.5,
-                ),
-              ),
+  /// Xay dung mot nhom phuong thuc.
+  Widget _buildSection(
+    BuildContext ctx,
+    PaymentMethodType type,
+    List<PaymentMethodModel> items,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Tieu de nhom.
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Text(
+            _getGroupTitle(ctx, type),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+              letterSpacing: 0.5,
             ),
-            // Cac item trong nhom.
-            ...items.map((method) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: PaymentMethodCard(
-                  method: method,
-                  onTap: () {
-                    debugPrint(
-                        'PaymentMethods: Nguoi dung chon phuong thuc [${method.id}]');
-                    _onSelectDefault(method.id);
-                  },
-                  onDelete: method.type == PaymentMethodType.cash
-                      ? null
-                      : () => _onDelete(method),
-                ),
-              );
-            }),
-            if (sectionIndex < order.length - 1)
-              const SizedBox(height: 16),
-          ],
-        );
-      },
+          ),
+        ),
+        // Cac item trong nhom.
+        ...items.map((method) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: PaymentMethodCard(
+              method: method,
+              onTap: () {
+                debugPrint(
+                    'PaymentMethods: Nguoi dung chon phuong thuc [${method.id}]');
+                _onSelectDefault(method.id);
+              },
+              onDelete: method.type == PaymentMethodType.cash
+                  ? null
+                  : () => _onDelete(ctx, method),
+            ),
+          );
+        }),
+      ],
     );
   }
 
   /// Lay tieu de nhom theo loai.
-  String _getGroupTitle(PaymentMethodType type) {
+  String _getGroupTitle(BuildContext ctx, PaymentMethodType type) {
     switch (type) {
       case PaymentMethodType.cash:
-        return LanguageService.translate('payment_group_cash').toUpperCase();
+        return ctx.t('payment_group_cash').toUpperCase();
       case PaymentMethodType.card:
-        return LanguageService.translate('payment_group_card').toUpperCase();
+        return ctx.t('payment_group_card').toUpperCase();
       case PaymentMethodType.wallet:
-        return LanguageService.translate('payment_group_wallet').toUpperCase();
+        return ctx.t('payment_group_wallet').toUpperCase();
     }
   }
 
@@ -362,7 +354,7 @@ class _PaymentMethodsViewState extends State<PaymentMethodsView> {
               ),
               const SizedBox(width: 8),
               Text(
-                LanguageService.translate('payment_add_new'),
+                context.t('payment_add_new'),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,

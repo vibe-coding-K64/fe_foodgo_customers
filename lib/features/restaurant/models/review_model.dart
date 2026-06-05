@@ -1,8 +1,7 @@
 /// Model danh gia cua mot quan an.
-///
-/// Mo phong du lieu tu Firestore de test UI.
 class ReviewModel {
   final String id;
+  final String? orderId;
   final String storeId;
   final String userId;
   final String userName;
@@ -11,9 +10,15 @@ class ReviewModel {
   final String? comment;
   final List<String> imageUrls;
   final DateTime createdAt;
+  final DateTime updatedAt;
+
+  /// Phan hoi cua nguoi ban (nguoi quan ly cua hang).
+  final String? replyComment;
+  final DateTime? repliedAt;
 
   ReviewModel({
     required this.id,
+    this.orderId,
     required this.storeId,
     required this.userId,
     required this.userName,
@@ -22,7 +27,107 @@ class ReviewModel {
     this.comment,
     this.imageUrls = const [],
     required this.createdAt,
+    required this.updatedAt,
+    this.replyComment,
+    this.repliedAt,
   });
+
+  factory ReviewModel.fromJson(Map<String, dynamic> json) {
+    return ReviewModel(
+      id: json['id'] as String? ?? '',
+      orderId: json['orderId'] as String?,
+      storeId: json['storeId'] as String? ?? '',
+      userId: json['userId'] as String? ?? '',
+      userName: json['userName'] as String? ?? '',
+      userAvatarUrl: (json['userAvatarUrl'] as String?) ??
+                     (json['avatarUrl'] as String?) ??
+                     (json['avatar'] as String?) ?? '',
+      starRating: json['starRating'] as int? ?? 0,
+      comment: json['comment'] as String?,
+      imageUrls: (json['imageUrls'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          (json['reviewImages'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          (json['images'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
+      createdAt: _parseDateTime(json['createdAt']),
+      updatedAt: _parseDateTime(json['updatedAt']),
+      replyComment: json['replyComment'] as String?,
+      repliedAt: _parseDateTimeOrNull(json['repliedAt']),
+    );
+  }
+
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is DateTime) return value;
+    if (value is String) {
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+    return DateTime.now();
+  }
+
+  static DateTime? _parseDateTimeOrNull(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) {
+      return DateTime.tryParse(value);
+    }
+    return null;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'orderId': orderId,
+      'storeId': storeId,
+      'userId': userId,
+      'userName': userName,
+      'userAvatarUrl': userAvatarUrl,
+      'starRating': starRating,
+      'comment': comment,
+      'imageUrls': imageUrls,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'replyComment': replyComment,
+      'repliedAt': repliedAt?.toIso8601String(),
+    };
+  }
+
+  ReviewModel copyWith({
+    String? id,
+    String? orderId,
+    String? storeId,
+    String? userId,
+    String? userName,
+    String? userAvatarUrl,
+    int? starRating,
+    String? comment,
+    List<String>? imageUrls,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? replyComment,
+    DateTime? repliedAt,
+  }) {
+    return ReviewModel(
+      id: id ?? this.id,
+      orderId: orderId ?? this.orderId,
+      storeId: storeId ?? this.storeId,
+      userId: userId ?? this.userId,
+      userName: userName ?? this.userName,
+      userAvatarUrl: userAvatarUrl ?? this.userAvatarUrl,
+      starRating: starRating ?? this.starRating,
+      comment: comment ?? this.comment,
+      imageUrls: imageUrls ?? this.imageUrls,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      replyComment: replyComment ?? this.replyComment,
+      repliedAt: repliedAt ?? this.repliedAt,
+    );
+  }
 }
 
 /// Mock data thong ke so sao.

@@ -1,46 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/localization/language_service.dart';
-
-/// Trang thai chi tiet cua don hang (hien thi dong sub-status).
-/// Chi ap dung cho don dang xu ly.
-enum SubOrderStatus {
-  preparing,     // Nguoi ban dang chuan bi.
-  driverComing,  // Tai xe dang toi nha hang.
-  delivering,    // Tai xe dang giao hang.
-}
-
-/// Model mock cho don hang.
-class OrderModel {
-  final String id;
-  final String storeName;
-  final String mainItem;
-  final int itemCount;
-  final double totalPrice;
-  final DateTime orderDate;
-  final OrderStatus status;
-  final SubOrderStatus? subStatus; // Chi co gia tri khi status == ordered.
-
-  const OrderModel({
-    required this.id,
-    required this.storeName,
-    required this.mainItem,
-    required this.itemCount,
-    required this.totalPrice,
-    required this.orderDate,
-    required this.status,
-    this.subStatus,
-  });
-}
-
-/// Trang thai don hang.
-enum OrderStatus {
-  ordered,   // Da dat (dang xu ly).
-  received,  // Da nhan (hoan thanh).
-  cancelled, // Da huy.
-}
+import 'package:fe_foodgo_customers/core/constants/app_colors.dart';
+import 'package:fe_foodgo_customers/core/localization/language_service.dart';
+import 'package:fe_foodgo_customers/features/order/models/order_model.dart';
 
 /// Widget Card hien thi thong tin mot don hang.
+///
+/// Su dung OrderModel tu Firebase Firestore.
 class ActivityOrderCard extends StatelessWidget {
   final OrderModel order;
   final VoidCallback? onViewDetail;
@@ -87,10 +52,20 @@ class ActivityOrderCard extends StatelessWidget {
                     color: AppColors.surfaceVariant,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
-                    Icons.restaurant,
-                    color: AppColors.textSecondary,
-                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: order.storeAvatar != null && order.storeAvatar!.isNotEmpty
+                      ? Image.network(
+                          order.storeAvatar!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.restaurant,
+                            color: AppColors.textSecondary,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.restaurant,
+                          color: AppColors.textSecondary,
+                        ),
                 ),
                 const SizedBox(width: 12),
                 // Thong tin don hang.
@@ -106,13 +81,8 @@ class ActivityOrderCard extends StatelessWidget {
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      // Hien thi sub-status neu co (chi cho don dang xu ly).
-                      if (order.subStatus != null) ...[
-                        const SizedBox(height: 2),
-                        _buildSubStatusRow(),
-                      ],
                       Text(
-                        _formatItemCountText(),
+                        _formatItemCountText(context),
                         style: const TextStyle(
                           fontSize: 13,
                           color: AppColors.textSecondary,
@@ -122,7 +92,7 @@ class ActivityOrderCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _formatPrice(order.totalPrice),
+                        _formatPrice(order.finalAmount, context),
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
@@ -133,7 +103,7 @@ class ActivityOrderCard extends StatelessWidget {
                   ),
                 ),
                 // Badge trang thai.
-                _buildStatusBadge(),
+                _buildStatusBadge(context),
               ],
             ),
           ),
@@ -150,7 +120,7 @@ class ActivityOrderCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  _formatDateTime(order.orderDate),
+                  _formatDateTime(order.createdAt),
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
@@ -188,10 +158,8 @@ class ActivityOrderCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Nut hanh dong thu hai: Huy don (neu ordered) hoac Dat lai (neu received/cancelled).
-                Expanded(
-                  child: _buildActionButton(),
-                ),
+                // Nut hanh dong thu hai: Huy don (neu active) hoac Dat lai (neu completed/cancelled).
+                Expanded(child: _buildActionButton(context)),
               ],
             ),
           ),
@@ -200,27 +168,35 @@ class ActivityOrderCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusBadge() {
+  /// Tao badge trang thai voi mau sac phu hop.
+  Widget _buildStatusBadge(BuildContext context) {
     Color bgColor;
     Color textColor;
-    String statusText;
 
     switch (order.status) {
-      case OrderStatus.ordered:
-        bgColor = Colors.blue.shade50;
-        textColor = Colors.blue.shade700;
-        statusText = LanguageService.translate('activity_status_ordered');
+      case 0:
+        bgColor = Colors.amber.shade50;
+        textColor = Colors.amber.shade800;
         break;
-      case OrderStatus.received:
+      case 1:
+        bgColor = Colors.purple.shade50;
+        textColor = Colors.purple.shade700;
+        break;
+      case 2:
+        bgColor = Colors.orange.shade50;
+        textColor = Colors.orange.shade800;
+        break;
+      case 3:
         bgColor = Colors.green.shade50;
         textColor = Colors.green.shade700;
-        statusText = LanguageService.translate('activity_status_received');
         break;
-      case OrderStatus.cancelled:
+      case 4:
         bgColor = Colors.red.shade50;
         textColor = Colors.red.shade700;
-        statusText = LanguageService.translate('activity_status_cancelled');
         break;
+      default:
+        bgColor = Colors.grey.shade50;
+        textColor = Colors.grey.shade700;
     }
 
     return Container(
@@ -230,7 +206,7 @@ class ActivityOrderCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        statusText,
+        context.t(order.statusTextKey),
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
@@ -240,73 +216,37 @@ class ActivityOrderCard extends StatelessWidget {
     );
   }
 
-  /// Dong sub-status hien thi trang thai chi tiet cua don dang xu ly.
-  Widget _buildSubStatusRow() {
-    // Chi hien thi neu subStatus co gia tri (don dang xu ly).
-    if (order.subStatus == null) return const SizedBox.shrink();
-
-    String text;
-    Color textColor;
-
-    switch (order.subStatus!) {
-      case SubOrderStatus.preparing:
-        text = LanguageService.translate('activity_status_preparing');
-        textColor = Colors.blue.shade700;
-        break;
-      case SubOrderStatus.driverComing:
-        text = LanguageService.translate('activity_status_driver_coming');
-        textColor = Colors.orange.shade700;
-        break;
-      case SubOrderStatus.delivering:
-        text = LanguageService.translate('activity_status_delivering');
-        textColor = Colors.orange.shade700;
-        break;
-    }
-
-    return Row(
-      children: [
-        Icon(
-          Icons.arrow_forward_ios,
-          size: 10,
-          color: textColor,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: textColor,
-          ),
-        ),
-      ],
-    );
-  }
-
   /// Nut hanh dong thu hai, thay doi theo trang thai don hang:
-  ///   - ordered: nut "Huy don" (OutlineButton, chu do).
-  ///   - received/cancelled: nut "Dat lai" (ElevatedButton, xanh la).
-  Widget _buildActionButton() {
-    if (order.status == OrderStatus.ordered) {
-      // Nut Huy don: OutlineButton voi chu mau do.
+  ///   - status 0 (cho xac nhan): hien thi nut Huy don.
+  ///   - status 1, 2 (dang chuan bi / dang giao): huy don bi disabled.
+  ///   - status 3, 4 (hoan thanh / da huy): hien thi nut Dat lai.
+  Widget _buildActionButton(BuildContext context) {
+    if (order.isActive) {
+      // Neu dang cho xac nhan (status 0) thi cho phep huy.
+      // Neu dang chuan bi (status 1) hoac dang giao (status 2) thi disable.
+      final canCancel = order.status == 0;
+
       return OutlinedButton(
-        onPressed: () {
-          debugPrint('ActivityOrderCard: Nguoi dung bam Huy don [${order.id}]');
-          onCancel?.call();
-        },
+        onPressed: canCancel
+            ? () {
+                debugPrint('ActivityOrderCard: Nguoi dung bam Huy don [${order.id}]');
+                onCancel?.call();
+              }
+            : null,
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.error,
-          side: const BorderSide(color: AppColors.error),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+          foregroundColor: canCancel ? AppColors.error : AppColors.textHint,
+          side: BorderSide(
+            color: canCancel ? AppColors.error : AppColors.border,
           ),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: Text(
-          LanguageService.translate('activity_btn_cancel'),
-          style: const TextStyle(
+          context.t('activity_btn_cancel'),
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
+            color: canCancel ? AppColors.error : AppColors.textHint,
           ),
         ),
       );
@@ -322,40 +262,42 @@ class ActivityOrderCard extends StatelessWidget {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 10),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         elevation: 0,
       ),
       child: Text(
-        LanguageService.translate('activity_btn_reorder'),
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-        ),
+        context.t('activity_btn_reorder'),
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
       ),
     );
   }
 
-  String _formatPrice(double price) {
-    final formatted = price.toStringAsFixed(0).replaceAllMapped(
+  /// Format gia tien thanh chuoi VND.
+  String _formatPrice(double price, BuildContext context) {
+    final formatted = price
+        .toStringAsFixed(0)
+        .replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]}.',
         );
-    return '$formatted ${LanguageService.translate('unit_currency')}';
+    return '$formatted ${context.t('unit_currency')}';
   }
 
+  /// Format ngay gio tao don hang.
   String _formatDateTime(DateTime dt) {
     return '${dt.day}/${dt.month}/${dt.year} - ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
   /// Format text so luong mon an them (VD: "+ 2 mon" hoac "+ 2 items").
-  String _formatItemCountText() {
-    if (order.itemCount <= 1) {
-      return order.mainItem;
-    }
-    final suffix = LanguageService.translate('order_item_count_suffix')
-        .replaceAll('\$1', (order.itemCount - 1).toString());
-    return '${order.mainItem} + $suffix';
+  String _formatItemCountText(BuildContext context) {
+    if (order.items.isEmpty) return 'Mon an';
+    if (order.items.length == 1) return order.items.first.name;
+    final firstName = order.items.first.name;
+    final remaining = order.itemCount - order.items.first.quantity;
+    if (remaining <= 0) return firstName;
+    final suffix = context
+        .t('order_item_count_suffix')
+        .replaceAll('\$1', remaining.toString());
+    return '$firstName + $suffix';
   }
 }
