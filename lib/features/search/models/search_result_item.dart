@@ -1,30 +1,93 @@
-/// Model ket hop san pham + thong tin cua hang.
+import 'dart:convert';
+
+/// Model ket qua tim kiem tu API /api/search.
 ///
-/// Tai vi ProductModel khong co storeName va rating, can mot model trung gian
-/// de hien thi ket qua tim kiem day du (hinh anh, ten mon, ten cua hang,
-/// gia, danh gia, nut them).
+/// Model nay dong hop thong tin san pham + thong tin cua hang de hien thi
+/// trang ket qua tim kiem (hinh anh, ten mon, ten cua hang, gia, danh gia).
 class SearchResultItem {
-  final String id;
+  final String productId;
   final String productName;
-  final String productImageUrl;
-  final double price;
+  final String storeId;
   final String storeName;
+  final String address;
+  final double price;
   final double rating;
   final int reviewCount;
+  final double distance;
+  final String deliveryTime;
+  final String imageUrl;
   final bool isOutOfStock;
-  final String productId;
-  final String storeId;
+  final String? storeAvatarUrl;
+  final List<Map<String, dynamic>> optionGroups;
 
   const SearchResultItem({
-    required this.id,
+    required this.productId,
     required this.productName,
-    required this.productImageUrl,
-    required this.price,
+    required this.storeId,
     required this.storeName,
+    required this.address,
+    required this.price,
     required this.rating,
     required this.reviewCount,
-    required this.isOutOfStock,
-    required this.productId,
-    required this.storeId,
+    required this.distance,
+    required this.deliveryTime,
+    required this.imageUrl,
+    this.isOutOfStock = false,
+    this.storeAvatarUrl,
+    this.optionGroups = const [],
   });
+
+  /// Parse tu JSON tra ve tu API /api/search.
+  ///
+  /// JSON mau:
+  /// ```json
+  /// {
+  ///   "productId": "prod_001",
+  ///   "productName": "Com tam suon bi cha",
+  ///   "storeId": "store_001",
+  ///   "storeName": "Com tam Phuc Loc Tho",
+  ///   "address": "123 Nguyen Trai, Q1, HCM",
+  ///   "price": 45000.0,
+  ///   "rating": 4.8,
+  ///   "reviewCount": 500,
+  ///   "distance": 2.1,
+  ///   "deliveryTime": "20-30 phut",
+  ///   "imageUrl": "https://..."
+  /// }
+  /// ```
+  factory SearchResultItem.fromJson(Map<String, dynamic> json) {
+    final optionGroupsRaw = json['optionGroups'];
+    List<Map<String, dynamic>> optionGroups = [];
+    if (optionGroupsRaw is List) {
+      optionGroups = optionGroupsRaw
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    } else if (optionGroupsRaw is String && optionGroupsRaw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(optionGroupsRaw);
+        if (decoded is List) {
+          optionGroups = (decoded as List)
+              .map((e) => Map<String, dynamic>.from(e as Map))
+              .toList();
+        }
+      } catch (_) {}
+    }
+
+    return SearchResultItem(
+      productId: json['productId'] as String? ?? '',
+      productName: json['productName'] as String? ?? '',
+      storeId: json['storeId'] as String? ?? '',
+      storeName: json['storeName'] as String? ?? '',
+      address: json['address'] as String? ?? '',
+    price: (json['price'] as num?)?.toDouble() ?? 0.0,
+    rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+    reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
+    distance: (json['distance'] as num?)?.toDouble() ?? 0.0,
+    deliveryTime: json['deliveryTime']?.toString() ?? '',
+    imageUrl: json['imageUrl'] as String? ?? '',
+      isOutOfStock: json['isOutOfStock'] as bool? ?? false,
+      storeAvatarUrl: json['storeAvatarUrl'] as String?,
+      optionGroups: optionGroups,
+    );
+  }
 }

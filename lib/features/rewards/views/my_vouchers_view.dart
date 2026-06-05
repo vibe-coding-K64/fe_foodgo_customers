@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/utils/snackbar_helper.dart';
 import '../models/rewards_model.dart';
 import 'widgets/rewards_voucher_card.dart';
 
@@ -55,14 +56,10 @@ class MyVouchersView extends StatelessWidget {
                   voucher: voucher,
                   onUse: () {
                     debugPrint('MyVouchers: Nguoi dung bam dung ngay [${voucher.code}]');
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          context.t('reward_using_voucher').replaceAll('\$1', voucher.code),
-                        ),
-                        backgroundColor: AppColors.primary,
-                        behavior: SnackBarBehavior.floating,
-                      ),
+                    showAppToast(
+                      context,
+                      message: context.t('reward_using_voucher').replaceAll('\$1', voucher.code),
+                      type: AppToastType.success,
                     );
                   },
                 );

@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/localization/language_service.dart';
 import '../../models/search_result_item.dart';
 
 /// Widget hien thi mot item san pham trong danh sach ket qua tim kiem.
 ///
-/// Bo cuc: [Hinh anh] [Ten mon] [Ten cua hang] [Gia | Sao] [Nut +]
-///   - Hinh anh: hinh vuong bo goc ben trai.
-///   - Nut +: nut them nhanh vao gio hang o goc phai.
+/// Bo cuc: [Hinh anh] [Ten mon] [Ten cua hang] [Gia | Sao] [Icon gio hang]
 class SearchResultCard extends StatelessWidget {
   final SearchResultItem item;
+  final int cartQuantity;
+  final bool isAddingToCart;
   final VoidCallback? onTap;
   final VoidCallback? onAddToCart;
 
   const SearchResultCard({
     super.key,
     required this.item,
+    this.cartQuantity = 0,
+    this.isAddingToCart = false,
     this.onTap,
     this.onAddToCart,
   });
@@ -39,9 +42,9 @@ class SearchResultCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Hinh anh san pham ben trai.
-              _buildProductImage(),
+              _buildProductImage(context),
               const SizedBox(width: 12),
-              // Noi dung chinh: ten mon, ten cua hang, gia, danh gia.
+              // Noi dung chinh: ten mon, ten cua hang, gia, danh gia, dia chi/giao hang.
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,11 +54,16 @@ class SearchResultCard extends StatelessWidget {
                     _buildStoreName(),
                     const SizedBox(height: 6),
                     _buildPriceAndRating(),
+                    const SizedBox(height: 4),
+                    _buildDeliveryInfo(),
                   ],
                 ),
               ),
-              // Nut them vao gio hang ben phai.
-              _buildAddButton(),
+              // Nut them vao gio hang ben phai — can giua theo chieu doc.
+              Align(
+                alignment: Alignment.center,
+                child: _buildAddButton(),
+              ),
             ],
           ),
         ),
@@ -63,29 +71,55 @@ class SearchResultCard extends StatelessWidget {
     );
   }
 
-  Widget _buildProductImage() {
+  Widget _buildProductImage(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
-      child: Image.network(
-        item.productImageUrl,
-        width: 80,
-        height: 80,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
+      child: Stack(
+        children: [
+          Image.network(
+            item.imageUrl,
             width: 80,
             height: 80,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceVariant,
-              borderRadius: BorderRadius.circular(8),
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.image_not_supported_outlined,
+                  color: AppColors.textHint,
+                  size: 28,
+                ),
+              );
+            },
+          ),
+          if (item.isOutOfStock)
+            Positioned.fill(
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Text(
+                    context.t('home_out_of_stock'),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
             ),
-            child: Icon(
-              Icons.image_not_supported_outlined,
-              color: AppColors.textHint,
-              size: 28,
-            ),
-          );
-        },
+        ],
       ),
     );
   }
@@ -96,9 +130,7 @@ class SearchResultCard extends StatelessWidget {
       style: TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.w600,
-        color: item.isOutOfStock
-            ? AppColors.textHint
-            : AppColors.textPrimary,
+        color: AppColors.textPrimary,
       ),
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
@@ -129,7 +161,7 @@ class SearchResultCard extends StatelessWidget {
             color: AppColors.primary,
           ),
         ),
-        const Spacer(),
+        const SizedBox(width: 8),
         // Danh gia sao.
         Icon(
           Icons.star,
@@ -157,23 +189,160 @@ class SearchResultCard extends StatelessWidget {
     );
   }
 
+  Widget _buildDeliveryInfo() {
+    final hasAddress = item.address.isNotEmpty;
+    final hasDistance = item.distance > 0;
+    final hasDeliveryTime = item.deliveryTime.isNotEmpty;
+
+    if (!hasAddress && !hasDistance && !hasDeliveryTime) {
+      return const SizedBox.shrink();
+    }
+
+    return Row(
+      children: [
+        // Dia chi cua hang.
+        if (hasAddress) ...[
+          Icon(
+            Icons.location_on_outlined,
+            size: 12,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(width: 2),
+          Expanded(
+            child: Text(
+              item.address,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+        // Khoang cach.
+        if (hasDistance) ...[
+          if (hasAddress) const SizedBox(width: 8),
+          Icon(
+            Icons.directions_walk,
+            size: 12,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(width: 2),
+          Text(
+            '${item.distance.toStringAsFixed(1)} km',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+        // Thoi gian giao hang.
+        if (hasDeliveryTime) ...[
+          const SizedBox(width: 8),
+          Icon(
+            Icons.schedule,
+            size: 12,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(width: 2),
+          Text(
+            item.deliveryTime,
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildAddButton() {
     if (item.isOutOfStock) {
       return Container(
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          color: AppColors.surfaceVariant,
+          color: AppColors.textHint.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(
-          Icons.remove_circle_outline,
-          color: AppColors.textHint,
-          size: 22,
+        child: const Icon(
+          Icons.remove_shopping_cart_outlined,
+          color: Colors.white,
+          size: 20,
         ),
       );
     }
 
+    if (isAddingToCart) {
+      return Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Center(
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (cartQuantity > 0) {
+      // Da co trong gio -> hien thi icon gio + badge so luong.
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          GestureDetector(
+            onTap: onAddToCart,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.shopping_cart_outlined,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ),
+          Positioned(
+            top: -6,
+            right: -6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.error,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              constraints: const BoxConstraints(minWidth: 18),
+              child: Text(
+                '$cartQuantity',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Chua co trong gio -> hien thi nut +.
     return GestureDetector(
       onTap: onAddToCart,
       child: Container(

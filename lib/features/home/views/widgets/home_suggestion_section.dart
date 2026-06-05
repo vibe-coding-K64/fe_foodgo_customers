@@ -3,6 +3,7 @@ import '../../models/store_model.dart';
 import '../../models/product_model.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
+import '../../../../core/utils/format_currency.dart';
 
 /// Widget nhom goi y voi tieu de va danh sach san pham/quan an.
 /// Nhan Stream thay vi List, tu dong xu ly 3 trang thai:
@@ -231,7 +232,7 @@ class _StoreCard extends StatelessWidget {
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(12)),
               child: Image.network(
-                store.backUrl,
+                store.backUrl.trim().isNotEmpty ? store.backUrl.trim() : store.avtUrl.trim(),
                 height: 100,
                 width: double.infinity,
                 fit: BoxFit.cover,
@@ -369,7 +370,7 @@ class _ProductCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${product.basePrice.toStringAsFixed(0)} ${context.t('unit_currency')}',
+                    formatCurrency(product.basePrice, context),
                     style: TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,

@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
-import '../../../features/profile/models/address_model.dart';
+import '../../../core/utils/snackbar_helper.dart';
+import '../models/address_model.dart';
+import '../services/address_service.dart';
+import 'map_picker_view.dart';
 
 /// Man hinh form Them moi / Cap nhat dia chi.
 ///
@@ -11,7 +14,7 @@ import '../../../features/profile/models/address_model.dart';
 ///   2. [onSave] - callback khi nguoi dung bam "Luu dia chi"
 ///
 /// Thu tu tra du lieu (sau khi luu):
-///   - Tra ve AddressModel da duoc tao / cap nhat thong qua callback [onSave].
+///   - Tra ve AddressModel da duoc tao / cap nhat thong qua API.
 ///   - Hoac tra ve [null] neu nguoi dung bam Back.
 ///
 /// Duoc goi tu:
@@ -24,10 +27,18 @@ class AddressFormView extends StatefulWidget {
   /// Callback khi nguoi dung luu thanh cong.
   final void Function(AddressModel address)? onSave;
 
+  /// Callback ngay truoc khi pop 2 lan. Dung de reload danh sach dia chi.
+  final Future<void> Function(AddressModel address)? onBeforeDoublePop;
+
+  /// Neu true, sau khi luu se pop 2 lan (ve trang checkout).
+  final bool autoDoublePop;
+
   const AddressFormView({
     super.key,
     this.address,
     this.onSave,
+    this.onBeforeDoublePop,
+    this.autoDoublePop = false,
   });
 
   /// Kiem tra xem day la che do sua hay tao moi.
@@ -38,16 +49,15 @@ class AddressFormView extends StatefulWidget {
 }
 
 class _AddressFormViewState extends State<AddressFormView> {
+  final AddressService _addressService = AddressService();
+
   /// Controller cac o nhap lieu.
-  late final TextEditingController _nameController;
+  late final TextEditingController _receiverNameController;
   late final TextEditingController _phoneController;
-  late final TextEditingController _streetController;
-  late final TextEditingController _wardController;
-  late final TextEditingController _districtController;
-  late final TextEditingController _cityController;
+  late final TextEditingController _labelController;
 
   /// FocusNode de quyen khong focus giua cac o.
-  final List<FocusNode> _focusNodes = List.generate(5, (_) => FocusNode());
+  final List<FocusNode> _focusNodes = List.generate(2, (_) => FocusNode());
 
   /// Loai dia chi dang chon (0 = Nha, 1 = Van phong, 2 = Khac).
   int _selectedLabel = 0;
@@ -58,7 +68,14 @@ class _AddressFormViewState extends State<AddressFormView> {
   /// Trang thai loading khi dang submit form.
   bool _isSaving = false;
 
-  /// Các loi validate hien tai (key = index cua field).
+  /// Toa do duoc chon tu MapPickerPage.
+  double? _selectedLat;
+  double? _selectedLng;
+
+  /// Dia chi hien thi (lay tu MapPicker, read-only, khong cho nhap tay).
+  String _addressDisplay = '';
+
+  /// Cac loi validate hien tai (key = index cua field).
   final Map<int, String> _fieldErrors = {};
 
   @override
@@ -66,60 +83,86 @@ class _AddressFormViewState extends State<AddressFormView> {
     super.initState();
     final addr = widget.address;
 
-    // Khoi tao controller voi du lieu cu (neu la sua).
-    _nameController = TextEditingController(text: addr?.name ?? '');
-    _phoneController = TextEditingController(text: addr?.userId ?? '');
-    _streetController = TextEditingController(text: addr?.address ?? '');
-    _wardController = TextEditingController();
-    _districtController = TextEditingController();
-    _cityController = TextEditingController();
+    _receiverNameController = TextEditingController(text: addr?.receiverName ?? '');
+    _phoneController = TextEditingController(text: addr?.receiverPhone ?? '');
+    _labelController = TextEditingController(text: addr?.name ?? '');
 
     if (addr != null) {
       _isDefault = addr.isDefault;
-      // Phan tich dia chi day du de tach cac thanh phan.
-      _parseAddress(addr.address);
+      _addressDisplay = addr.address;
+      _selectedLabel = _inferLabelIndex(addr.name);
+      _selectedLat = addr.lat;
+      _selectedLng = addr.lng;
     }
 
     debugPrint(
         'AddressFormView: Che do ${widget.isEditMode ? 'sua' : 'them moi'}.');
   }
 
-  /// Phan tich dia chi day du thanh tung thanh phan.
-  void _parseAddress(String fullAddress) {
-    // Mac dinh: "123 Nguyen Hue, Quan 1, TP.HCM"
-    final parts = fullAddress.split(',').map((p) => p.trim()).toList();
-    if (parts.length >= 1) _streetController.text = parts[0];
-    if (parts.length >= 2) _districtController.text = parts[1];
-    if (parts.length >= 3) _cityController.text = parts[2];
+  /// Xac dinh chi so chip label tu gia tri label hien tai.
+  int _inferLabelIndex(String label) {
+    if (label.isEmpty) return 0;
+    if (label.contains('Công ty') ||
+        label.contains('Office') ||
+        label.contains('Cong ty')) {
+      return 1;
+    }
+    if (label.contains('Nhà') ||
+        label.contains('Home') ||
+        label.contains('Nha')) {
+      return 0;
+    }
+    return 2; // Khac
   }
 
-  /// Goop tat ca thanh phan dia chi thanh mot chuoi day du.
-  String _buildFullAddress() {
-    final street = _streetController.text.trim();
-    final district = _districtController.text.trim();
-    final city = _cityController.text.trim();
+  /// Lay gia tri label tu chi so chip.
+  String _getLabelValue(int index, BuildContext ctx) {
+    switch (index) {
+      case 0:
+        return ctx.t('address_name_home');
+      case 1:
+        return ctx.t('address_name_office');
+      case 2:
+        return ctx.t('address_name_other');
+      default:
+        return '';
+    }
+  }
 
-    final buffer = StringBuffer();
-    if (street.isNotEmpty) buffer.write(street);
-    if (district.isNotEmpty) {
-      if (buffer.isNotEmpty) buffer.write(', ');
-      buffer.write(district);
+  /// Mo MapPickerPage de chon vi tri tren ban do.
+  void _openMapPicker(BuildContext ctx) async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      ctx,
+      MaterialPageRoute(
+        builder: (_) => MapPickerPage(
+          initialLat: _selectedLat ?? widget.address?.lat,
+          initialLng: _selectedLng ?? widget.address?.lng,
+          initialAddress: _addressDisplay.isNotEmpty ? _addressDisplay : widget.address?.address,
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      final lat = result['lat'] as double;
+      final lng = result['lng'] as double;
+      final fullAddress = result['address'] as String;
+
+      setState(() {
+        _selectedLat = lat;
+        _selectedLng = lng;
+        _addressDisplay = fullAddress;
+      });
+
+      debugPrint(
+          'AddressFormView: Chon vi tri tu ban do - lat=$lat, lng=$lng, address=$fullAddress');
     }
-    if (city.isNotEmpty) {
-      if (buffer.isNotEmpty) buffer.write(', ');
-      buffer.write(city);
-    }
-    return buffer.isEmpty ? street : buffer.toString();
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _receiverNameController.dispose();
     _phoneController.dispose();
-    _streetController.dispose();
-    _wardController.dispose();
-    _districtController.dispose();
-    _cityController.dispose();
+    _labelController.dispose();
     for (final node in _focusNodes) {
       node.dispose();
     }
@@ -127,25 +170,18 @@ class _AddressFormViewState extends State<AddressFormView> {
   }
 
   /// Validate tat ca cac truong bat buoc.
-  /// Tra ve true neu tat ca deu hop le.
-  bool _validate() {
+  bool _validate(BuildContext context) {
+    final t = context.t;
     final errors = <int, String>{};
-    final t = LanguageService.translate;
 
-    if (_nameController.text.trim().isEmpty) {
+    if (_receiverNameController.text.trim().isEmpty) {
       errors[0] = t('address_form_name_required');
     }
     if (_phoneController.text.trim().isEmpty) {
       errors[1] = t('address_form_phone_required');
     }
-    if (_streetController.text.trim().isEmpty) {
-      errors[2] = t('address_form_street_required');
-    }
-    if (_districtController.text.trim().isEmpty) {
-      errors[3] = t('address_form_district_required');
-    }
-    if (_cityController.text.trim().isEmpty) {
-      errors[4] = t('address_form_city_required');
+    if (_addressDisplay.trim().isEmpty) {
+      errors[2] = t('error_no_address');
     }
 
     setState(() {
@@ -159,53 +195,98 @@ class _AddressFormViewState extends State<AddressFormView> {
   }
 
   /// Xu ly khi nguoi dung bam nut "Luu dia chi".
-  void _onSave() {
-    if (!_validate()) return;
+  void _onSave() async {
+    if (!_validate(context)) return;
 
     setState(() => _isSaving = true);
 
-    final now = DateTime.now();
-    final addr = AddressModel(
-      id: widget.address?.id ?? 'addr_${now.millisecondsSinceEpoch}',
-      userId: _phoneController.text.trim(),
-      name: _nameController.text.trim(),
-      address: _buildFullAddress(),
-      lat: widget.address?.lat ?? 0,
-      lng: widget.address?.lng ?? 0,
-      isDefault: _isDefault,
-      createdAt: widget.address?.createdAt ?? now,
-      updatedAt: now,
-    );
+    try {
+      final fullAddress = _addressDisplay.trim();
+      final label = _getLabelValue(_selectedLabel, context);
 
-    debugPrint(
-        'AddressFormView: Luu dia chi [${addr.id}] - ${addr.name}, ${addr.address}, mac dinh=${addr.isDefault}');
+      debugPrint(
+          'AddressFormView: Dang luu dia chi - name=$label, address=$fullAddress, '
+          'receiverName=${_receiverNameController.text.trim()}, '
+          'receiverPhone=${_phoneController.text.trim()}, '
+          'lat=${_selectedLat ?? widget.address?.lat}, lng=${_selectedLng ?? widget.address?.lng}, '
+          'isDefault=$_isDefault');
 
-    // Thong bao thanh cong.
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(LanguageService.translate('address_form_saved')),
-        backgroundColor: AppColors.primary,
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+      final AddressModel savedAddress;
 
-    // Goi callback.
-    widget.onSave?.call(addr);
+      if (widget.isEditMode) {
+        savedAddress = await _addressService.updateAddress(
+          addressId: widget.address!.id,
+          name: label,
+          address: fullAddress,
+          receiverName: _receiverNameController.text.trim(),
+          receiverPhone: _phoneController.text.trim(),
+          lat: _selectedLat ?? widget.address?.lat,
+          lng: _selectedLng ?? widget.address?.lng,
+          isDefault: _isDefault,
+        );
+      } else {
+        savedAddress = await _addressService.createAddress(
+          name: label,
+          address: fullAddress,
+          receiverName: _receiverNameController.text.trim(),
+          receiverPhone: _phoneController.text.trim(),
+          lat: _selectedLat,
+          lng: _selectedLng,
+          isDefault: _isDefault,
+        );
+      }
 
-    // Quay lai.
-    Navigator.pop(context, addr);
+      debugPrint(
+          'AddressFormView: Da luu dia chi [${savedAddress.id}] thanh cong');
+
+      if (mounted) {
+        showAppToast(
+          context,
+          message: context.t('address_form_saved'),
+          type: AppToastType.success,
+          duration: const Duration(seconds: 1),
+        );
+
+        widget.onSave?.call(savedAddress);
+        if (widget.autoDoublePop) {
+          await widget.onBeforeDoublePop?.call(savedAddress);
+          if (mounted) {
+            Navigator.pop(context); // ve AddressManagement
+            Navigator.pop(context, savedAddress); // ve Checkout
+          }
+        } else {
+          Navigator.pop(context, savedAddress);
+        }
+      }
+    } catch (e) {
+      debugPrint('AddressFormView: Loi khi luu dia chi - $e');
+      if (mounted) {
+        showAppToast(
+          context,
+          message: widget.isEditMode
+              ? context.t('address_error_update')
+              : context.t('address_error_create'),
+          type: AppToastType.error,
+          duration: const Duration(seconds: 2),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 
   /// Khoi tao style cho TextField.
   InputDecoration _buildInputDecoration({
+    required BuildContext ctx,
     required String labelKey,
     required String hintKey,
     int? errorFieldIndex,
   }) {
     return InputDecoration(
-      labelText: LanguageService.translate(labelKey),
-      hintText: LanguageService.translate(hintKey),
+      labelText: ctx.t(labelKey),
+      hintText: ctx.t(hintKey),
       labelStyle: const TextStyle(fontSize: 14),
       hintStyle: const TextStyle(fontSize: 14, color: AppColors.textHint),
       filled: true,
@@ -249,8 +330,8 @@ class _AddressFormViewState extends State<AddressFormView> {
         ),
         title: Text(
           widget.isEditMode
-              ? LanguageService.translate('address_form_title_edit')
-              : LanguageService.translate('address_form_title_add'),
+              ? context.t('address_form_title_edit')
+              : context.t('address_form_title_add'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -265,33 +346,25 @@ class _AddressFormViewState extends State<AddressFormView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // MUC 1: Thong tin lien he.
-            _buildSectionHeader('address_form_contact_info'),
+            _buildSectionHeader(context, 'address_form_contact_info'),
             const SizedBox(height: 12),
-            _buildNameField(),
+            _buildNameField(context),
             const SizedBox(height: 14),
-            _buildPhoneField(),
+            _buildPhoneField(context),
             const SizedBox(height: 24),
 
             // MUC 2: Vi tri.
-            _buildSectionHeader('address_form_location'),
+            _buildSectionHeader(context, 'address_form_location'),
             const SizedBox(height: 12),
-            _buildMapPicker(),
-            const SizedBox(height: 14),
-            _buildStreetField(),
-            const SizedBox(height: 14),
-            _buildWardField(),
-            const SizedBox(height: 14),
-            _buildDistrictField(),
-            const SizedBox(height: 14),
-            _buildCityField(),
+            _buildMapPicker(context),
             const SizedBox(height: 24),
 
             // MUC 3: Cai dat bo sung.
-            _buildSectionHeader('address_form_label'),
+            _buildSectionHeader(context, 'address_form_label'),
             const SizedBox(height: 12),
-            _buildLabelChips(),
+            _buildLabelChips(context),
             const SizedBox(height: 20),
-            _buildDefaultSwitch(),
+            _buildDefaultSwitch(context),
             const SizedBox(height: 24),
 
             // Khoang trong duoi cung de sticky bar.
@@ -304,9 +377,9 @@ class _AddressFormViewState extends State<AddressFormView> {
   }
 
   /// Tieu de cua tung muc (section header).
-  Widget _buildSectionHeader(String labelKey) {
+  Widget _buildSectionHeader(BuildContext ctx, String labelKey) {
     return Text(
-      LanguageService.translate(labelKey),
+      ctx.t(labelKey),
       style: const TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.w600,
@@ -315,44 +388,55 @@ class _AddressFormViewState extends State<AddressFormView> {
     );
   }
 
-  /// Nut chon vi tri tren ban do.
-  Widget _buildMapPicker() {
+  /// Nut chon vi tri tren ban do / hien thi dia chi da chon.
+  Widget _buildMapPicker(BuildContext ctx) {
+    final hasAddress = _addressDisplay.trim().isNotEmpty;
+
     return GestureDetector(
-      onTap: () {
-        debugPrint('AddressFormView: Nguoi dung bam chon ban do (chua ho tro)');
-        // TODO: Mo trang ban do / tra ve toa do.
-      },
+      onTap: () => _openMapPicker(ctx),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: AppColors.primary.withAlpha(10),
+          color: hasAddress
+              ? AppColors.surface
+              : AppColors.primary.withAlpha(10),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: AppColors.primary.withAlpha(60),
+            color: hasAddress
+                ? _fieldErrors[2] != null
+                    ? AppColors.error
+                    : AppColors.border
+                : AppColors.primary.withAlpha(60),
             width: 1,
           ),
         ),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.map_outlined,
-              color: AppColors.primary,
+              color: hasAddress ? AppColors.textSecondary : AppColors.primary,
               size: 22,
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                LanguageService.translate('address_form_select_map'),
-                style: const TextStyle(
+                hasAddress
+                    ? _addressDisplay
+                    : ctx.t('address_form_select_map'),
+                style: TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.primary,
+                  fontWeight: hasAddress ? FontWeight.w400 : FontWeight.w500,
+                  color: hasAddress
+                      ? AppColors.textPrimary
+                      : AppColors.primary,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             const Icon(
               Icons.chevron_right,
-              color: AppColors.primary,
+              color: AppColors.textSecondary,
               size: 22,
             ),
           ],
@@ -362,14 +446,15 @@ class _AddressFormViewState extends State<AddressFormView> {
   }
 
   /// O nhap Ten nguoi nhan.
-  Widget _buildNameField() {
+  Widget _buildNameField(BuildContext ctx) {
     return TextField(
-      controller: _nameController,
+      controller: _receiverNameController,
       focusNode: _focusNodes[0],
       textInputAction: TextInputAction.next,
       textCapitalization: TextCapitalization.words,
       onSubmitted: (_) => _focusNodes[1].requestFocus(),
       decoration: _buildInputDecoration(
+        ctx: ctx,
         labelKey: 'address_form_receiver_name',
         hintKey: 'address_form_receiver_name_hint',
         errorFieldIndex: 0,
@@ -378,18 +463,19 @@ class _AddressFormViewState extends State<AddressFormView> {
   }
 
   /// O nhap So dien thoai.
-  Widget _buildPhoneField() {
+  Widget _buildPhoneField(BuildContext ctx) {
     return TextField(
       controller: _phoneController,
       focusNode: _focusNodes[1],
-      textInputAction: TextInputAction.next,
+      textInputAction: TextInputAction.done,
       keyboardType: TextInputType.phone,
       inputFormatters: [
         FilteringTextInputFormatter.digitsOnly,
-        LengthLimitingTextInputFormatter(10),
+        LengthLimitingTextInputFormatter(11),
       ],
-      onSubmitted: (_) => _focusNodes[2].requestFocus(),
+      onSubmitted: (_) => FocusScope.of(context).unfocus(),
       decoration: _buildInputDecoration(
+        ctx: ctx,
         labelKey: 'address_form_phone',
         hintKey: 'address_form_phone_hint',
         errorFieldIndex: 1,
@@ -397,74 +483,12 @@ class _AddressFormViewState extends State<AddressFormView> {
     );
   }
 
-  /// O nhap So nha / Ten duong.
-  Widget _buildStreetField() {
-    return TextField(
-      controller: _streetController,
-      focusNode: _focusNodes[2],
-      textInputAction: TextInputAction.next,
-      textCapitalization: TextCapitalization.words,
-      onSubmitted: (_) => _focusNodes[3].requestFocus(),
-      decoration: _buildInputDecoration(
-        labelKey: 'address_form_street',
-        hintKey: 'address_form_street_hint',
-        errorFieldIndex: 2,
-      ),
-    );
-  }
-
-  /// O nhap Phuong / Xa.
-  Widget _buildWardField() {
-    return TextField(
-      controller: _wardController,
-      focusNode: _focusNodes[3],
-      textInputAction: TextInputAction.next,
-      textCapitalization: TextCapitalization.words,
-      onSubmitted: (_) => _focusNodes[4].requestFocus(),
-      decoration: _buildInputDecoration(
-        labelKey: 'address_form_ward',
-        hintKey: 'address_form_ward_hint',
-      ),
-    );
-  }
-
-  /// O nhap Quan / Huyen.
-  Widget _buildDistrictField() {
-    return TextField(
-      controller: _districtController,
-      focusNode: _focusNodes[4],
-      textInputAction: TextInputAction.next,
-      textCapitalization: TextCapitalization.words,
-      onSubmitted: (_) => _focusNodes[0].requestFocus(),
-      decoration: _buildInputDecoration(
-        labelKey: 'address_form_district',
-        hintKey: 'address_form_district_hint',
-        errorFieldIndex: 3,
-      ),
-    );
-  }
-
-  /// O nhap Tinh / Thanh pho.
-  Widget _buildCityField() {
-    return TextField(
-      controller: _cityController,
-      textInputAction: TextInputAction.done,
-      textCapitalization: TextCapitalization.words,
-      onSubmitted: (_) => FocusScope.of(context).unfocus(),
-      decoration: _buildInputDecoration(
-        labelKey: 'address_form_city',
-        hintKey: 'address_form_city_hint',
-        errorFieldIndex: 4,
-      ),
-    );
-  }
-
   /// Nhom ChoiceChip: Nha / Van phong / Khac.
-  Widget _buildLabelChips() {
+  Widget _buildLabelChips(BuildContext ctx) {
     final labels = [
-      LanguageService.translate('address_name_home'),
-      LanguageService.translate('address_name_office'),
-      LanguageService.translate('address_name_other'),
+      ctx.t('address_name_home'),
+      ctx.t('address_name_office'),
+      ctx.t('address_name_other'),
     ];
 
     return Wrap(
@@ -507,7 +531,7 @@ class _AddressFormViewState extends State<AddressFormView> {
   }
 
   /// Dong Switch "Dat lam dia chi mac dinh".
-  Widget _buildDefaultSwitch() {
+  Widget _buildDefaultSwitch(BuildContext ctx) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
@@ -519,7 +543,7 @@ class _AddressFormViewState extends State<AddressFormView> {
         children: [
           Expanded(
             child: Text(
-              LanguageService.translate('address_form_default_switch'),
+              ctx.t('address_form_default_switch'),
               style: const TextStyle(
                 fontSize: 14,
                 color: AppColors.textPrimary,
@@ -545,7 +569,7 @@ class _AddressFormViewState extends State<AddressFormView> {
   }
 
   /// Sticky Bottom Bar: Nut "Luu dia chi".
-  Widget _buildStickyBottomBar(BuildContext context) {
+  Widget _buildStickyBottomBar(BuildContext ctx) {
     return Container(
       padding: EdgeInsets.fromLTRB(
         16,
@@ -587,7 +611,7 @@ class _AddressFormViewState extends State<AddressFormView> {
                   ),
                 )
               : Text(
-                  LanguageService.translate('address_form_save_btn'),
+                  ctx.t('address_form_save_btn'),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 16,

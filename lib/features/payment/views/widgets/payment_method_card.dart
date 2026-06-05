@@ -42,25 +42,25 @@ class PaymentMethodCard extends StatelessWidget {
         ),
         child: Padding(
           padding: const EdgeInsets.all(14),
-          child: _buildContent(),
+          child: _buildContent(context),
         ),
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(BuildContext context) {
     switch (method.type) {
       case PaymentMethodType.cash:
-        return _buildCashContent();
+        return _buildCashContent(context);
       case PaymentMethodType.card:
-        return _buildCardContent();
+        return _buildCardContent(context);
       case PaymentMethodType.wallet:
-        return _buildWalletContent();
+        return _buildWalletContent(context);
     }
   }
 
   /// Noi dung cho phuong thuc tien mat.
-  Widget _buildCashContent() {
+  Widget _buildCashContent(BuildContext ctx) {
     return Row(
       children: [
         // Icon tien mat.
@@ -83,7 +83,7 @@ class PaymentMethodCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                LanguageService.translate('payment_cash'),
+                ctx.t('payment_cash'),
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -92,7 +92,7 @@ class PaymentMethodCard extends StatelessWidget {
               ),
               const SizedBox(height: 3),
               Text(
-                LanguageService.translate('payment_cash_desc'),
+                ctx.t('payment_cash_desc'),
                 style: const TextStyle(
                   fontSize: 12,
                   color: AppColors.textSecondary,
@@ -108,7 +108,7 @@ class PaymentMethodCard extends StatelessWidget {
   }
 
   /// Noi dung cho phuong thuc the.
-  Widget _buildCardContent() {
+  Widget _buildCardContent(BuildContext ctx) {
     return Row(
       children: [
         // Logo the.
@@ -136,7 +136,7 @@ class PaymentMethodCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                _getCardBrandName(),
+                _getCardBrandName(ctx),
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -184,7 +184,7 @@ class PaymentMethodCard extends StatelessWidget {
   }
 
   /// Noi dung cho phuong thuc vi dien tu.
-  Widget _buildWalletContent() {
+  Widget _buildWalletContent(BuildContext ctx) {
     return Row(
       children: [
         // Icon vi.
@@ -209,7 +209,7 @@ class PaymentMethodCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                _getWalletName(),
+                _getWalletName(ctx),
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -227,8 +227,8 @@ class PaymentMethodCard extends StatelessWidget {
                 ),
                 child: Text(
                   method.isLinked
-                      ? LanguageService.translate('payment_linked')
-                      : LanguageService.translate('payment_not_linked'),
+                      ? ctx.t('payment_linked')
+                      : ctx.t('payment_not_linked'),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -297,31 +297,31 @@ class PaymentMethodCard extends StatelessWidget {
   }
 
   /// Lay ten nhan hien thi cua nha the.
-  String _getCardBrandName() {
-    switch (method.cardBrand) {
-      case CardBrand.visa:
-        return LanguageService.translate('payment_visa');
-      case CardBrand.mastercard:
-        return LanguageService.translate('payment_mastercard');
-      case CardBrand.jcb:
+  String _getCardBrandName(BuildContext ctx) {
+    switch (method.cardBrand?.toLowerCase()) {
+      case 'visa':
+        return ctx.t('payment_visa');
+      case 'mastercard':
+        return ctx.t('payment_mastercard');
+      case 'jcb':
         return 'JCB';
-      case CardBrand.amex:
+      case 'amex':
         return 'American Express';
       default:
-        return LanguageService.translate('payment_card');
+        return ctx.t('payment_card');
     }
   }
 
   /// Lay chu viet tat hien thi tren logo the.
   String _getCardAbbrev() {
-    switch (method.cardBrand) {
-      case CardBrand.visa:
+    switch (method.cardBrand?.toLowerCase()) {
+      case 'visa':
         return 'VISA';
-      case CardBrand.mastercard:
+      case 'mastercard':
         return 'MC';
-      case CardBrand.jcb:
+      case 'jcb':
         return 'JCB';
-      case CardBrand.amex:
+      case 'amex':
         return 'AMEX';
       default:
         return '****';
@@ -330,14 +330,14 @@ class PaymentMethodCard extends StatelessWidget {
 
   /// Lay mau nen logo the.
   Color _getCardBgColor() {
-    switch (method.cardBrand) {
-      case CardBrand.visa:
+    switch (method.cardBrand?.toLowerCase()) {
+      case 'visa':
         return const Color(0xFF1A1F71);
-      case CardBrand.mastercard:
+      case 'mastercard':
         return const Color(0xFFEB001B);
-      case CardBrand.jcb:
+      case 'jcb':
         return const Color(0xFF0E4D95);
-      case CardBrand.amex:
+      case 'amex':
         return const Color(0xFF007BC1);
       default:
         return AppColors.surfaceVariant;
@@ -346,14 +346,11 @@ class PaymentMethodCard extends StatelessWidget {
 
   /// Lay mau chu tren logo the.
   Color _getCardTextColor() {
-    switch (method.cardBrand) {
-      case CardBrand.visa:
-        return Colors.white;
-      case CardBrand.mastercard:
-        return Colors.white;
-      case CardBrand.jcb:
-        return Colors.white;
-      case CardBrand.amex:
+    switch (method.cardBrand?.toLowerCase()) {
+      case 'visa':
+      case 'mastercard':
+      case 'jcb':
+      case 'amex':
         return Colors.white;
       default:
         return AppColors.textSecondary;
@@ -361,27 +358,27 @@ class PaymentMethodCard extends StatelessWidget {
   }
 
   /// Lay ten hien thi cua vi.
-  String _getWalletName() {
-    switch (method.walletBrand) {
-      case WalletBrand.momo:
-        return LanguageService.translate('payment_momo');
-      case WalletBrand.zalopay:
-        return LanguageService.translate('payment_zalopay');
-      case WalletBrand.vnpay:
-        return LanguageService.translate('payment_vnpay');
+  String _getWalletName(BuildContext ctx) {
+    switch (method.walletBrand?.toLowerCase()) {
+      case 'momo':
+        return ctx.t('payment_momo');
+      case 'zalopay':
+        return ctx.t('payment_zalopay');
+      case 'vnpay':
+        return ctx.t('payment_vnpay');
       default:
-        return LanguageService.translate('payment_wallet');
+        return ctx.t('payment_wallet');
     }
   }
 
   /// Lay icon vi.
   IconData _getWalletIcon() {
-    switch (method.walletBrand) {
-      case WalletBrand.momo:
+    switch (method.walletBrand?.toLowerCase()) {
+      case 'momo':
         return Icons.savings_outlined;
-      case WalletBrand.zalopay:
+      case 'zalopay':
         return Icons.account_balance_wallet_outlined;
-      case WalletBrand.vnpay:
+      case 'vnpay':
         return Icons.payment;
       default:
         return Icons.account_balance_wallet_outlined;
@@ -390,12 +387,12 @@ class PaymentMethodCard extends StatelessWidget {
 
   /// Lay mau nen icon vi.
   Color _getWalletBgColor() {
-    switch (method.walletBrand) {
-      case WalletBrand.momo:
+    switch (method.walletBrand?.toLowerCase()) {
+      case 'momo':
         return const Color(0xFFA50064);
-      case WalletBrand.zalopay:
+      case 'zalopay':
         return const Color(0xFF0068FF);
-      case WalletBrand.vnpay:
+      case 'vnpay':
         return const Color(0xFFAE2C1B);
       default:
         return AppColors.surfaceVariant;
@@ -404,10 +401,10 @@ class PaymentMethodCard extends StatelessWidget {
 
   /// Lay mau icon vi.
   Color _getWalletIconColor() {
-    switch (method.walletBrand) {
-      case WalletBrand.momo:
-      case WalletBrand.zalopay:
-      case WalletBrand.vnpay:
+    switch (method.walletBrand?.toLowerCase()) {
+      case 'momo':
+      case 'zalopay':
+      case 'vnpay':
         return Colors.white;
       default:
         return AppColors.textSecondary;

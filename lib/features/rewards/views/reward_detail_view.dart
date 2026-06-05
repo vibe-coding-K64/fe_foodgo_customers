@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../models/rewards_model.dart';
+import '../services/offer_service.dart';
 
 /// Man hinh Chi tiet uu dai (doi diem).
 ///
@@ -14,16 +15,26 @@ import '../models/rewards_model.dart';
 ///
 /// Duoc goi tu:
 ///   - RewardsView: bam vao item trong section "Doi diem".
-class RewardDetailView extends StatelessWidget {
+class RewardDetailView extends StatefulWidget {
   /// Voucher can hien thi chi tiet.
   final ExchangeVoucherModel voucher;
+
+  /// Callback khi doi voucher thanh cong (tra ve so diem con lai).
+  final void Function(int diemConLai)? onExchangeSuccess;
 
   const RewardDetailView({
     super.key,
     required this.voucher,
+    this.onExchangeSuccess,
   });
 
-  /// Format so diem thanh chuoi co dau phay.
+  @override
+  State<RewardDetailView> createState() => _RewardDetailViewState();
+}
+
+class _RewardDetailViewState extends State<RewardDetailView> {
+  bool _isExchanging = false;
+
   String _formatPoints(int points) {
     final formatted = points.toString().replaceAllMapped(
         RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
@@ -31,10 +42,10 @@ class RewardDetailView extends StatelessWidget {
     return formatted;
   }
 
-  /// Xu ly khi bam nut "Doi diem ngay".
-  void _onExchangeTap(BuildContext context) {
+  void _onExchangeTap() {
     final bodyTemplate = context.t('reward_exchange_confirm_body');
-    final bodyText = bodyTemplate.replaceAll('\$1', _formatPoints(voucher.pointsRequired));
+    final bodyText = bodyTemplate.replaceAll(
+        '\$1', _formatPoints(widget.voucher.pointsRequired));
 
     showDialog(
       context: context,
@@ -80,9 +91,8 @@ class RewardDetailView extends StatelessWidget {
             const SizedBox(width: 8),
             ElevatedButton(
               onPressed: () {
-                debugPrint('RewardDetail: Nguoi dung dong y doi diem [${voucher.id}]');
                 Navigator.pop(dialogContext);
-                _showSuccessAndPop(context);
+                _performExchange();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
@@ -111,17 +121,220 @@ class RewardDetailView extends StatelessWidget {
     );
   }
 
-  /// Hien thi thanh cong roi quay ve.
-  void _showSuccessAndPop(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.t('reward_exchange_success')),
-        backgroundColor: AppColors.primary,
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
+  Future<void> _performExchange() async {
+    setState(() => _isExchanging = true);
+
+    final (result, errorMessage) = await OfferService.exchangeVoucher(
+      voucherId: widget.voucher.id,
     );
-    Navigator.pop(context);
+
+    if (!mounted) return;
+    setState(() => _isExchanging = false);
+
+    if (result != null) {
+      _showExchangeSuccess(result);
+    } else {
+      _showExchangeError(errorMessage ?? 'Doi voucher that bai.');
+    }
+  }
+
+  void _showExchangeSuccess(ExchangedVoucherData data) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              const Icon(Icons.check_circle,
+                  color: AppColors.greenGradientEnd, size: 24),
+              const SizedBox(width: 8),
+              Text(
+                context.t('reward_exchange_success'),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  data.message,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withAlpha(15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildSuccessRow(
+                          context.t('reward_voucher_label'), data.name),
+                      const SizedBox(height: 6),
+                      _buildSuccessRow(
+                          context.t('reward_code_label'), data.code),
+                      const SizedBox(height: 6),
+                      _buildSuccessRow(
+                          context.t('reward_discount_label_row'),
+                          data.discountText),
+                      const SizedBox(height: 6),
+                      _buildSuccessRow(context.t('reward_points_used'),
+                          _formatPoints(data.diemDaDung)),
+                      const SizedBox(height: 6),
+                      _buildSuccessRow(context.t('reward_points_remaining'),
+                          _formatPoints(data.diemConLai)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  widget.onExchangeSuccess?.call(data.diemConLai);
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  context.t('common_done'),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+          actionsPadding: const EdgeInsets.all(16),
+        );
+      },
+    );
+  }
+
+  Widget _buildSuccessRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Flexible(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+            textAlign: TextAlign.right,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showExchangeError(String message) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              const Icon(Icons.error_outline, color: AppColors.error, size: 24),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  context.t('reward_exchange_error_title'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Text(
+              message,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+            ),
+          ),
+          actions: [
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  context.t('common_done'),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+          actionsPadding: const EdgeInsets.all(16),
+        );
+      },
+    );
   }
 
   @override
@@ -150,42 +363,35 @@ class RewardDetailView extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // Noi dung cuon.
           Expanded(
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Hinh anh cover tran vien.
                   _buildCoverImage(),
                   const SizedBox(height: 20),
-                  // Tieu de va mo ta.
                   _buildHeader(),
                   const SizedBox(height: 16),
-                  // Divider.
                   _buildDivider(),
                   const SizedBox(height: 16),
-                  // Dieu khoan.
                   _buildTerms(context),
                   const SizedBox(height: 32),
                 ],
               ),
             ),
           ),
-          // Sticky bottom bar: Diem + Nut doi diem.
           _buildBottomBar(context),
         ],
       ),
     );
   }
 
-  /// Widget hinh anh cover tran vien.
   Widget _buildCoverImage() {
     return AspectRatio(
       aspectRatio: 16 / 9,
-      child: voucher.imageUrl.isNotEmpty
+      child: widget.voucher.imageUrl.isNotEmpty
           ? Image.network(
-              voucher.imageUrl,
+              widget.voucher.imageUrl,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
             )
@@ -193,7 +399,6 @@ class RewardDetailView extends StatelessWidget {
     );
   }
 
-  /// Placeholder khi khong co anh.
   Widget _buildImagePlaceholder() {
     return Container(
       color: AppColors.surfaceVariant,
@@ -207,16 +412,14 @@ class RewardDetailView extends StatelessWidget {
     );
   }
 
-  /// Widget tieu de va mo ta.
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Tieu de.
           Text(
-            voucher.title,
+            widget.voucher.title,
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
@@ -225,9 +428,8 @@ class RewardDetailView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          // Mo ta ngắn.
           Text(
-            voucher.subtitle,
+            widget.voucher.subtitle,
             style: const TextStyle(
               fontSize: 14,
               color: AppColors.textSecondary,
@@ -239,7 +441,6 @@ class RewardDetailView extends StatelessWidget {
     );
   }
 
-  /// Widget divider.
   Widget _buildDivider() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -254,14 +455,12 @@ class RewardDetailView extends StatelessWidget {
     );
   }
 
-  /// Widget dieu khoan ap dung.
   Widget _buildTerms(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Tieu de "Dieu khoan".
           Row(
             children: [
               const Icon(
@@ -281,7 +480,6 @@ class RewardDetailView extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          // Noi dung dieu khoan.
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(14),
@@ -293,28 +491,25 @@ class RewardDetailView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Han su dung.
                 _buildTermItem(
                   icon: Icons.calendar_today_outlined,
-                  text: voucher.terms.isNotEmpty
-                      ? voucher.terms
+                  text: widget.voucher.terms.isNotEmpty
+                      ? widget.voucher.terms
                       : context.t('reward_default_terms'),
                 ),
-                if (voucher.minOrderValue > 0) ...[
+                if (widget.voucher.minOrderValue > 0) ...[
                   const SizedBox(height: 10),
-                  // Don hang toi thieu.
                   _buildTermItem(
                     icon: Icons.shopping_cart_outlined,
                     text: '${context.t('reward_min_order')}: '
-                        '${voucher.minOrderValue.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match[1]},')} '
+                        '${widget.voucher.minOrderValue.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match[1]},')} '
                         '${context.t('unit_currency')}',
                   ),
                 ],
                 const SizedBox(height: 10),
-                // So luong con lai.
                 _buildTermItem(
                   icon: Icons.inventory_2_outlined,
-                  text: '${context.t('reward_remaining')}: ${voucher.remaining} ${context.t('reward_voucher_unit')}',
+                  text: '${context.t('reward_remaining')}: ${widget.voucher.remaining} ${context.t('reward_voucher_unit')}',
                 ),
               ],
             ),
@@ -324,16 +519,11 @@ class RewardDetailView extends StatelessWidget {
     );
   }
 
-  /// Mot dong trong khoi dieu khoan.
   Widget _buildTermItem({required IconData icon, required String text}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          icon,
-          size: 15,
-          color: AppColors.textSecondary,
-        ),
+        Icon(icon, size: 15, color: AppColors.textSecondary),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -349,7 +539,6 @@ class RewardDetailView extends StatelessWidget {
     );
   }
 
-  /// Widget sticky bottom bar.
   Widget _buildBottomBar(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -371,7 +560,6 @@ class RewardDetailView extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // So diem can doi (trai).
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
@@ -380,14 +568,10 @@ class RewardDetailView extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.stars,
-                  size: 18,
-                  color: AppColors.primary,
-                ),
+                const Icon(Icons.stars, size: 18, color: AppColors.primary),
                 const SizedBox(width: 6),
                 Text(
-                  '${_formatPoints(voucher.pointsRequired)} ${context.t('reward_points_required')}',
+                  '${_formatPoints(widget.voucher.pointsRequired)} ${context.t('reward_points_required')}',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -398,10 +582,9 @@ class RewardDetailView extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          // Nut "Doi diem ngay" (phai).
           Expanded(
             child: ElevatedButton(
-              onPressed: () => _onExchangeTap(context),
+              onPressed: _isExchanging ? null : _onExchangeTap,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -411,13 +594,22 @@ class RewardDetailView extends StatelessWidget {
                 ),
                 elevation: 0,
               ),
-              child: Text(
-                context.t('reward_action_exchange_now'),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child: _isExchanging
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      context.t('reward_action_exchange_now'),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
             ),
           ),
         ],

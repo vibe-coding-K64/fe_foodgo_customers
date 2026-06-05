@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
-import '../../../features/home/models/store_model.dart';
-import '../../../features/home/models/product_model.dart';
+import '../../../core/state/cart_state.dart';
+import '../../../core/utils/auth_storage.dart';
+import '../../../core/utils/snackbar_helper.dart';
+import '../../home/models/store_model.dart';
+import '../../home/models/product_model.dart';
+import '../../cart/views/cart_view.dart';
 import '../services/restaurant_service.dart';
 import '../models/restaurant_category_model.dart';
+import '../models/restaurant_detail_response.dart';
 import 'restaurant_reviews_view.dart';
+import '../../product/views/product_detail_bottom_sheet.dart';
 
 /// Trang chi tiet quan an.
 ///
@@ -13,7 +19,7 @@ import 'restaurant_reviews_view.dart';
 /// thanh danh muc mon an sticky khi cuon.
 ///
 /// Tum xuong duoi se thay:
-///   1. SliverAppBar: Anh bi thu nho + Tieu de xuat hien tren AppBar.
+///   1. SliverAppBar: Anh bia + Tieu de xuat hien tren AppBar.
 ///   2. Thong tin co ban: Avatar, Ten, Khoang cach, Danh gia (clickable).
 ///   3. Danh muc sticky: StickyHeader nam ngay duoi AppBar.
 ///   4. Danh sach mon: SliverList cac mon an theo danh muc.
@@ -30,46 +36,115 @@ class RestaurantDetailView extends StatefulWidget {
 }
 
 class _RestaurantDetailViewState extends State<RestaurantDetailView> {
-  // Store mock data.
-  late StoreModel _store;
-  late List<RestaurantCategoryModel> _categories;
-  late String _selectedCategoryId;
+  // Du lieu tu API.
+  RestaurantDetailResponse? _detail;
+  StoreModel? _store;
+  List<RestaurantCategoryModel> _categories = [];
+  List<ProductModel> _allProducts = [];
+  String _selectedCategoryId = 'all';
 
-  // Vi tri tab danh muc dang duoc chon.
-  int _selectedCategoryIndex = 0;
+  // Trang thai loading.
+  bool _isLoading = true;
+  String? _errorMessage;
+  /// Tap productId dang duoc add de hien thi loading icon tren tile.
+  final Set<String> _addingProductIds = {};
+  /// ProductId dang mo bottom sheet de configure.
+  String? _productIdBeingConfigured;
 
-  // Scroll controller de di chuyen thanh danh muc khi bam tab.
+  /// Query tim kiem san pham trong trang nay.
+  String _searchQuery = '';
+  /// TextEditingController cho search bar.
+  final TextEditingController _searchController = TextEditingController();
+  /// FocusNode de dismiss keyboard.
+  final FocusNode _searchFocusNode = FocusNode();
+
   final ScrollController _scrollController = ScrollController();
+  bool _isCollapsed = false;
 
   @override
   void initState() {
     super.initState();
-    _store = RestaurantService.getMockStore(widget.storeId);
-    _categories = RestaurantService.getCategories();
-    _selectedCategoryId = _categories.first.id;
-    debugPrint(
-        'RestaurantDetailView: Khoi tao trang chi tiet quan [${_store.name}]');
+    _scrollController.addListener(_onScroll);
+    _loadRestaurantDetail();
+  }
+
+  void _onScroll() {
+    final collapsed = _scrollController.offset >= 260 - kToolbarHeight;
+    if (collapsed != _isCollapsed) {
+      setState(() => _isCollapsed = collapsed);
+    }
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
-  // Xu ly khi nguoi dung bam vao tab danh muc.
+  Future<void> _loadRestaurantDetail() async {
+    try {
+      final detail = await RestaurantService.getRestaurantDetail(widget.storeId);
+      if (mounted) {
+        setState(() {
+          _detail = detail;
+          _store = detail.store;
+          _categories = detail.categories;
+          _allProducts = detail.products;
+          _isLoading = false;
+
+          // Chon danh muc dau tien neu co.
+          if (detail.categories.isNotEmpty) {
+            _selectedCategoryId = detail.categories.first.id;
+          }
+
+          if (_store == null) {
+            _errorMessage = 'Khong tim thay cua hang';
+          }
+        });
+        debugPrint(
+            'RestaurantDetailView: Da lay chi tiet - store: ${_store?.name}, '
+            'categories: ${_categories.length}, products: ${_allProducts.length}');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Khong the tai thong tin cua hang';
+        });
+        debugPrint('RestaurantDetailView: Loi loadRestaurantDetail - $e');
+      }
+    }
+  }
+
   void _onCategoryTap(int index) {
     setState(() {
-      _selectedCategoryIndex = index;
       _selectedCategoryId = _categories[index].id;
     });
     debugPrint(
         'RestaurantDetailView: Nguoi dung bam danh muc [${_categories[index].name}]');
   }
 
-  // Xu ly khi nguoi dung bam vao block danh gia.
+  /// Loc san pham theo search query va danh muc dang chon.
+  List<ProductModel> _getFilteredProducts() {
+    var products = _selectedCategoryId == 'all'
+        ? _allProducts
+        : _allProducts
+            .where((p) => p.categoryId == _selectedCategoryId)
+            .toList();
+
+    if (_searchQuery.isNotEmpty) {
+      products = products
+          .where((p) => p.name.toLowerCase().contains(_searchQuery))
+          .toList();
+    }
+
+    return products;
+  }
+
   void _onRatingTap() {
-    debugPrint('Chuyen sang trang Danh gia');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -78,22 +153,168 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
     );
   }
 
-  // Xu ly khi nguoi dung bam nut (+) them mon vao gio hang.
   void _onAddToCart(ProductModel product) {
-    debugPrint(
-        'RestaurantDetailView: Nguoi dung them mon [${product.name}] vao gio hang');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '${context.t('success_add_to_cart')} ${product.name}',
+    if (_addingProductIds.contains(product.id)) return;
+
+    setState(() => _addingProductIds.add(product.id));
+    showProductDetailSheet(context, product).then((_) {
+      if (mounted) {
+        setState(() => _addingProductIds.remove(product.id));
+      }
+    });
+  }
+
+  Future<void> _addDirectlyToCart(ProductModel product) async {
+    final userId = AuthStorage.getUserId();
+    if (userId == null || userId.isEmpty) {
+      showTopSnackBar(
+        context,
+        message: context.t('auth_login'),
+        backgroundColor: AppColors.error,
+      );
+      return;
+    }
+
+    if (product.isOutOfStock) return;
+
+    setState(() => _addingProductIds.add(product.id));
+
+    final cartState = CartState.of(context);
+    CartAddResult result;
+    try {
+      result = await cartState.addItem(
+        userId,
+        product,
+        quantity: 1,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _addingProductIds.remove(product.id));
+      }
+    }
+
+    if (!mounted) return;
+
+    switch (result) {
+      case CartAddResult.success:
+        showTopSnackBar(
+          context,
+          message: '${product.name} ${context.t('success_add_to_cart')}',
+          backgroundColor: AppColors.primary,
+          duration: const Duration(seconds: 1),
+        );
+        break;
+      case CartAddResult.differentStore:
+        _showDifferentStoreDialog(cartState, product);
+        break;
+      case CartAddResult.outOfStock:
+        showTopSnackBar(
+          context,
+          message: cartState.errorMessage ?? 'Mon an dang het hang.',
+          backgroundColor: AppColors.error,
+        );
+        break;
+      case CartAddResult.notFound:
+        showTopSnackBar(
+          context,
+          message: cartState.errorMessage ?? 'San pham khong ton tai.',
+          backgroundColor: AppColors.error,
+        );
+        break;
+      case CartAddResult.otherError:
+        showTopSnackBar(
+          context,
+          message: cartState.errorMessage ?? 'Loi them vao gio hang.',
+          backgroundColor: AppColors.error,
+        );
+        break;
+    }
+  }
+
+  void _showDifferentStoreDialog(CartState cartState, ProductModel product) {
+    final message = cartState.differentStoreErrorMessage ??
+        'Gio hang hien co mon tu cua hang khac. Ban co muon xoa gio hang hien tai de them mon nay?';
+
+    bool dialogIsAdding = false;
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Cua hang khac'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: dialogIsAdding ? null : () => Navigator.pop(ctx),
+              child: Text(
+                'Huy',
+                style: TextStyle(
+                  color: dialogIsAdding
+                      ? AppColors.textHint
+                      : AppColors.textSecondary,
+                ),
+              ),
+            ),
+            FilledButton(
+              onPressed: dialogIsAdding
+                  ? null
+                  : () async {
+                      setDialogState(() => dialogIsAdding = true);
+                      Navigator.pop(ctx);
+                      final userId = AuthStorage.getUserId();
+                      if (userId == null) return;
+
+                      final result = await cartState.replaceCartAndAddItem(
+                        userId,
+                        product,
+                        quantity: 1,
+                      );
+
+                      if (!mounted) return;
+
+                      if (result == CartAddResult.success) {
+                        Navigator.pop(context);
+                        showTopSnackBar(
+                          context,
+                          message:
+                              '${product.name} ${context.t('success_add_to_cart')}',
+                          backgroundColor: AppColors.primary,
+                          duration: const Duration(seconds: 1),
+                        );
+                      } else {
+                        showTopSnackBar(
+                          context,
+                          message:
+                              cartState.errorMessage ?? 'Loi them vao gio hang.',
+                          backgroundColor: AppColors.error,
+                        );
+                      }
+                    },
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
+              ),
+              child: dialogIsAdding
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Xoa va them moi'),
+            ),
+          ],
         ),
-        backgroundColor: AppColors.primary,
-        duration: const Duration(seconds: 1),
       ),
     );
   }
 
-  // Lay key localization cua danh muc theo id.
   String _getCategoryDisplayName(RestaurantCategoryModel category) {
     final keyMap = <String, String>{
       'all': 'category_all',
@@ -111,56 +332,54 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
 
   @override
   Widget build(BuildContext context) {
-    final distance = RestaurantService.getMockDistance();
-
     return Scaffold(
-      // Body la CustomScrollView chua cac Sliver.
       body: CustomScrollView(
         controller: _scrollController,
-
-        // ========== 1. SLIVER APP BAR (ANH BIA + TIEU DE) ==========
         slivers: [
+          // ========== 1. SLIVER APP BAR ==========
           SliverAppBar(
             expandedHeight: 260,
             pinned: true,
             stretch: true,
-            // Anhnen gradient phia sau tieu de.
+            backgroundColor: _isCollapsed ? AppColors.surface : Colors.transparent,
+            foregroundColor: _isCollapsed ? AppColors.textPrimary : Colors.white,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
-                _store.name,
-                style: const TextStyle(
-                  color: Colors.white,
+                _store?.name ?? '...',
+                style: TextStyle(
+                  color: _isCollapsed ? AppColors.textPrimary : Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  shadows: [
-                    Shadow(
-                      offset: Offset(0, 1),
-                      blurRadius: 4,
-                      color: Colors.black38,
-                    ),
-                  ],
+                  shadows: _isCollapsed
+                      ? null
+                      : [
+                          const Shadow(
+                            offset: Offset(0, 1),
+                            blurRadius: 4,
+                            color: Colors.black38,
+                          ),
+                        ],
                 ),
               ),
               centerTitle: true,
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Anh bia.
-                  Image.network(
-                    _store.backUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
+                  if (_store != null)
+                    Image.network(
+                      _store!.backUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
                         color: AppColors.primaryLight,
                         child: const Icon(
                           Icons.restaurant,
                           size: 80,
                           color: Colors.white54,
                         ),
-                      );
-                    },
-                  ),
-                  // Gradient de tieu de de doc hon.
+                      ),
+                    )
+                  else
+                    Container(color: AppColors.primaryLight),
                   const DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -179,103 +398,172 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
             leading: Padding(
               padding: const EdgeInsets.all(8),
               child: CircleAvatar(
-                backgroundColor: Colors.black26,
+                backgroundColor: _isCollapsed
+                    ? AppColors.surface
+                    : Colors.black26,
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  icon: Icon(
+                    Icons.arrow_back,
+                    color: _isCollapsed
+                        ? AppColors.textPrimary
+                        : Colors.white,
+                  ),
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
             ),
             actions: [
               CircleAvatar(
-                backgroundColor: Colors.black26,
+                backgroundColor: _isCollapsed
+                    ? AppColors.surface
+                    : Colors.black26,
                 child: IconButton(
-                  icon:
-                      const Icon(Icons.favorite_border, color: Colors.white),
+                  icon: Icon(
+                    Icons.shopping_cart_outlined,
+                    color: _isCollapsed
+                        ? AppColors.textPrimary
+                        : Colors.white,
+                  ),
                   onPressed: () {
-                    debugPrint(
-                        'RestaurantDetailView: Nguoi dung bam yeu thich');
-                  },
-                ),
-              ),
-              CircleAvatar(
-                backgroundColor: Colors.black26,
-                child: IconButton(
-                  icon: const Icon(Icons.share, color: Colors.white),
-                  onPressed: () {
-                    debugPrint('RestaurantDetailView: Nguoi dung bam chia se');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CartView(),
+                      ),
+                    );
                   },
                 ),
               ),
             ],
           ),
 
-          // ========== 2. THONG TIN CO BAN (AVATAR, TEN, KHOANG CACH, DANH GIA) ==========
-          SliverToBoxAdapter(
-            child: _StoreInfoSection(
-              store: _store,
-              distance: distance,
-              onRatingTap: _onRatingTap,
-            ),
-          ),
-
-          // ========== 3. STICKY HEADER - DANH MUC MON AN ==========
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _CategoryTabsDelegate(
-              categories: _categories,
-              selectedIndex: _selectedCategoryIndex,
-              onCategoryTap: _onCategoryTap,
-              getDisplayName: _getCategoryDisplayName,
-            ),
-          ),
-
-          // ========== 4. DANH SACH MON AN ==========
-          // Su dung StreamBuilder de lay san pham theo danh muc da chon.
-          StreamBuilder<List<ProductModel>>(
-            stream: RestaurantService.getProductsByCategoryStream(
-              widget.storeId,
-              _selectedCategoryId,
-            ),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              if (snapshot.hasError) {
-                return SliverFillRemaining(
-                  child: Center(
-                    child:
-                        Text(context.t('error_load_products')),
+          // ========== 2. THONG TIN CO BAN ==========
+          if (_isLoading)
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            )
+          else if (_store == null)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Center(
+                  child: Text(
+                    _errorMessage ?? 'Khong the tai thong tin cua hang',
+                    style: TextStyle(color: AppColors.error),
                   ),
-                );
-              }
-              final products = snapshot.data ?? [];
-              if (products.isEmpty) {
-                return SliverFillRemaining(
-                  child: Center(
-                    child: Text(
-                      context.t('empty_products'),
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                  ),
-                );
-              }
-              return SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final product = products[index];
-                    return _FoodItemTile(
-                      product: product,
-                      onAddToCart: () => _onAddToCart(product),
-                    );
-                  },
-                  childCount: products.length,
                 ),
-              );
-            },
-          ),
+              ),
+            )
+          else
+            SliverToBoxAdapter(
+              child: _StoreInfoSection(
+                store: _store!,
+                onRatingTap: _onRatingTap,
+              ),
+            ),
+
+          // ========== 3. SEARCH BAR ==========
+          if (!_isLoading)
+            SliverToBoxAdapter(
+              child: _InPageSearchBar(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                onChanged: (value) {
+                  setState(() => _searchQuery = value.trim().toLowerCase());
+                },
+                onClear: () {
+                  _searchController.clear();
+                  setState(() => _searchQuery = '');
+                  _searchFocusNode.unfocus();
+                },
+              ),
+            ),
+
+          // ========== 4. STICKY HEADER - DANH MUC ==========
+          if (_isLoading)
+            const SliverToBoxAdapter(
+              child: SizedBox(height: 52),
+            )
+          else if (_categories.isNotEmpty)
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _CategoryTabsDelegate(
+                categories: _categories,
+                selectedId: _selectedCategoryId,
+                onCategoryTap: _onCategoryTap,
+                getDisplayName: _getCategoryDisplayName,
+              ),
+            ),
+
+          // ========== 5. DANH SACH MON AN ==========
+          if (_isLoading)
+            const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_store == null)
+            const SliverFillRemaining(
+              child: SizedBox(height: 200),
+            )
+          else if (_allProducts.isEmpty)
+            SliverFillRemaining(
+              child: Center(
+                child: Text(
+                  context.t('empty_products'),
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              ),
+            )
+          else if (_getFilteredProducts().isEmpty)
+            SliverFillRemaining(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.search_off,
+                      size: 48,
+                      color: AppColors.textHint,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      context.t('search_no_results'),
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '"$_searchQuery"',
+                      style: TextStyle(
+                        color: AppColors.textHint,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final products = _getFilteredProducts();
+                  if (index >= products.length) return null;
+                  final product = products[index];
+                  return _FoodItemTile(
+                    product: product,
+                    isAddingToCart: _addingProductIds.contains(product.id),
+                    onAddToCart: () => _onAddToCart(product),
+                  );
+                },
+                childCount: _getFilteredProducts().length,
+              ),
+            ),
 
           // Khoang trong cuoi cung.
           const SliverToBoxAdapter(
@@ -289,17 +577,14 @@ class _RestaurantDetailViewState extends State<RestaurantDetailView> {
 
 // ================================================================
 // WIDGET: PHAN THONG TIN CO BAN CUA QUAN
-// (Avatar, Ten, Khoang cach, Danh gia clickable)
 // ================================================================
 
 class _StoreInfoSection extends StatelessWidget {
   final StoreModel store;
-  final double distance;
   final VoidCallback onRatingTap;
 
   const _StoreInfoSection({
     required this.store,
-    required this.distance,
     required this.onRatingTap,
   });
 
@@ -313,7 +598,7 @@ class _StoreInfoSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar — placed below cover image with white border and shadow.
+          // Avatar.
           Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
@@ -326,70 +611,66 @@ class _StoreInfoSection extends StatelessWidget {
                 ),
               ],
             ),
-            child: CircleAvatar(
-              radius: 38,
-              backgroundColor: AppColors.surfaceVariant,
-              backgroundImage: store.avtUrl.isNotEmpty
-                  ? NetworkImage(store.avtUrl)
-                  : null,
-              child: store.avtUrl.isEmpty
-                  ? Icon(
+            child: store.avtUrl.trim().isNotEmpty
+                ? CircleAvatar(
+                    radius: 38,
+                    backgroundColor: AppColors.surfaceVariant,
+                    backgroundImage: NetworkImage(
+                      store.avtUrl.trim(),
+                      headers: {'Accept': 'image/*'},
+                    ),
+                    onBackgroundImageError: (_, __) {},
+                  )
+                : CircleAvatar(
+                    radius: 38,
+                    backgroundColor: AppColors.surfaceVariant,
+                    child: Icon(
                       Icons.restaurant,
                       size: 36,
                       color: AppColors.primary,
-                    )
-                  : null,
-            ),
+                    ),
+                  ),
           ),
 
-          // Gap between avatar and name.
           const SizedBox(height: 12),
 
-          // Store name.
-          Text(
-            store.name,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-
-          const SizedBox(height: 4),
-
-          // Distance and delivery time.
+          // Ten cua hang + Trang thai.
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(
-                Icons.location_on_outlined,
-                size: 16,
-                color: AppColors.textSecondary,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '${context.t('restaurant_distance')} $distance ${context.t('unit_km')}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+              Expanded(
+                child: Text(
+                  store.name,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Icon(
-                Icons.access_time_outlined,
-                size: 16,
-                color: AppColors.textSecondary,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '${context.t('restaurant_delivery_time')} ${store.deliveryTime}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: store.isOpen
+                      ? AppColors.primary.withValues(alpha: 0.12)
+                      : AppColors.error.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  store.isOpen
+                      ? context.t('store_status_open')
+                      : context.t('store_status_closed'),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: store.isOpen ? AppColors.primary : AppColors.error,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
-          // Delivery fee.
+          // Thoi gian giao.
           Row(
             children: [
               Icon(
@@ -404,6 +685,21 @@ class _StoreInfoSection extends StatelessWidget {
                   color: AppColors.textSecondary,
                 ),
               ),
+              if (store.deliveryTime.isNotEmpty) ...[
+                const SizedBox(width: 12),
+                Icon(
+                  Icons.access_time_outlined,
+                  size: 16,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  store.deliveryTime,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
             ],
           ),
 
@@ -422,14 +718,12 @@ class _StoreInfoSection extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Yellow star icon.
                   const Icon(
                     Icons.star,
                     color: Colors.amber,
                     size: 22,
                   ),
                   const SizedBox(width: 6),
-                  // Star count.
                   Text(
                     store.rating.toStringAsFixed(1),
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -438,7 +732,6 @@ class _StoreInfoSection extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Review count.
                   Text(
                     '${_formatReviewCount(store.reviewCount)} ${context.t('restaurant_reviews_count')}',
                     style: theme.textTheme.bodyMedium?.copyWith(
@@ -446,7 +739,6 @@ class _StoreInfoSection extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  // Chevron.
                   Icon(
                     Icons.chevron_right,
                     color: AppColors.textSecondary,
@@ -458,8 +750,50 @@ class _StoreInfoSection extends StatelessWidget {
           ),
 
           const SizedBox(height: 16),
-
           Divider(height: 1, color: AppColors.divider),
+
+          if (store.description.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              context.t('restaurant_description'),
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              store.description,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+          ],
+
+          if (store.address.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.location_on_outlined,
+                  size: 18,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    store.address,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -485,22 +819,104 @@ class _StoreInfoSection extends StatelessWidget {
 }
 
 // ================================================================
+// WIDGET: SEARCH BAR TRONG TRANG CHI TIET QUAN
+// ================================================================
+
+class _InPageSearchBar extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  const _InPageSearchBar({
+    required this.controller,
+    required this.focusNode,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.surface,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: TextField(
+        controller: controller,
+        focusNode: focusNode,
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          hintText: context.t('restaurant_search_hint') ?? 'Tìm món ăn...',
+          hintStyle: TextStyle(
+            color: AppColors.textHint,
+            fontSize: 14,
+          ),
+          prefixIcon: Icon(
+            Icons.search,
+            color: AppColors.textHint,
+            size: 22,
+          ),
+          suffixIcon: ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controller,
+            builder: (context, value, child) {
+              return value.text.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(
+                        Icons.clear,
+                        color: AppColors.textHint,
+                        size: 20,
+                      ),
+                      onPressed: onClear,
+                    )
+                  : const SizedBox.shrink();
+            },
+          ),
+          filled: true,
+          fillColor: AppColors.surfaceVariant,
+          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+          ),
+        ),
+        style: TextStyle(
+          fontSize: 14,
+          color: AppColors.textPrimary,
+        ),
+        textInputAction: TextInputAction.search,
+      ),
+    );
+  }
+}
+
+// ================================================================
 // WIDGET: TIEN DAO STICKY - DANH MUC TAB
-// Su dung SliverPersistentHeaderDelegate de tao sticky header.
 // ================================================================
 
 class _CategoryTabsDelegate extends SliverPersistentHeaderDelegate {
   final List<RestaurantCategoryModel> categories;
-  final int selectedIndex;
+  final String selectedId;
   final Function(int) onCategoryTap;
   final String Function(RestaurantCategoryModel) getDisplayName;
 
   _CategoryTabsDelegate({
     required this.categories,
-    required this.selectedIndex,
+    required this.selectedId,
     required this.onCategoryTap,
     required this.getDisplayName,
   });
+
+  int get _selectedIndex {
+    final idx = categories.indexWhere((c) => c.id == selectedId);
+    return idx >= 0 ? idx : 0;
+  }
 
   @override
   double get minExtent => 52;
@@ -510,7 +926,7 @@ class _CategoryTabsDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(covariant _CategoryTabsDelegate oldDelegate) {
-    return oldDelegate.selectedIndex != selectedIndex ||
+    return oldDelegate.selectedId != selectedId ||
         oldDelegate.categories != categories;
   }
 
@@ -521,6 +937,7 @@ class _CategoryTabsDelegate extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) {
     final theme = Theme.of(context);
+    final selectedIdx = _selectedIndex;
     return Container(
       color: AppColors.surface,
       child: Column(
@@ -532,7 +949,7 @@ class _CategoryTabsDelegate extends SliverPersistentHeaderDelegate {
               itemCount: categories.length,
               itemBuilder: (context, index) {
                 final category = categories[index];
-                final isSelected = index == selectedIndex;
+                final isSelected = index == selectedIdx;
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Align(
@@ -573,7 +990,6 @@ class _CategoryTabsDelegate extends SliverPersistentHeaderDelegate {
               },
             ),
           ),
-          // Duong ke phan cach duoi cung.
           Divider(
             height: 1,
             thickness: 1,
@@ -587,15 +1003,16 @@ class _CategoryTabsDelegate extends SliverPersistentHeaderDelegate {
 
 // ================================================================
 // WIDGET: ITEM MON AN
-// (Anh, Ten, Mo ta, Gia, Nut +)
 // ================================================================
 
 class _FoodItemTile extends StatelessWidget {
   final ProductModel product;
+  final bool isAddingToCart;
   final VoidCallback onAddToCart;
 
   const _FoodItemTile({
     required this.product,
+    required this.isAddingToCart,
     required this.onAddToCart,
   });
 
@@ -608,61 +1025,82 @@ class _FoodItemTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ========== ANH MON AN ==========
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Stack(
               children: [
-                Image.network(
-                  product.imageUrl,
-                  width: 90,
-                  height: 90,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 90,
-                      height: 90,
-                      color: AppColors.surfaceVariant,
-                      child: Icon(
-                        Icons.fastfood,
-                        size: 32,
-                        color: AppColors.textHint,
+                // Anh mon an.
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Stack(
+                    children: [
+                      Image.network(
+                        product.imageUrl,
+                        width: 90,
+                        height: 90,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 90,
+                            height: 90,
+                            color: AppColors.surfaceVariant,
+                            child: Icon(
+                              Icons.fastfood,
+                              size: 32,
+                              color: AppColors.textHint,
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
-                // Neu het hang thi hien thi overlay.
-                if (product.isOutOfStock)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        context.t('product_out_of_stock'),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                      if (product.isOutOfStock)
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              context.t('product_out_of_stock'),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
+                      if (product.isFeatured)
+                        Positioned(
+                          top: 4,
+                          left: 4,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.shade700,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Nổi bật',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-              ],
-            ),
-          ),
+                ),
           const SizedBox(width: 12),
 
-          // ========== THONG TIN MON AN ==========
+          // Thong tin mon an.
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Ten mon.
                 Text(
                   product.name,
                   style: theme.textTheme.titleMedium?.copyWith(
@@ -673,24 +1111,49 @@ class _FoodItemTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
-
-                // Mo ta ngan.
-                Text(
-                  product.description,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                if (product.description.isNotEmpty)
+                  Text(
+                    product.description,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                if (product.rating != null && product.rating! > 0) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.star,
+                        size: 14,
+                        color: Colors.amber.shade700,
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        product.rating!.toStringAsFixed(1),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (product.reviewCount != null && product.reviewCount! > 0) ...[
+                        const SizedBox(width: 4),
+                        Text(
+                          '(${product.reviewCount})',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 8),
-
-                // Gia tien (mau xanh la) + Nut them.
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Gia.
                     Text(
                       _formatPrice(product.basePrice),
                       style: theme.textTheme.titleSmall?.copyWith(
@@ -698,9 +1161,26 @@ class _FoodItemTile extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
-                    // Nut (+) them vao gio.
-                    if (!product.isOutOfStock)
+                    if (isAddingToCart)
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Center(
+                          child: SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      )
+                    else if (!product.isOutOfStock)
                       GestureDetector(
                         onTap: onAddToCart,
                         child: Container(

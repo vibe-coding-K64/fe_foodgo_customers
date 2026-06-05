@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
+import '../../../../core/utils/snackbar_helper.dart';
+import '../services/auth_service.dart';
 import 'otp_verification_view.dart';
 
 /// Man hinh Quen mat khau.
@@ -33,24 +35,44 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
   }
 
   /// Xu ly bam nut Gui ma xac nhan.
-  void _onSendOtpPressed() {
+  Future<void> _onSendOtpPressed() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
-      debugPrint('ForgotPasswordView: Gui ma xac nhan toi ${_inputController.text}');
-      // Gia lap goi API, sau 1.5s chuyen sang trang OTP.
-      Future.delayed(const Duration(milliseconds: 1500), () {
+      final contact = _inputController.text.trim();
+      debugPrint('ForgotPasswordView: Gui ma xac nhan toi $contact');
+
+      try {
+        await AuthService.sendOtp(contact);
         if (!mounted) return;
-        setState(() => _isLoading = false);
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => OtpVerificationView(
-              contactInfo: _inputController.text.trim(),
+              contactInfo: contact,
               verifyType: 'forgot_password',
             ),
           ),
         );
-      });
+      } on AuthException catch (e) {
+        if (!mounted) return;
+        showAppToast(
+          context,
+          message: e.message,
+          type: AppToastType.error,
+        );
+      } catch (e) {
+        if (!mounted) return;
+        debugPrint('ForgotPasswordView: Loi bat ngooi = $e');
+        showAppToast(
+          context,
+          message: 'Da xay ra loi, vui long thu lai sau',
+          type: AppToastType.error,
+        );
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
     }
   }
 
@@ -98,7 +120,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
 
                 // Tieu de.
                 Text(
-                  LanguageService.translate('auth_forgot_password_title'),
+                  context.t('auth_forgot_password_title'),
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
@@ -110,7 +132,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
 
                 // Mo ta.
                 Text(
-                  LanguageService.translate('auth_forgot_password_desc'),
+                  context.t('auth_forgot_password_desc'),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -126,7 +148,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) => _onSendOtpPressed(),
                   decoration: InputDecoration(
-                    labelText: LanguageService.translate('auth_phone_email_hint'),
+                    labelText: context.t('auth_phone_email_hint'),
                     labelStyle: const TextStyle(
                       fontSize: 14,
                       color: AppColors.textSecondary,
@@ -171,7 +193,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return LanguageService.translate('auth_error_empty_field');
+                      return context.t('auth_error_empty_field');
                     }
                     return null;
                   },
@@ -203,7 +225,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                             ),
                           )
                         : Text(
-                            LanguageService.translate('auth_send_otp'),
+                            context.t('auth_send_otp'),
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,

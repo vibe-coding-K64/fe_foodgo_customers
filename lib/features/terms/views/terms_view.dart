@@ -91,7 +91,7 @@ class TermsView extends StatelessWidget {
           },
         ),
         title: Text(
-          LanguageService.translate('terms_title'),
+          context.t('terms_title'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -108,8 +108,8 @@ class TermsView extends StatelessWidget {
             // Khong co padding top o day dau tien vi AppBar da co spacing.
             for (int i = 0; i < _sections.length; i++) ...[
               if (i == 0) const SizedBox(height: 8),
-              _buildSectionTitle(LanguageService.translate(_sections[i].titleKey)),
-              _buildSectionContent(LanguageService.translate(_sections[i].contentKey)),
+              _buildSectionTitle(context.t(_sections[i].titleKey)),
+              _buildSectionContent(context.t(_sections[i].contentKey)),
             ],
             const SizedBox(height: 32),
           ],

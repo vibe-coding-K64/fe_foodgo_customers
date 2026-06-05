@@ -2,21 +2,26 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
 
-/// Card hien thi so diem hien tai va hang thanh vien cua nguoi dung.
+/// Card hien thi so diem hien tai, hang thanh vien va thu hang cua nguoi dung.
 class RewardsPointCard extends StatelessWidget {
   final int currentPoints;
   final String memberTier;
   final int nextTierPoints;
+  final int? rank;
 
   const RewardsPointCard({
     super.key,
     required this.currentPoints,
     required this.memberTier,
     required this.nextTierPoints,
+    this.rank = 0,
   });
 
   @override
   Widget build(BuildContext context) {
+    final safeNextTier = nextTierPoints > 0 ? nextTierPoints : 1;
+    final safeRank = rank ?? 0;
+
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
@@ -52,6 +57,7 @@ class RewardsPointCard extends StatelessWidget {
                   fontSize: 14,
                 ),
               ),
+              // Hang thanh vien + Thu hang.
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
@@ -78,6 +84,23 @@ class RewardsPointCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                    if (safeRank > 0) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 1,
+                        height: 12,
+                        color: Colors.white.withOpacity(0.4),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '#$safeRank',
+                        style: TextStyle(
+                          color: Colors.amber[200],
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -111,14 +134,14 @@ class RewardsPointCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           // Thanh tien do den hang tiep theo.
-          _buildProgressBar(context),
+          _buildProgressBar(context, safeNextTier),
         ],
       ),
     );
   }
 
-  Widget _buildProgressBar(BuildContext context) {
-    final progress = currentPoints / nextTierPoints;
+  Widget _buildProgressBar(BuildContext context, int safeNextTier) {
+    final progress = safeNextTier > 0 ? currentPoints / safeNextTier : 0.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -134,7 +157,7 @@ class RewardsPointCard extends StatelessWidget {
               ),
             ),
             Text(
-              '$currentPoints / $nextTierPoints',
+              '$currentPoints / $safeNextTier',
               style: TextStyle(
                 color: Colors.white.withOpacity(0.8),
                 fontSize: 12,

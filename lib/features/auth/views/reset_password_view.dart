@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
+import '../../../../core/utils/snackbar_helper.dart';
+import '../services/auth_service.dart';
 
 /// Man hinh Dat lai mat khau.
 ///
@@ -12,9 +14,13 @@ class ResetPasswordView extends StatefulWidget {
   /// Email hoac so dien thoai cua nguoi dung (tu trang Quen mat khau).
   final String contactInfo;
 
+  /// Token tam thoi nhan duoc sau khi xac thuc OTP.
+  final String tempToken;
+
   const ResetPasswordView({
     super.key,
     required this.contactInfo,
+    required this.tempToken,
   });
 
   @override
@@ -48,25 +54,44 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
   }
 
   /// Xu ly bam nut Cap nhat mat khau.
-  void _onUpdatePasswordPressed() {
+  Future<void> _onUpdatePasswordPressed() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
       debugPrint('ResetPasswordView: Cap nhat mat khau moi cho ${widget.contactInfo}');
-      // Gia lap goi API, sau 1.5s quay lai trang thai binh thuong.
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) {
-          setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(LanguageService.translate('auth_update_password')),
-              backgroundColor: AppColors.primary,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-          // Quay ve man hinh chinh sau khi cap nhat thanh cong.
-          Navigator.of(context).popUntil((route) => route.isFirst);
-        }
-      });
+
+      try {
+        await AuthService.resetPassword(
+          widget.tempToken,
+          _newPasswordController.text,
+        );
+
+        if (!mounted) return;
+        showAppToast(
+          context,
+          message: context.t('auth_update_password'),
+          type: AppToastType.success,
+        );
+
+        // Quay ve man hinh chinh sau khi cap nhat thanh cong.
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      } on AuthException catch (e) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        showAppToast(
+          context,
+          message: e.message,
+          type: AppToastType.error,
+        );
+      } catch (e) {
+        if (!mounted) return;
+        debugPrint('ResetPasswordView: Loi bat ngooi = $e');
+        setState(() => _isLoading = false);
+        showAppToast(
+          context,
+          message: 'Da xay ra loi, vui long thu lai',
+          type: AppToastType.error,
+        );
+      }
     }
   }
 
@@ -114,7 +139,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
 
                 // Tieu de.
                 Text(
-                  LanguageService.translate('auth_reset_password_title'),
+                  context.t('auth_reset_password_title'),
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
@@ -126,7 +151,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
 
                 // Mo ta.
                 Text(
-                  LanguageService.translate('auth_reset_password_desc'),
+                  context.t('auth_reset_password_desc'),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -141,7 +166,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                   obscureText: _obscureNewPassword,
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
-                    labelText: LanguageService.translate('auth_new_password_hint'),
+                    labelText: context.t('auth_new_password_hint'),
                     labelStyle: const TextStyle(
                       fontSize: 14,
                       color: AppColors.textSecondary,
@@ -199,10 +224,10 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return LanguageService.translate('auth_error_empty_field');
+                      return context.t('auth_error_empty_field');
                     }
                     if (value.length < 8) {
-                      return LanguageService.translate('auth_error_password_weak');
+                      return context.t('auth_error_password_weak');
                     }
                     return null;
                   },
@@ -217,7 +242,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) => _onUpdatePasswordPressed(),
                   decoration: InputDecoration(
-                    labelText: LanguageService.translate('auth_confirm_new_password_hint'),
+                    labelText: context.t('auth_confirm_new_password_hint'),
                     labelStyle: const TextStyle(
                       fontSize: 14,
                       color: AppColors.textSecondary,
@@ -275,10 +300,10 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return LanguageService.translate('auth_error_empty_field');
+                      return context.t('auth_error_empty_field');
                     }
                     if (value != _newPasswordController.text) {
-                      return LanguageService.translate('auth_error_password_mismatch');
+                      return context.t('auth_error_password_mismatch');
                     }
                     return null;
                   },
@@ -310,7 +335,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                             ),
                           )
                         : Text(
-                            LanguageService.translate('auth_update_password'),
+                            context.t('auth_update_password'),
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,

@@ -16,6 +16,11 @@ class MainView extends StatefulWidget {
 
 class _MainViewState extends State<MainView> {
   int _currentIndex = 0;
+  int _homeRefreshKey = 0;
+  int _activityRefreshKey = 0;
+  int _rewardsRefreshKey = 0;
+  int _notificationsRefreshKey = 0;
+  int _profileRefreshKey = 0;
 
   // Danh sach cac tab.
   static const List<Widget> _pages = [
@@ -35,14 +40,47 @@ class _MainViewState extends State<MainView> {
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
-        children: _pages,
+        children: [
+          HomeView(key: ValueKey(_homeRefreshKey)),
+          ActivityView(key: ValueKey(_activityRefreshKey)),
+          RewardsView(key: ValueKey(_rewardsRefreshKey)),
+          NotificationsView(key: ValueKey(_notificationsRefreshKey)),
+          ProfileView(key: ValueKey(_profileRefreshKey)),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+          if (index == 0) {
+            setState(() {
+              _currentIndex = index;
+              _homeRefreshKey++;
+            });
+          } else if (index == 1) {
+            setState(() {
+              _currentIndex = index;
+              _activityRefreshKey++;
+            });
+          } else if (index == 2) {
+            setState(() {
+              _currentIndex = index;
+              _rewardsRefreshKey++;
+            });
+          } else if (index == 3) {
+            setState(() {
+              _currentIndex = index;
+              _notificationsRefreshKey++;
+            });
+          } else if (index == 4) {
+            setState(() {
+              _currentIndex = index;
+              _profileRefreshKey++;
+            });
+          } else {
+            setState(() {
+              _currentIndex = index;
+            });
+          }
         },
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.primary,

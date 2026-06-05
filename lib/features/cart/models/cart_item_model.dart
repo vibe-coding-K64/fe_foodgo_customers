@@ -1,89 +1,219 @@
-class CartItemModel {
-  final String id;
-  final String userId;
-  final String storeId;
-  final String foodId;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../home/models/product_model.dart';
+
+/// Một option đã được chọn (chỉ lưu name, không lưu price).
+class SelectedOption {
   final String name;
-  final double price;
-  final int quantity;
-  final String? imageUrl;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final DateTime? deletedAt;
+  SelectedOption({required this.name});
 
-  CartItemModel({
-    required this.id,
-    required this.userId,
-    required this.storeId,
-    required this.foodId,
-    required this.name,
-    required this.price,
-    required this.quantity,
-    this.imageUrl,
-    required this.createdAt,
-    required this.updatedAt,
-    this.deletedAt,
-  });
+  factory SelectedOption.fromJson(Map<String, dynamic> json) {
+    return SelectedOption(name: json['name'] as String? ?? '');
+  }
 
-  factory CartItemModel.fromJson(Map<String, dynamic> json) {
-    return CartItemModel(
-      id: json['id'] as String,
-      userId: json['userId'] as String,
-      storeId: json['storeId'] as String,
-      foodId: json['foodId'] as String,
-      name: json['name'] as String,
-      price: (json['price'] as num).toDouble(),
-      quantity: json['quantity'] as int,
-      imageUrl: json['imageUrl'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
-      deletedAt: json['deletedAt'] != null
-          ? DateTime.parse(json['deletedAt'] as String)
-          : null,
+  Map<String, dynamic> toJson() => {'name': name};
+}
+
+/// Một nhóm options đã chọn (VD: "Kich thuoc", "Topping").
+class SelectedOptionGroup {
+  final String name;
+  final List<SelectedOption> options;
+
+  SelectedOptionGroup({required this.name, required this.options});
+
+  factory SelectedOptionGroup.fromJson(Map<String, dynamic> json) {
+    final opts = (json['options'] as List<dynamic>?)
+            ?.map((o) => SelectedOption.fromJson(o as Map<String, dynamic>))
+            .toList() ??
+        [];
+    return SelectedOptionGroup(
+      name: json['name'] as String? ?? '',
+      options: opts,
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'options': options.map((o) => o.toJson()).toList(),
+      };
+}
+
+/// Model item trong gio hang.
+///
+/// Duong dan collection: customer_profiles/{userId}/cart
+///
+/// Cart KHONG luu gia tri price.
+/// Gia cua item duoc tinh dong tu ProductModel (lay tu collection products/{foodId}).
+class CartItemModel {
+  final String id;
+  final String storeId;
+  final String foodId;
+  int quantity;
+  final List<SelectedOptionGroup> selectedOptions;
+  final String? note;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  /// ProductModel tu collection products/{foodId}. Set khi enrich tu CartState.
+  /// Su dung de tinh unitPrice() va totalPrice().
+  final ProductModel? product;
+
+  CartItemModel({
+    required this.id,
+    required this.storeId,
+    required this.foodId,
+    required this.quantity,
+    this.selectedOptions = const [],
+    this.note,
+    required this.createdAt,
+    required this.updatedAt,
+    this.product,
+  });
+
+  factory CartItemModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+
+    List<SelectedOptionGroup> groups = [];
+    final rawSelectedOptions = data['selectedOptions'];
+    if (rawSelectedOptions is List) {
+      groups = rawSelectedOptions
+          .whereType<Map<String, dynamic>>()
+          .map((g) => SelectedOptionGroup.fromJson(g))
+          .toList();
+    }
+
+    return CartItemModel(
+      id: (data['id'] as String?)?.isNotEmpty == true
+          ? data['id'] as String
+          : doc.id,
+      storeId: data['storeId'] as String? ?? '',
+      foodId: data['foodId'] as String? ?? '',
+      quantity: (data['quantity'] as num?)?.toInt() ?? 1,
+      selectedOptions: groups,
+      note: data['note'] as String?,
+      createdAt: _parseTimestamp(data['createdAt']),
+      updatedAt: _parseTimestamp(data['updatedAt']),
+    );
+  }
+
+  static DateTime _parseTimestamp(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate();
+    } else if (value is DateTime) {
+      return value;
+    } else if (value is String) {
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+    return DateTime.now();
+  }
+
+  Map<String, dynamic> toFirestore() {
     return {
-      'id': id,
-      'userId': userId,
+      if (id.isNotEmpty) 'id': id,
       'storeId': storeId,
       'foodId': foodId,
-      'name': name,
-      'price': price,
       'quantity': quantity,
-      'imageUrl': imageUrl,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
-      'deletedAt': deletedAt?.toIso8601String(),
+      if (selectedOptions.isNotEmpty)
+        'selectedOptions':
+            selectedOptions.map((g) => g.toJson()).toList(),
+      if (note != null && note!.isNotEmpty) 'note': note,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
     };
+  }
+
+  factory CartItemModel.fromProduct({
+    required String storeId,
+    required String productId,
+    required int quantity,
+    List<SelectedOptionGroup>? selectedOptions,
+    String? note,
+    ProductModel? product,
+  }) {
+    final now = DateTime.now();
+    return CartItemModel(
+      id: '',
+      storeId: storeId,
+      foodId: productId,
+      quantity: quantity,
+      selectedOptions: selectedOptions ?? [],
+      note: note,
+      createdAt: now,
+      updatedAt: now,
+      product: product,
+    );
   }
 
   CartItemModel copyWith({
     String? id,
-    String? userId,
     String? storeId,
     String? foodId,
-    String? name,
-    double? price,
     int? quantity,
-    String? imageUrl,
+    List<SelectedOptionGroup>? selectedOptions,
+    String? note,
     DateTime? createdAt,
     DateTime? updatedAt,
-    DateTime? deletedAt,
+    ProductModel? product,
   }) {
     return CartItemModel(
       id: id ?? this.id,
-      userId: userId ?? this.userId,
       storeId: storeId ?? this.storeId,
       foodId: foodId ?? this.foodId,
-      name: name ?? this.name,
-      price: price ?? this.price,
       quantity: quantity ?? this.quantity,
-      imageUrl: imageUrl ?? this.imageUrl,
+      selectedOptions: selectedOptions ?? this.selectedOptions,
+      note: note ?? this.note,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      deletedAt: deletedAt ?? this.deletedAt,
+      product: product ?? this.product,
     );
+  }
+
+  /// Tinh don gia cua 1 don vi = basePrice + sizePrice + toppingsTotal.
+  double unitPriceOf(ProductModel? product) {
+    if (product == null) return 0.0;
+
+    double total = product.basePrice;
+
+    for (final group in selectedOptions) {
+      for (final opt in group.options) {
+        // Tim price cua option nay trong product optionGroups.
+        final productGroup = product.optionGroups
+            .where((g) => g.name == group.name)
+            .firstOrNull;
+        if (productGroup == null) continue;
+
+        final productOption = productGroup.options
+            .where((o) => o.name == opt.name)
+            .firstOrNull;
+        if (productOption != null) {
+          total += productOption.price;
+        }
+      }
+    }
+
+    return total;
+  }
+
+  /// Don gia cua 1 don vi.
+  double get unitPrice => unitPriceOf(product);
+
+  /// Tong gia = don gia * so luong.
+  double get totalPrice => unitPrice * quantity;
+
+  /// Tinh tong gia voi product cho truoc.
+  double totalPriceOf(ProductModel? product) => unitPriceOf(product) * quantity;
+
+  /// Tra ve imageUrl tu product, neu null thi tra ve placeholder.
+  String get imageUrlOrDefault {
+    final url = product?.imageUrl;
+    if (url != null && url.isNotEmpty) return url;
+    return 'https://picsum.photos/seed/${foodId.hashCode.abs()}/200';
+  }
+
+  /// Label hien thi tat ca options da chon (noi tiep bang dau phay).
+  String get selectedOptionsLabel {
+    if (selectedOptions.isEmpty) return '';
+    return selectedOptions
+        .expand((g) => g.options.map((o) => o.name))
+        .join(', ');
   }
 }

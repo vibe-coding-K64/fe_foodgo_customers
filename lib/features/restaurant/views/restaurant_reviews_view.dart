@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
 import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
 import '../models/review_model.dart';
-import '../services/restaurant_service.dart';
+import '../services/review_service.dart';
 
 /// Trang danh gia cua mot quan an.
 ///
@@ -27,8 +28,9 @@ class RestaurantReviewsView extends StatefulWidget {
 }
 
 class _RestaurantReviewsViewState extends State<RestaurantReviewsView> {
-  late List<ReviewModel> _allReviews;
-  late ReviewStarDistribution _distribution;
+  List<ReviewModel> _allReviews = [];
+  bool _isLoading = false;
+  String? _errorMessage;
 
   int? _selectedStarFilter;
   bool _filterWithComment = false;
@@ -37,9 +39,58 @@ class _RestaurantReviewsViewState extends State<RestaurantReviewsView> {
   @override
   void initState() {
     super.initState();
-    _allReviews = RestaurantService.getMockReviews(widget.storeId);
-    _distribution = RestaurantService.getMockStarDistribution();
-    debugPrint('RestaurantReviewsView: Khoi tao trang danh gia cua quan [${widget.storeId}]');
+    _fetchReviews();
+    debugPrint(
+        'RestaurantReviewsView: Khoi tao trang danh gia cua quan [${widget.storeId}]');
+  }
+
+  Future<void> _fetchReviews() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final reviews = await ReviewService.getReviewsByStore(widget.storeId);
+
+      // Lay avatar tu Firestore cho nhung review chua co avatar
+      final reviewsWithoutAvatar = reviews
+          .where((r) => r.userAvatarUrl.isEmpty)
+          .toList();
+
+      if (reviewsWithoutAvatar.isNotEmpty) {
+        final userIds = reviewsWithoutAvatar.map((r) => r.userId).toSet().toList();
+        final avatarMap = await ReviewService.getUserAvatars(userIds);
+
+        // Gan avatar vao review
+        for (var i = 0; i < reviews.length; i++) {
+          if (reviews[i].userAvatarUrl.isEmpty && avatarMap.containsKey(reviews[i].userId)) {
+            reviews[i] = reviews[i].copyWith(userAvatarUrl: avatarMap[reviews[i].userId]);
+          }
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _allReviews = reviews;
+          _isLoading = false;
+        });
+      }
+    } on ReviewException catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.message;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Da xay ra loi khong xac dinh.';
+        });
+      }
+    }
   }
 
   List<ReviewModel> get _filteredReviews {
@@ -74,6 +125,32 @@ class _RestaurantReviewsViewState extends State<RestaurantReviewsView> {
     );
   }
 
+  double get _averageRating {
+    if (_allReviews.isEmpty) return 0;
+    final total = _allReviews.fold<int>(0, (sum, r) => sum + r.starRating);
+    return total / _allReviews.length;
+  }
+
+  ReviewStarDistribution get _distribution {
+    int star5 = 0, star4 = 0, star3 = 0, star2 = 0, star1 = 0;
+    for (final r in _allReviews) {
+      switch (r.starRating) {
+        case 5: star5++; break;
+        case 4: star4++; break;
+        case 3: star3++; break;
+        case 2: star2++; break;
+        case 1: star1++; break;
+      }
+    }
+    return ReviewStarDistribution(
+      star5: star5,
+      star4: star4,
+      star3: star3,
+      star2: star2,
+      star1: star1,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -97,47 +174,75 @@ class _RestaurantReviewsViewState extends State<RestaurantReviewsView> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        physics: const ClampingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Khoang cach tu header.
-            const SizedBox(height: 8),
+      body: _buildBody(theme),
+    );
+  }
 
-            // Khong thay doi phan thong ke.
-            _ReviewOverviewSection(
-              averageRating: 4.8,
-              distribution: _distribution,
-            ),
+  Widget _buildBody(ThemeData theme) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-            Divider(height: 1, color: AppColors.divider),
-
-            // Khong thay doi bo loc.
-            _ReviewFilterBar(
-              selectedStar: _selectedStarFilter,
-              filterWithComment: _filterWithComment,
-              filterWithImage: _filterWithImage,
-              onStarFilterTap: _showStarFilterSheet,
-              onCommentFilterChanged: (value) {
-                setState(() => _filterWithComment = value ?? false);
-                debugPrint('RestaurantReviewsView: Loc binh luan = ${value ?? false}');
-              },
-              onImageFilterChanged: (value) {
-                setState(() => _filterWithImage = value ?? false);
-                debugPrint('RestaurantReviewsView: Loc hinh anh = ${value ?? false}');
-              },
-            ),
-
-            Divider(height: 1, color: AppColors.divider),
-
-            // Danh sach danh gia.
-            _ReviewListSection(
-              reviews: _filteredReviews,
-              totalReviews: _allReviews.length,
-            ),
-          ],
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 48,
+                color: AppColors.textHint,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _errorMessage!,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _fetchReviews,
+                child: const Text('Thu lai'),
+              ),
+            ],
+          ),
         ),
+      );
+    }
+
+    return SingleChildScrollView(
+      physics: const ClampingScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 8),
+          _ReviewOverviewSection(
+            averageRating: _averageRating,
+            distribution: _distribution,
+          ),
+          Divider(height: 1, color: AppColors.divider),
+          _ReviewFilterBar(
+            selectedStar: _selectedStarFilter,
+            filterWithComment: _filterWithComment,
+            filterWithImage: _filterWithImage,
+            onStarFilterTap: _showStarFilterSheet,
+            onCommentFilterChanged: (value) {
+              setState(() => _filterWithComment = value ?? false);
+            },
+            onImageFilterChanged: (value) {
+              setState(() => _filterWithImage = value ?? false);
+            },
+          ),
+          Divider(height: 1, color: AppColors.divider),
+          _ReviewListSection(
+            reviews: _filteredReviews,
+            totalReviews: _allReviews.length,
+          ),
+        ],
       ),
     );
   }
@@ -561,16 +666,18 @@ class _ReviewItemWidget extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Avatar.
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: AppColors.surfaceVariant,
-                backgroundImage: review.userAvatarUrl.isNotEmpty
-                    ? NetworkImage(review.userAvatarUrl)
-                    : null,
-                child: review.userAvatarUrl.isEmpty
-                    ? Icon(Icons.person, size: 20, color: AppColors.textHint)
-                    : null,
-              ),
+              review.userAvatarUrl.isNotEmpty
+                  ? CircleAvatar(
+                      radius: 20,
+                      backgroundColor: AppColors.surfaceVariant,
+                      backgroundImage: NetworkImage(review.userAvatarUrl),
+                      onBackgroundImageError: (_, __) {},
+                    )
+                  : CircleAvatar(
+                      radius: 20,
+                      backgroundColor: AppColors.surfaceVariant,
+                      child: Icon(Icons.person, size: 20, color: AppColors.textHint),
+                    ),
               const SizedBox(width: 10),
 
               // Ten + Thoi gian.
@@ -656,6 +763,66 @@ class _ReviewItemWidget extends StatelessWidget {
                     ),
                   );
                 }).toList(),
+              ),
+            ),
+          ],
+
+          // Phan hoi cua nguoi ban.
+          if (review.replyComment != null && review.replyComment!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.only(left: 50),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.06),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.15),
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            context.t('review_seller_reply_label'),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        if (review.repliedAt != null)
+                          Text(
+                            _formatDate(context, review.repliedAt!),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppColors.textHint,
+                              fontSize: 11,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      review.replyComment!,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textPrimary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

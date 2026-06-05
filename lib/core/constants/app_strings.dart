@@ -79,6 +79,9 @@ class AppStrings {
   static const String privacyPolicy = 'Chinh sach bao mat';
   static const String termsOfService = 'Dieu khoan su dung';
 
+  // Contact
+  static const String hotlineNumber = '0971811857';
+
   // Search
   static const String searchHint = 'Tim kiem mon an, cua hang...';
   static const String recentSearches = 'Tim kiem gan day';

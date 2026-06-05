@@ -1,130 +1,121 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/localization/language_service.dart';
-import '../../../../features/checkout/views/checkout_view.dart';
-import '../../support/views/support_view.dart';
-import 'driver_chat_view.dart';
-import 'order_tracking_map_view.dart';
-
-///=============================================================================
-/// SECTION: MODELS
-///=============================================================================
-
-/// Model topping cua mot mon an.
-class OrderToppingModel {
-  final String name;
-  final double price;
-
-  const OrderToppingModel({
-    required this.name,
-    required this.price,
-  });
-}
-
-/// Model mot mon an trong don hang.
-class OrderItemModel {
-  final String name;
-  final int quantity;
-  final double unitPrice;
-  final List<OrderToppingModel> toppings;
-
-  const OrderItemModel({
-    required this.name,
-    required this.quantity,
-    required this.unitPrice,
-    this.toppings = const [],
-  });
-
-  double get totalPrice {
-    final toppingTotal = toppings.fold<double>(
-      0,
-      (sum, topping) => sum + topping.price,
-    );
-    return (unitPrice + toppingTotal) * quantity;
-  }
-}
-
-/// Model thong tin tai xe.
-class DriverInfoModel {
-  final String name;
-  final String phone;
-  final String avatarUrl;
-  final String vehiclePlate;
-
-  const DriverInfoModel({
-    required this.name,
-    required this.phone,
-    required this.avatarUrl,
-    required this.vehiclePlate,
-  });
-}
-
-/// Model don hang day du cho trang chi tiet.
-class OrderDetailModel {
-  final String id;
-  final String storeName;
-  final String storeAddress;
-  final String storePhone;
-  final String customerName;
-  final String customerPhone;
-  final String deliveryAddress;
-  final List<OrderItemModel> items;
-  final double subtotal;
-  final double deliveryFee;
-  final double voucherDiscount;
-  final double total;
-  final String paymentMethod; // "cash", "wallet"
-  final DateTime orderDate;
-  final OrderDetailStatus status;
-  final DriverInfoModel? driverInfo;
-  final String? cancelReason;
-
-  const OrderDetailModel({
-    required this.id,
-    required this.storeName,
-    required this.storeAddress,
-    required this.storePhone,
-    required this.customerName,
-    required this.customerPhone,
-    required this.deliveryAddress,
-    required this.items,
-    required this.subtotal,
-    required this.deliveryFee,
-    required this.voucherDiscount,
-    required this.total,
-    required this.paymentMethod,
-    required this.orderDate,
-    required this.status,
-    this.driverInfo,
-    this.cancelReason,
-  });
-}
-
-/// Trang thai cua don hang trong trang chi tiet.
-enum OrderDetailStatus {
-  delivering,  // Dang giao.
-  received,    // Da hoan thanh.
-  cancelled,   // Da huy.
-}
+import 'package:url_launcher/url_launcher.dart';
+import 'package:fe_foodgo_customers/core/constants/app_colors.dart';
+import 'package:fe_foodgo_customers/core/localization/language_service.dart';
+import 'package:fe_foodgo_customers/core/utils/snackbar_helper.dart';
+import 'package:fe_foodgo_customers/features/order/models/order_model.dart';
+import 'package:fe_foodgo_customers/features/order/services/order_service.dart';
+import 'package:fe_foodgo_customers/features/checkout/views/checkout_view.dart';
+import 'package:fe_foodgo_customers/features/support/views/support_view.dart';
+import 'package:fe_foodgo_customers/features/activity/views/driver_chat_view.dart';
+import 'package:fe_foodgo_customers/features/activity/views/order_tracking_map_view.dart';
+import 'package:fe_foodgo_customers/features/activity/views/food_review_view.dart';
+import 'package:fe_foodgo_customers/features/activity/views/widgets/cancel_order_dialog.dart';
 
 ///=============================================================================
 /// SECTION: VIEW
 ///=============================================================================
 
+/// Buoc trong tracker trang thai don hang.
+class _TrackerStep {
+  final IconData icon;
+  final String label;
+  final int status;
+
+  const _TrackerStep({
+    required this.icon,
+    required this.label,
+    required this.status,
+  });
+}
+
 /// Man hinh chi tiet don hang.
 ///
-/// Hien thi day du thong tin don hang cung cac hanh dong theo trang thai.
-/// Phan giao dien dong (driver section, rating, huy don) thay doi theo status.
-class OrderDetailView extends StatelessWidget {
-  final OrderDetailModel order;
+/// Hien thi day du thong tin don hang tu Firebase Firestore.
+/// Doc real-time tu Firestore, dong thoi join du lieu tu address va stores.
+/// Cac hanh dong thay doi theo trang thai don hang.
+class OrderDetailView extends StatefulWidget {
+  final String orderId;
 
-  const OrderDetailView({
-    super.key,
-    required this.order,
-  });
+  const OrderDetailView({super.key, required this.orderId});
+
+  @override
+  State<OrderDetailView> createState() => _OrderDetailViewState();
+}
+
+class _OrderDetailViewState extends State<OrderDetailView> {
+  OrderModel? _order;
+  bool _loading = true;
+  StreamSubscription<OrderModel?>? _orderSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _orderSubscription = OrderService.getOrderByIdStream(widget.orderId)
+        .listen((order) {
+      if (mounted) {
+        setState(() {
+          _order = order;
+          _loading = false;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _orderSubscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          title: Text(
+            context.t('order_detail_title'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
+          ),
+          centerTitle: true,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_order == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          title: Text(
+            context.t('order_detail_title'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
+          ),
+          centerTitle: true,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: AppColors.textSecondary),
+              const SizedBox(height: 16),
+              Text(context.t('order_not_found'), style: const TextStyle(fontSize: 16)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final order = _order!;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -133,10 +124,7 @@ class OrderDetailView extends StatelessWidget {
         elevation: 0,
         title: Text(
           context.t('order_detail_title'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
         ),
         centerTitle: true,
       ),
@@ -144,32 +132,28 @@ class OrderDetailView extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 12),
-            // Phan co dinh: ma don hang.
-            _buildOrderIdSection(context),
+            _buildStatusTracker(context, order),
             const SizedBox(height: 12),
-            // Phan co dinh: dia chi (Tu -> Den).
-            _buildAddressSection(context),
+            _buildOrderIdSection(context, order),
             const SizedBox(height: 12),
-            // Phan co dinh: danh sach mon.
-            _buildProductListSection(),
+            _buildAddressSection(context, order),
             const SizedBox(height: 12),
-            // Phan co dinh: chi tiet thanh toan.
-            _buildPaymentDetailSection(context),
+            _buildOrderNoteSection(context, order),
             const SizedBox(height: 12),
-            // Phan co dinh: phuong thuc thanh toan.
-            _buildPaymentMethodSection(context),
+            _buildProductListSection(context, order),
             const SizedBox(height: 12),
-            // Phan dong: nut Tro giup.
-            _buildHelpSection(context),
+            _buildPaymentDetailSection(context, order),
             const SizedBox(height: 12),
-            // Phan giao dien dong theo trang thai.
-            _buildDynamicSection(context),
-            // Khoang trong cuoi de tranh bi遮 boi bottom bar.
+            _buildPaymentMethodSection(context, order),
+            const SizedBox(height: 12),
+            _buildHelpSection(context, order),
+            const SizedBox(height: 12),
+            _buildDynamicSection(context, order),
             const SizedBox(height: 80),
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomBar(context),
+      bottomNavigationBar: _buildBottomBar(context, order),
     );
   }
 
@@ -177,7 +161,7 @@ class OrderDetailView extends StatelessWidget {
   /// PHAN CO DINH
   ///=============================================================================
 
-  Widget _buildOrderIdSection(BuildContext context) {
+  Widget _buildOrderIdSection(BuildContext context, OrderModel order) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -201,16 +185,12 @@ class OrderDetailView extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: () {
               debugPrint('OrderDetailView: Sao chep ma don hang [${order.id}]');
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${context.t('order_id')}: #${order.id} '
+              showAppToast(
+                context,
+                message: '${context.t('order_id')}: #${order.id} '
                     '${context.t('order_copy')}',
-                  ),
-                  backgroundColor: AppColors.primary,
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 1),
-                ),
+                type: AppToastType.success,
+                duration: const Duration(seconds: 1),
               );
             },
             icon: const Icon(Icons.copy, size: 16),
@@ -229,7 +209,182 @@ class OrderDetailView extends StatelessWidget {
     );
   }
 
-  Widget _buildAddressSection(BuildContext ctx) {
+  /// Widget hien thi tracker trang thai don hang.
+  ///
+  /// Hien thi 4 buoc: Xac nhan -> Chuan bi -> Dang giao -> Hoan thanh
+  /// Buoc hien tai duoc to mau, cac buoc truoc da xong se to cham,
+  /// buoc sau chua den se mo.
+  Widget _buildStatusTracker(BuildContext context, OrderModel order) {
+    final int currentStatus = order.status;
+
+    // Cac buoc tracker: xac nhan(0), chuan bi(1), dang giao(2), hoan thanh(3).
+    // Huy(4) la trang thai dac biet, hien thi o _buildCancelledSection.
+    final List<_TrackerStep> steps = [
+      _TrackerStep(
+        icon: Icons.check_circle_outline,
+        label: context.t('status_pending'),
+        status: 0,
+      ),
+      _TrackerStep(
+        icon: Icons.restaurant_outlined,
+        label: context.t('status_preparing'),
+        status: 1,
+      ),
+      _TrackerStep(
+        icon: Icons.delivery_dining,
+        label: context.t('status_delivering'),
+        status: 2,
+      ),
+      _TrackerStep(
+        icon: Icons.done_all,
+        label: context.t('status_completed'),
+        status: 3,
+      ),
+    ];
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.t('order_status_title'),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          _buildStatusLabel(context, currentStatus),
+          const SizedBox(height: 16),
+          Row(
+            children: List.generate(steps.length * 2 - 1, (index) {
+              if (index.isOdd) {
+                // Duong noi giua cac buoc.
+                final stepIndex = index ~/ 2;
+                final isFilled = currentStatus > steps[stepIndex].status;
+                return Expanded(
+                  child: Container(
+                    height: 2,
+                    color: isFilled ? AppColors.primary : AppColors.divider,
+                  ),
+                );
+              }
+              // Buoc (icon + label).
+              final stepIndex = index ~/ 2;
+              final step = steps[stepIndex];
+              final isCompleted = currentStatus > step.status;
+              final isCurrent = currentStatus == step.status;
+              return _buildStepItem(
+                step: step,
+                isCompleted: isCompleted,
+                isCurrent: isCurrent,
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusLabel(BuildContext ctx, int status) {
+    Color color;
+    String text;
+    switch (status) {
+      case 0:
+        color = AppColors.warning;
+        text = ctx.t('status_pending');
+        break;
+      case 1:
+        color = AppColors.info;
+        text = ctx.t('status_preparing');
+        break;
+      case 2:
+        color = AppColors.primary;
+        text = ctx.t('status_delivering');
+        break;
+      case 3:
+        color = AppColors.success;
+        text = ctx.t('status_completed');
+        break;
+      case 4:
+        color = AppColors.error;
+        text = ctx.t('status_cancelled');
+        break;
+      default:
+        color = AppColors.textSecondary;
+        text = ctx.t('status_pending');
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepItem({
+    required _TrackerStep step,
+    required bool isCompleted,
+    required bool isCurrent,
+  }) {
+    final Color activeColor = AppColors.primary;
+    final Color inactiveColor = AppColors.divider;
+    final Color activeTextColor = AppColors.primary;
+    final Color inactiveTextColor = AppColors.textSecondary;
+
+    final Color iconColor = isCompleted || isCurrent ? activeColor : inactiveColor;
+    final Color textColor = isCompleted || isCurrent ? activeTextColor : inactiveTextColor;
+
+    return Column(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: isCompleted || isCurrent
+                ? activeColor.withValues(alpha: 0.12)
+                : AppColors.surfaceVariant,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            step.icon,
+            size: 20,
+            color: iconColor,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          step.label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
+            color: textColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAddressSection(BuildContext ctx, OrderModel order) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -241,51 +396,76 @@ class OrderDetailView extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Tu: Thong tin cua hang.
           _buildAddressItem(
+            ctx: ctx,
             icon: Icons.store_outlined,
             iconColor: AppColors.primary,
-            label: LanguageService.translate('order_from'),
+            label: ctx.t('order_from'),
             name: order.storeName,
-            detail: order.storeAddress,
-            phone: order.storePhone,
+            detail: order.storeAddress ?? order.deliveryAddress,
+            phone: '',
+            imageUrl: order.storeAvatar,
           ),
           const SizedBox(height: 12),
-          // Duong noi.
           Container(
             margin: const EdgeInsets.only(left: 22),
             child: Row(
               children: [
-                Container(
-                  width: 2,
-                  height: 16,
-                  color: AppColors.divider,
-                ),
+                Container(width: 2, height: 16, color: AppColors.divider),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: Container(
-                    height: 1,
-                    color: AppColors.divider,
-                  ),
-                ),
+                Expanded(child: Container(height: 1, color: AppColors.divider)),
                 const SizedBox(width: 8),
-                Icon(
-                  Icons.local_shipping_outlined,
-                  size: 18,
-                  color: AppColors.textSecondary,
-                ),
+                const Icon(Icons.local_shipping_outlined, size: 18, color: AppColors.textSecondary),
               ],
             ),
           ),
           const SizedBox(height: 12),
-          // Den: Dia chi giao hang cua khach.
           _buildAddressItem(
+            ctx: ctx,
             icon: Icons.location_on_outlined,
             iconColor: AppColors.error,
-            label: LanguageService.translate('order_to'),
-            name: order.customerName,
+            label: ctx.t('order_to'),
+            name: order.receiverName ?? order.addressName ?? 'Khach hang',
             detail: order.deliveryAddress,
-            phone: order.customerPhone,
+            phone: order.receiverPhone ?? '',
+            imageUrl: order.userAvatar,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrderNoteSection(BuildContext ctx, OrderModel order) {
+    final note = order.note;
+    if (note == null || note.trim().isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.note_outlined, size: 20, color: AppColors.textSecondary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  ctx.t('checkout_order_note'),
+                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 4),
+                Text(note, style: const TextStyle(fontSize: 14, color: AppColors.textPrimary)),
+              ],
+            ),
           ),
         ],
       ),
@@ -293,29 +473,65 @@ class OrderDetailView extends StatelessWidget {
   }
 
   Widget _buildAddressItem({
+    required BuildContext ctx,
     required IconData icon,
     required Color iconColor,
     required String label,
     required String name,
     required String detail,
     required String phone,
+    String? imageUrl,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.1),
+        if (imageUrl != null && imageUrl.isNotEmpty)
+          ClipRRect(
             borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              imageUrl,
+              width: 44,
+              height: 44,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 22, color: iconColor),
+              ),
+              loadingBuilder: (_, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Center(
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                );
+              },
+            ),
+          )
+        else
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 22, color: iconColor),
           ),
-          child: Icon(
-            icon,
-            size: 20,
-            color: iconColor,
-          ),
-        ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -341,19 +557,15 @@ class OrderDetailView extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 detail,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
               ),
-              const SizedBox(height: 2),
-              Text(
-                phone,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
+              if (phone.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  phone,
+                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -361,7 +573,7 @@ class OrderDetailView extends StatelessWidget {
     );
   }
 
-  Widget _buildProductListSection() {
+  Widget _buildProductListSection(BuildContext ctx, OrderModel order) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -374,90 +586,241 @@ class OrderDetailView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            LanguageService.translate('order_items'),
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
+          Row(
+            children: [
+              Text(
+                ctx.t('order_items'),
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+              ),
+              const Spacer(),
+              Text(
+                '${order.itemCount} ${ctx.t('unit_items')}',
+                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           const Divider(height: 1, color: AppColors.divider),
-          ...order.items.map((item) => _buildProductItem(item)).toList(),
+          ...order.items.map((item) => _buildProductItem(ctx, item)).toList(),
         ],
       ),
     );
   }
 
-  Widget _buildProductItem(OrderItemModel item) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // So luong.
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Center(
-              child: Text(
-                item.quantity.toString(),
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
-                ),
-              ),
-            ),
+  Widget _buildProductItem(BuildContext ctx, OrderItemModel item) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
-          const SizedBox(width: 12),
-          // Ten mon va topping.
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.name,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                if (item.toppings.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  ...item.toppings.map(
-                    (topping) => Text(
-                      '+ ${topping.name}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Hinh anh mon an - trai.
+            _buildProductImage(item),
+            const SizedBox(width: 12),
+            // Noi dung trung tam.
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Ten mon + so luong.
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.name,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                            height: 1.3,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
+                      const SizedBox(width: 8),
+                      // Quantity badge - phai.
+                      _buildQuantityBadge(item.quantity),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Variant + Toppings trong container xam nhat.
+                  if (item.options != null && item.options!.isNotEmpty) ...[
+                    _buildOptionsContainer(ctx, item),
+                    const SizedBox(height: 8),
+                  ],
+                  // Don gia.
+                  Text(
+                    _formatPrice(item.price, ctx),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
                     ),
                   ),
                 ],
-              ],
+              ),
             ),
-          ),
-          // Don gia.
-          Text(
-            _formatPrice(item.unitPrice),
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildPaymentDetailSection(BuildContext ctx) {
+  Widget _buildProductImage(OrderItemModel item) {
+    final Widget placeholder = Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Icon(Icons.restaurant_outlined, size: 28, color: AppColors.textSecondary),
+    );
+
+    if (item.imageUrl == null || item.imageUrl!.isEmpty) {
+      return placeholder;
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Image.network(
+        item.imageUrl!,
+        width: 80,
+        height: 80,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => placeholder,
+        loadingBuilder: (_, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildQuantityBadge(int quantity) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        'x$quantity',
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: AppColors.primary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOptionsContainer(BuildContext ctx, OrderItemModel item) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: _buildGroupedToppings(ctx, item.options ?? []),
+      ),
+    );
+  }
+
+  /// Tao danh sach topping, cung groupName thi xuat hien tren 1 dong.
+  /// VD: "Lựa chọn: Trà sữa Size L" | "Lựa chọn: Pudding, Trân châu"
+  List<Widget> _buildGroupedToppings(BuildContext ctx, List<ToppingOption> options) {
+    if (options.isEmpty) return [];
+
+    // Group theo groupName.
+    final Map<String, List<ToppingOption>> grouped = {};
+    for (final opt in options) {
+      final key = opt.groupName.isEmpty ? ctx.t('order_options') : opt.groupName;
+      grouped.putIfAbsent(key, () => []).add(opt);
+    }
+
+    return grouped.entries.map((entry) {
+      final toppingNames = entry.value.map((o) => o.name).join(' · ');
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 2),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 4,
+              height: 4,
+              margin: const EdgeInsets.only(top: 6),
+              decoration: BoxDecoration(
+                color: AppColors.textSecondary,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: RichText(
+                text: TextSpan(
+                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+                  children: [
+                    TextSpan(
+                      text: '${entry.key}: ',
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    TextSpan(text: toppingNames),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }).toList();
+  }
+
+  Widget _buildPaymentDetailSection(BuildContext ctx, OrderModel order) {
+    // Tinh subtotal: tong tien chua tinh topping (basePrice * quantity).
+    double subtotal = 0.0;
+    for (final item in order.items) {
+      double itemBasePrice = item.price;
+      if (item.options != null) {
+        for (final opt in item.options!) {
+          itemBasePrice -= opt.price;
+        }
+      }
+      subtotal += itemBasePrice * item.quantity;
+    }
+    final discount = order.discountAmount;
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -469,49 +832,42 @@ class OrderDetailView extends StatelessWidget {
       ),
       child: Column(
         children: [
+          // Tam tinh.
           _buildPaymentRow(
-            label: LanguageService.translate('order_subtotal'),
-            value: _formatPrice(order.subtotal),
+            ctx: ctx,
+            label: ctx.t('order_subtotal'),
+            value: _formatPrice(subtotal, ctx),
             valueColor: AppColors.textPrimary,
           ),
           const SizedBox(height: 8),
-          _buildPaymentRow(
-            label: LanguageService.translate('order_delivery_fee'),
-            value: _formatPrice(order.deliveryFee),
-            valueColor: AppColors.textPrimary,
-          ),
-          if (order.voucherDiscount > 0) ...[
-            const SizedBox(height: 8),
+          // Giam gia (tu voucher).
+          if (discount > 0) ...[
             _buildPaymentRow(
-              label: LanguageService.translate('order_voucher_discount'),
-              value: '- ${_formatPrice(order.voucherDiscount)}',
-              valueColor: AppColors.error,
+              ctx: ctx,
+              label: ctx.t('order_voucher_discount'),
+              value: '-${_formatPrice(discount, ctx)}',
+              valueColor: AppColors.primary,
               isDiscount: true,
             ),
+            const SizedBox(height: 8),
           ],
+          // Phi van chuyen.
+          _buildPaymentRow(
+            ctx: ctx,
+            label: ctx.t('order_delivery_fee'),
+            value: _formatPrice(order.deliveryFee, ctx),
+            valueColor: AppColors.textPrimary,
+          ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Divider(height: 1, color: AppColors.divider),
           ),
+          // Tong cong.
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                LanguageService.translate('order_total'),
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              Text(
-                _formatPrice(order.total),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
+              Text(ctx.t('order_total'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+              Text(_formatPrice(order.finalAmount, ctx), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
             ],
           ),
         ],
@@ -520,6 +876,7 @@ class OrderDetailView extends StatelessWidget {
   }
 
   Widget _buildPaymentRow({
+    required BuildContext ctx,
     required String label,
     required String value,
     required Color valueColor,
@@ -549,16 +906,34 @@ class OrderDetailView extends StatelessWidget {
     );
   }
 
-  Widget _buildPaymentMethodSection(BuildContext ctx) {
+  Widget _buildPaymentMethodSection(BuildContext ctx, OrderModel order) {
     String methodText;
     IconData methodIcon;
 
-    if (order.paymentMethod == 'cash') {
-      methodText = LanguageService.translate('order_cash_on_delivery');
-      methodIcon = Icons.payments_outlined;
-    } else {
-      methodText = LanguageService.translate('order_wallet');
-      methodIcon = Icons.account_balance_wallet_outlined;
+    switch (order.paymentMethod) {
+      case 'cash':
+        methodText = ctx.t('order_cash_on_delivery');
+        methodIcon = Icons.payments_outlined;
+        break;
+      case 'momo':
+        methodText = ctx.t('order_payment_momo');
+        methodIcon = Icons.account_balance_wallet_outlined;
+        break;
+      case 'zalo':
+        methodText = ctx.t('order_payment_zalopay');
+        methodIcon = Icons.account_balance_wallet_outlined;
+        break;
+      case 'vnpay':
+        methodText = ctx.t('order_payment_vnpay');
+        methodIcon = Icons.account_balance_wallet_outlined;
+        break;
+      case 'card':
+        methodText = ctx.t('payment_card');
+        methodIcon = Icons.credit_card_outlined;
+        break;
+      default:
+        methodText = ctx.t('order_wallet');
+        methodIcon = Icons.account_balance_wallet_outlined;
     }
 
     return Container(
@@ -572,18 +947,14 @@ class OrderDetailView extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            methodIcon,
-            size: 22,
-            color: AppColors.textSecondary,
-          ),
+          Icon(methodIcon, size: 22, color: AppColors.textSecondary),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  LanguageService.translate('order_payment_method'),
+                  ctx.t('order_payment_method'),
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
@@ -606,19 +977,14 @@ class OrderDetailView extends StatelessWidget {
     );
   }
 
-  Widget _buildHelpSection(BuildContext context) {
+  Widget _buildHelpSection(BuildContext context, OrderModel order) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: OutlinedButton.icon(
         onPressed: () {
           debugPrint('OrderDetailView: Nguoi dung bam Tro giup, chuyen sang trang Tro giop voi ma don [${order.id}]');
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => SupportView(orderId: order.id),
-            ),
-          );
+          Navigator.push(context, MaterialPageRoute(builder: (context) => SupportView(orderId: order.id)));
         },
         icon: const Icon(Icons.support_agent_outlined, size: 20),
         label: Text(context.t('order_need_help')),
@@ -626,9 +992,7 @@ class OrderDetailView extends StatelessWidget {
           foregroundColor: AppColors.textSecondary,
           side: const BorderSide(color: AppColors.divider),
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
     );
@@ -638,25 +1002,26 @@ class OrderDetailView extends StatelessWidget {
   /// PHAN GIAO DIEN DONG
   ///=============================================================================
 
-  Widget _buildDynamicSection(BuildContext context) {
+  Widget _buildDynamicSection(BuildContext context, OrderModel order) {
     switch (order.status) {
-      case OrderDetailStatus.delivering:
-        return _buildDeliveringSection(context);
-      case OrderDetailStatus.received:
-        return _buildReceivedSection(context);
-      case OrderDetailStatus.cancelled:
-        return _buildCancelledSection(context);
+      case 0:
+      case 1:
+      case 2:
+        return _buildDeliveringSection(context, order);
+      case 3:
+        return _buildReceivedSection(context, order);
+      case 4:
+        return _buildCancelledSection(context, order);
+      default:
+        return const SizedBox.shrink();
     }
   }
 
-  /// Giao diện khi đang giao: khối tài xế đầy đủ + nút Map/Chat + Hủy đơn.
-  Widget _buildDeliveringSection(BuildContext context) {
-    final driver = order.driverInfo;
-    if (driver == null) return const SizedBox.shrink();
+  Widget _buildDeliveringSection(BuildContext context, OrderModel order) {
+    final hasDriver = order.hasDriverInfo;
 
     return Column(
       children: [
-        // Khối thông tin tài xế.
         Container(
           width: double.infinity,
           margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -678,321 +1043,297 @@ class OrderDetailView extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 14),
-              Row(
-                children: [
-                  // Avatar tài xế.
-                  CircleAvatar(
-                    radius: 26,
-                    backgroundColor: AppColors.surfaceVariant,
-                    backgroundImage: driver.avatarUrl.isNotEmpty
-                        ? NetworkImage(driver.avatarUrl)
-                        : null,
-                    child: driver.avatarUrl.isEmpty
-                        ? const Icon(
-                            Icons.person,
-                            size: 28,
-                            color: AppColors.textSecondary,
-                          )
-                        : null,
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          driver.name,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.directions_car_outlined,
-                              size: 14,
-                              color: AppColors.textSecondary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              driver.vehiclePlate,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.phone_outlined,
-                              size: 14,
-                              color: AppColors.textSecondary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              driver.phone,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+              if (!hasDriver) ...[
+                Row(
+                  children: [
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primary,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              // Nút Mo ban do va Chat voi tai xe.
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        debugPrint('OrderDetailView: Mo ban do theo doi tai xe [${driver.name}]');
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => OrderTrackingMapView(
-                              order: order,
-                              etaMinutes: 15,
+                    const SizedBox(width: 12),
+                    Text(
+                      context.t('finding_driver'),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 26,
+                      backgroundColor: AppColors.surfaceVariant,
+                      child: const Icon(
+                        Icons.person,
+                        size: 28,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            order.driverName ?? 'Tai xe',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
                             ),
                           ),
-                        );
-                      },
-                      icon: const Icon(Icons.map_outlined, size: 18),
-                      label: Text(context.t('order_open_map')),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.directions_car_outlined,
+                                size: 14,
+                                color: AppColors.textSecondary,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                order.vehiclePlate ?? '',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.phone_outlined,
+                                size: 14,
+                                color: AppColors.textSecondary,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                order.driverPhone ?? '',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          debugPrint(
+                            'OrderDetailView: Mo ban do theo doi tai xe [${order.driverName}]',
+                          );
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => OrderTrackingMapView(
+                                orderId: order.id,
+                                driverId: order.driverId ?? '',
+                                driverName: order.driverName ?? '',
+                                driverPhone: order.driverPhone ?? '',
+                                vehiclePlate: order.vehiclePlate ?? '',
+                                driverLat: order.driverLat,
+                                driverLng: order.driverLng,
+                                storeLat: order.storeLat,
+                                storeLng: order.storeLng,
+                                storeName: order.storeName,
+                                addressLat: order.addressLat,
+                                addressLng: order.addressLng,
+                                receiverName: order.receiverName ?? order.addressName,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.map_outlined, size: 18),
+                        label: Text(context.t('order_open_map')),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        debugPrint('OrderDetailView: Chat voi tai xe [${driver.name}]');
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DriverChatView(
-                              chat: DriverChatModel(
-                                driverName: driver.name,
-                                vehiclePlate: driver.vehiclePlate,
-                                driverPhone: driver.phone,
-                                driverAvatarUrl: driver.avatarUrl,
-                                messages: const [],
-                              ),
-                            ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _callDriver(context, order.driverPhone ?? ''),
+                        icon: const Icon(Icons.phone_outlined, size: 18),
+                        label: Text(context.t('order_call_driver')),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        );
-                      },
-                      icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                      label: Text(context.t('order_chat_driver')),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
                         ),
-                        elevation: 0,
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
         const SizedBox(height: 12),
-        // Nut Huy don.
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          child: OutlinedButton(
-            onPressed: () {
-              debugPrint('OrderDetailView: Nguoi dung bam Huy don [${order.id}]');
-            },
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.error,
-              side: const BorderSide(color: AppColors.error),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              context.t('order_cancel_order'),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Giao diện khi đã hoàn thành: khối tài xế ẩn SĐT/nút + 2 nút đánh giá.
-  Widget _buildReceivedSection(BuildContext context) {
-    final driver = order.driverInfo;
-
-    return Column(
-      children: [
-        if (driver != null) ...[
-          // Khối tài xế rút gọn (chỉ Avatar + Tên).
+        if (order.status == 0) ...[
           Container(
             width: double.infinity,
             margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.divider),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: AppColors.surfaceVariant,
-                  backgroundImage: driver.avatarUrl.isNotEmpty
-                      ? NetworkImage(driver.avatarUrl)
-                      : null,
-                  child: driver.avatarUrl.isEmpty
-                      ? const Icon(
-                          Icons.person,
-                          size: 26,
-                          color: AppColors.textSecondary,
-                        )
-                      : null,
+            child: OutlinedButton(
+              onPressed: () {
+                debugPrint(
+                  'OrderDetailView: Nguoi dung bam Huy don [${order.id}]',
+                );
+                _showCancelDialog(context, order);
+              },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.error,
+                side: const BorderSide(color: AppColors.error),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  driver.name,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
+              ),
+              child: Text(
+                context.t('order_cancel_order'),
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
             ),
           ),
-          const SizedBox(height: 12),
         ],
-        // Khối 2 nút đánh giá.
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.divider),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.t('order_rating_title'),
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 14),
-              // Nút đánh giá món ăn.
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    debugPrint('OrderDetailView: Nguoi dung bam Danh gia mon an');
-                  },
-                  icon: const Icon(Icons.restaurant_outlined, size: 18),
-                  label: Text(context.t('order_rate_food')),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              // Nut danh gia tai xe.
-              if (driver != null)
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      debugPrint('OrderDetailView: Nguoi dung bam Danh gia tai xe');
-                    },
-                    icon: const Icon(Icons.directions_car_outlined, size: 18),
-                    label: Text(context.t('order_rate_driver')),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.secondary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      elevation: 0,
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 12),
-              // Nut Dat lai don hang.
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    debugPrint('OrderDetailView: Nguoi dung bam Dat lai, chuyen sang Checkout voi ma don [${order.id}]');
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CheckoutView(initialOrder: order),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.replay_outlined, size: 18),
-                  label: Text(context.t('order_reorder_btn')),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    elevation: 0,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
 
-  /// Giao dien khi da huy: dong text do noi bat + ly do huy + nut Dat lai.
-  Widget _buildCancelledSection(BuildContext context) {
+  Future<void> _showCancelDialog(BuildContext context, OrderModel order) async {
+    await CancelOrderDialog.show(context, order);
+  }
+
+  Widget _buildReceivedSection(BuildContext context, OrderModel order) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.t('order_rating_title'),
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                debugPrint(
+                  'OrderDetailView: Nguoi dung bam Danh gia mon an');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FoodReviewView(order: order),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.restaurant_outlined, size: 18),
+              label: Text(context.t('order_rate_food')),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (order.hasDriverInfo) ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  debugPrint(
+                    'OrderDetailView: Nguoi dung bam Danh gia tai xe',
+                  );
+                },
+                icon: const Icon(Icons.directions_car_outlined, size: 18),
+                label: Text(context.t('order_rate_driver')),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.secondary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                debugPrint(
+                  'OrderDetailView: Nguoi dung bam Dat lai, chuyen sang Checkout voi ma don [${order.id}]',
+                );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CheckoutView(initialOrder: order),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.replay_outlined, size: 18),
+              label: Text(context.t('order_reorder_btn')),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCancelledSection(BuildContext context, OrderModel order) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -1004,11 +1345,7 @@ class OrderDetailView extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.cancel_outlined,
-            size: 40,
-            color: AppColors.error,
-          ),
+          Icon(Icons.cancel_outlined, size: 40, color: AppColors.error),
           const SizedBox(height: 8),
           Text(
             context.t('order_cancelled_title'),
@@ -1018,24 +1355,14 @@ class OrderDetailView extends StatelessWidget {
               color: AppColors.error,
             ),
           ),
-          if (order.cancelReason != null && order.cancelReason!.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              '${context.t('order_cancel_reason')}: ${order.cancelReason}',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
           const SizedBox(height: 16),
-          // Nut Dat lai don hang.
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () {
-                debugPrint('OrderDetailView: Nguoi dung bam Dat lai tu man hinh da huy, chuyen sang Checkout voi ma don [${order.id}]');
+                debugPrint(
+                  'OrderDetailView: Nguoi dung bam Dat lai tu man hinh da huy, chuyen sang Checkout voi ma don [${order.id}]',
+                );
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -1065,7 +1392,7 @@ class OrderDetailView extends StatelessWidget {
   /// THANH DAM DAY
   ///=============================================================================
 
-  Widget _buildBottomBar(BuildContext context) {
+  Widget _buildBottomBar(BuildContext context, OrderModel order) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       decoration: BoxDecoration(
@@ -1082,17 +1409,11 @@ class OrderDetailView extends StatelessWidget {
         width: double.infinity,
         child: ElevatedButton(
           onPressed: () {
-            debugPrint('OrderDetailView: Nguoi dung bam Huy don [${order.id}]');
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(context.t('order_cancel_order')),
-                backgroundColor: AppColors.error,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            debugPrint('OrderDetailView: Nguoi dung bam Dong man hinh chi tiet don hang');
+            Navigator.pop(context);
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.error,
+            backgroundColor: AppColors.textSecondary,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
@@ -1101,11 +1422,8 @@ class OrderDetailView extends StatelessWidget {
             elevation: 0,
           ),
           child: Text(
-            context.t('order_cancel_order'),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            context.t('btn_close'),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
         ),
       ),
@@ -1116,129 +1434,33 @@ class OrderDetailView extends StatelessWidget {
   /// UTILITIES
   ///=============================================================================
 
-  /// Format gia thanh chuoi VND (VD: "85.000 VND").
-  String _formatPrice(double price) {
+  Future<void> _callDriver(BuildContext context, String phone) async {
+    if (phone.isEmpty) return;
+    final uri = Uri(scheme: 'tel', path: phone);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      if (context.mounted) {
+        showAppToast(
+          context,
+          message: context.t('error_cannot_call'),
+          type: AppToastType.error,
+          duration: const Duration(seconds: 2),
+        );
+      }
+    }
+  }
+
+  String _formatPrice(double price, BuildContext ctx) {
     if (price >= 1000) {
-      final formatted = price.toStringAsFixed(0).replaceAllMapped(
+      final formatted = price
+          .toStringAsFixed(0)
+          .replaceAllMapped(
             RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
             (Match m) => '${m[1]}.',
           );
-      return '$formatted ${LanguageService.translate('unit_currency')}';
+      return '$formatted ${ctx.t('unit_currency')}';
     }
-    return '${price.toStringAsFixed(0)} ${LanguageService.translate('unit_currency')}';
+    return '${price.toStringAsFixed(0)} ${ctx.t('unit_currency')}';
   }
 }
-
-///=============================================================================
-/// SECTION: MOCK DATA
-///=============================================================================
-
-/// Mock data 1: Trang thai DANG GIAO (tai xe dang giao).
-final mockOrderDelivering = OrderDetailModel(
-  id: 'ORD-123456',
-  storeName: 'Com Tam Oi Den',
-  storeAddress: '123 Nguyen Hue, Quan 1, TP.HCM',
-  storePhone: '028 1234 5678',
-  customerName: 'Nguyen Van A',
-  customerPhone: '090 123 4567',
-  deliveryAddress: '456 Le Dai Hanh, Quan 11, TP.HCM',
-  items: const [
-    OrderItemModel(
-      name: 'Com tam bi cha',
-      quantity: 2,
-      unitPrice: 35000,
-      toppings: [
-        OrderToppingModel(name: 'Trung cut', price: 5000),
-        OrderToppingModel(name: 'Dua chuot', price: 3000),
-      ],
-    ),
-    OrderItemModel(
-      name: 'Tra sua tran chau',
-      quantity: 1,
-      unitPrice: 28000,
-      toppings: [
-        OrderToppingModel(name: 'Tran chau den', price: 5000),
-      ],
-    ),
-  ],
-  subtotal: 113000,
-  deliveryFee: 15000,
-  voucherDiscount: 10000,
-  total: 118000,
-  paymentMethod: 'cash',
-  orderDate: DateTime.now().subtract(const Duration(hours: 3)),
-  status: OrderDetailStatus.delivering,
-  driverInfo: const DriverInfoModel(
-    name: 'Le Van B',
-    phone: '091 234 5678',
-    avatarUrl: '',
-    vehiclePlate: '59A-123.45',
-  ),
-);
-
-/// Mock data 2: Trang thai DA HOAN THANH (da nhan hang).
-final mockOrderReceived = OrderDetailModel(
-  id: 'ORD-789012',
-  storeName: 'Bun Bo Hue Ba Trieu',
-  storeAddress: '88 Ba Trieu, Quan 5, TP.HCM',
-  storePhone: '028 2345 6789',
-  customerName: 'Tran Thi C',
-  customerPhone: '093 456 7890',
-  deliveryAddress: '22 Hoang Van Thu, Quan Phu Nhuan, TP.HCM',
-  items: const [
-    OrderItemModel(
-      name: 'Bun bo hue lon',
-      quantity: 1,
-      unitPrice: 50000,
-      toppings: [
-        OrderToppingModel(name: 'Vit', price: 15000),
-      ],
-    ),
-    OrderItemModel(
-      name: 'Nem chua ran',
-      quantity: 1,
-      unitPrice: 25000,
-      toppings: [],
-    ),
-  ],
-  subtotal: 90000,
-  deliveryFee: 20000,
-  voucherDiscount: 0,
-  total: 110000,
-  paymentMethod: 'wallet',
-  orderDate: DateTime.now().subtract(const Duration(days: 2)),
-  status: OrderDetailStatus.received,
-  driverInfo: const DriverInfoModel(
-    name: 'Pham Van D',
-    phone: '097 345 6789',
-    avatarUrl: '',
-    vehiclePlate: '58B-234.56',
-  ),
-);
-
-/// Mock data 3: Trang thai DA HUY (da huy don).
-final mockOrderCancelled = OrderDetailModel(
-  id: 'ORD-345678',
-  storeName: 'Lau De Nha Hang Song Than',
-  storeAddress: '999 Dien Bien Phu, Quan 3, TP.HCM',
-  storePhone: '028 3456 7890',
-  customerName: 'Ho Van E',
-  customerPhone: '095 567 8901',
-  deliveryAddress: '12 Nguyen Van Qua, Quan 3, TP.HCM',
-  items: const [
-    OrderItemModel(
-      name: 'Lau de 4 nguoi',
-      quantity: 1,
-      unitPrice: 350000,
-      toppings: [],
-    ),
-  ],
-  subtotal: 350000,
-  deliveryFee: 30000,
-  voucherDiscount: 50000,
-  total: 330000,
-  paymentMethod: 'cash',
-  orderDate: DateTime.now().subtract(const Duration(days: 7)),
-  status: OrderDetailStatus.cancelled,
-  cancelReason: 'Khong co nguoi nhan duoc hang',
-);

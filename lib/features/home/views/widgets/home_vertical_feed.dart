@@ -3,6 +3,7 @@ import '../../models/store_model.dart';
 import '../../models/product_model.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/language_service.dart';
+import '../../../../core/utils/format_currency.dart';
 
 /// Widget feed danh sach san pham/quan an cuon doc.
 /// Nhan Stream thay vi List, tu dong xu ly 3 trang thai:
@@ -75,14 +76,14 @@ class _StoresVerticalStreamBuilder extends StatelessWidget {
           debugPrint(
               'HomeVerticalFeed: loi khi load danh sach quan: ${snapshot.error}');
           return _ErrorWidget(
-            message: LanguageService.translate('error_load_stores'),
+            message: context.t('error_load_stores'),
           );
         }
 
         final stores = snapshot.data!;
         if (stores.isEmpty) {
           return _EmptyWidget(
-            message: LanguageService.translate('empty_stores'),
+            message: context.t('empty_stores'),
           );
         }
 
@@ -136,14 +137,14 @@ class _ProductsVerticalStreamBuilder extends StatelessWidget {
           debugPrint(
               'HomeVerticalFeed: loi khi load danh sach san pham: ${snapshot.error}');
           return _ErrorWidget(
-            message: LanguageService.translate('error_load_products'),
+            message: context.t('error_load_products'),
           );
         }
 
         final products = snapshot.data!;
         if (products.isEmpty) {
           return _EmptyWidget(
-            message: LanguageService.translate('empty_products'),
+            message: context.t('empty_products'),
           );
         }
 
@@ -193,7 +194,11 @@ class _VerticalStoreItem extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: Image.network(
-                store.avtUrl,
+                store.avtUrl.trim().isNotEmpty
+                    ? store.avtUrl.trim()
+                    : store.backUrl.trim().isNotEmpty
+                        ? store.backUrl.trim()
+                        : '',
                 width: 90,
                 height: 90,
                 fit: BoxFit.cover,
@@ -237,7 +242,7 @@ class _VerticalStoreItem extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '(${store.reviewCount} ${LanguageService.translate('unit_rating')})',
+                        '(${store.reviewCount} ${context.t('unit_rating')})',
                         style:
                             TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
@@ -256,8 +261,8 @@ class _VerticalStoreItem extends StatelessWidget {
                         ),
                         child: Text(
                           store.isOpen
-                              ? LanguageService.translate('home_open')
-                              : LanguageService.translate('home_closed'),
+                              ? context.t('home_open')
+                              : context.t('home_closed'),
                           style: TextStyle(
                             fontSize: 11,
                             color: store.isOpen ? Colors.green : Colors.red,
@@ -333,7 +338,7 @@ class _VerticalProductItem extends StatelessWidget {
                         ),
                         child: Center(
                           child: Text(
-                            LanguageService.translate('home_out_of_stock'),
+                            context.t('home_out_of_stock'),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 11,
@@ -362,19 +367,46 @@ class _VerticalProductItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    product.categoryName,
+                    product.categoryName.isNotEmpty
+                        ? product.categoryName
+                        : 'Mon noi bat',
                     style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    product.description,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  // Hien thi khoang cach + danh gia + thoi gian giao.
+                  Row(
+                    children: [
+                      if (product.rating != null) ...[
+                        Icon(Icons.star, size: 12, color: Colors.amber),
+                        const SizedBox(width: 2),
+                        Text(
+                          product.rating!.toStringAsFixed(1),
+                          style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                        ),
+                        const SizedBox(width: 4),
+                      ],
+                      if (product.distance != null) ...[
+                        Icon(Icons.location_on, size: 12, color: AppColors.primary),
+                        const SizedBox(width: 2),
+                        Text(
+                          '${product.distance!.toStringAsFixed(1)} ${context.t('unit_km')}',
+                          style: TextStyle(fontSize: 12, color: AppColors.primary),
+                        ),
+                        const SizedBox(width: 4),
+                      ],
+                      if (product.deliveryTime != null) ...[
+                        Icon(Icons.access_time, size: 12, color: Colors.grey[600]),
+                        const SizedBox(width: 2),
+                        Text(
+                          product.deliveryTime!,
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${product.basePrice.toStringAsFixed(0)} ${LanguageService.translate('unit_currency')}',
+                    formatCurrency(product.basePrice, context),
                     style: TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
