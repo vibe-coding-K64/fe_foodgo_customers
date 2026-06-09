@@ -1277,30 +1277,31 @@ class _OrderDetailViewState extends State<OrderDetailView> {
             ),
           ),
           const SizedBox(height: 10),
-          if (order.hasDriverInfo) ...[
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  debugPrint(
-                    'OrderDetailView: Nguoi dung bam Danh gia tai xe',
-                  );
-                },
-                icon: const Icon(Icons.directions_car_outlined, size: 18),
-                label: Text(context.t('order_rate_driver')),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.secondary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 0,
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-          ],
+          // TODO: [Driver Rating] Uncomment when backend API is ready
+          // if (order.hasDriverInfo) ...[
+          //   SizedBox(
+          //     width: double.infinity,
+          //     child: ElevatedButton.icon(
+          //       onPressed: () {
+          //         debugPrint(
+          //           'OrderDetailView: Nguoi dung bam Danh gia tai xe',
+          //         );
+          //       },
+          //       icon: const Icon(Icons.directions_car_outlined, size: 18),
+          //       label: Text(context.t('order_rate_driver')),
+          //       style: ElevatedButton.styleFrom(
+          //         backgroundColor: AppColors.secondary,
+          //         foregroundColor: Colors.white,
+          //         padding: const EdgeInsets.symmetric(vertical: 12),
+          //         shape: RoundedRectangleBorder(
+          //           borderRadius: BorderRadius.circular(8),
+          //         ),
+          //         elevation: 0,
+          //       ),
+          //     ),
+          //   ),
+          //   const SizedBox(height: 10),
+          // ],
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
