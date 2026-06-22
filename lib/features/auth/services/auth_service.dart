@@ -180,9 +180,9 @@ class AuthService {
         '/auth/send-otp',
         data: {'emailOrPhone': emailOrPhone.trim()},
       );
-      debugPrint('AuthService: Gui OTP thanh cong - response: ${response.data}');
+      debugPrint('AuthService: Gui OTP thanh cong - full response: ${response.data}');
     } on DioException catch (e) {
-      debugPrint('AuthService: Gui OTP loi - response: ${e.response?.data}');
+      debugPrint('AuthService: Gui OTP loi - status: ${e.response?.statusCode}, data: ${e.response?.data}');
       throw _handleDioError(e);
     }
   }
@@ -198,9 +198,9 @@ class AuthService {
         '/auth/resend-otp',
         data: {'emailOrPhone': emailOrPhone.trim()},
       );
-      debugPrint('AuthService: Gui lai OTP thanh cong - response: ${response.data}');
+      debugPrint('AuthService: Gui lai OTP thanh cong - full response: ${response.data}');
     } on DioException catch (e) {
-      debugPrint('AuthService: Gui lai OTP loi - response: ${e.response?.data}');
+      debugPrint('AuthService: Gui lai OTP loi - status: ${e.response?.statusCode}, data: ${e.response?.data}');
       throw _handleDioError(e);
     }
   }
@@ -314,26 +314,46 @@ class AuthService {
         throw AuthException('Khong nhan duoc phan hoi tu server');
       }
 
-      final success = data['success'] as bool? ?? false;
-      if (!success) {
-        final message = data['message'] as String? ?? 'Xac thuc OTP that bai';
-        throw AuthException(message);
+      debugPrint('AuthService: verifyOtp - FULL RESPONSE: $data');
+
+      // Backend tra ve flatten response (khong co wrapper success/data)
+      // hoac tra ve dung format co success + data
+      final hasSuccessField = data.containsKey('success');
+      Map<String, dynamic> payload;
+
+      if (hasSuccessField) {
+        final success = data['success'] as bool?;
+        if (success != true) {
+          final message = data['message'] as String? ?? 'Xac thuc OTP that bai';
+          debugPrint('AuthService: verifyOtp - XAC THUC THAT BAI: $message');
+          throw AuthException(message);
+        }
+        // Format co success + data -> lay payload tu data.data
+        final nestedData = data['data'];
+        if (nestedData is Map<String, dynamic>) {
+          payload = nestedData;
+        } else {
+          payload = data;
+        }
+      } else {
+        // Backend tra thang payload khong co wrapper
+        payload = data;
       }
 
-      final tempToken = data['tempToken'] as String?;
+      final tempToken = payload['tempToken'] as String?;
       if (tempToken == null || tempToken.isEmpty) {
         throw AuthException('Phan hoi khong chua tempToken');
       }
 
-      final tokenType = data['tokenType'] as String? ?? 'Bearer';
-      final expiresIn = data['expiresIn'] as int? ?? 0;
+      final tokenType = payload['tokenType'] as String? ?? 'Bearer';
+      final expiresIn = payload['expiresIn'] as int? ?? 0;
       DateTime? expiresAt;
-      final expiresAtStr = data['expiresAt'] as String?;
+      final expiresAtStr = payload['expiresAt'] as String?;
       if (expiresAtStr != null) {
         expiresAt = DateTime.tryParse(expiresAtStr);
       }
 
-      debugPrint('AuthService: Xac thuc OTP thanh cong - response: $data');
+      debugPrint('AuthService: Xac thuc OTP thanh cong - payload: $payload');
       return OtpVerifyResult(
         tempToken: tempToken,
         tokenType: tokenType,
