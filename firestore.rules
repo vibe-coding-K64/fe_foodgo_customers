@@ -77,6 +77,16 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Chat: conversations va messages.
+    // Customer app doc/ghi realtime qua Firestore.
+    match /conversations/{docId} {
+      allow read, write: if true;
+    }
+
+    match /messages/{docId} {
+      allow read, write: if true;
+    }
+
     // Vouchers.
     match /vouchers/{voucherId} {
       allow read: if true;
