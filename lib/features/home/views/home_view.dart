@@ -21,6 +21,7 @@ import 'popular_stores_view.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_search_bar.dart';
 import 'widgets/home_categories.dart';
+import '../widgets/green_chat_overlay.dart';
 import '../services/home_service.dart';
 
 /// Trang chu - HomeView.
@@ -128,6 +129,32 @@ class _HomeViewState extends State<HomeView> {
     setState(() {
       _popularStoresFuture = _storeService.getPopularStores(lat: _lat, lng: _lng);
     });
+  }
+
+  /// Mo GreenBot chat overlay (hien thi tren trang chu).
+  ///
+  /// Dung `showGeneralDialog` de:
+  ///   - Van giu trang chu ben duoi (khong push route moi).
+  ///   - Tap ra ngoai vung chat se dong overlay (`barrierDismissible: true`).
+  Future<void> _openGreenChat() async {
+    await showGeneralDialog<void>(
+      context: context,
+      barrierLabel: 'Đóng GreenBot',
+      barrierDismissible: true,
+      barrierColor: const Color(0x66000000),
+      transitionDuration: const Duration(milliseconds: 220),
+      pageBuilder: (context, _, __) => const GreenChatOverlay(),
+      transitionBuilder: (context, animation, _, child) {
+        final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+        return FadeTransition(
+          opacity: curved,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.96, end: 1.0).animate(curved),
+            child: child,
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -278,8 +305,58 @@ class _HomeViewState extends State<HomeView> {
               const SliverToBoxAdapter(child: SizedBox(height: 80)),
             ],
           ),
-          Positioned(right: 16, bottom: 16, child: _CartFab()),
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                _GreenBotFab(onTap: _openGreenChat),
+                const SizedBox(height: 12),
+                _CartFab(),
+              ],
+            ),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+/// Nut FAB GreenBot dat phia tren nut gio hang, nen trong suot.
+///
+/// Bam vao se mo bong bóng chat GreenChatOverlay.
+class _GreenBotFab extends StatelessWidget {
+  const _GreenBotFab({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: const BoxDecoration(
+            color: Colors.transparent,
+            shape: BoxShape.circle,
+          ),
+          child: ClipOval(
+            child: Image.asset(
+              'asset/img/logo.png',
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.chat_bubble_outline,
+                color: AppColors.primary,
+                size: 26,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
