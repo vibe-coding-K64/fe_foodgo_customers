@@ -86,9 +86,9 @@ class _CheckoutViewState extends State<CheckoutView> {
         _paymentMethods = methods;
         if (_paymentMethods.isNotEmpty) {
           final defaultMethod = _paymentMethods.first;
-          _selectedPaymentMethod = defaultMethod.id;
+          _selectedPaymentMethod = defaultMethod.type.toInt().toString();
           debugPrint(
-              'Checkout: Da load ${_paymentMethods.length} phuong thuc, mac dinh: ${defaultMethod.name}');
+              'Checkout: Da load ${_paymentMethods.length} phuong thuc, mac dinh: ${defaultMethod.name} (type=${defaultMethod.type.toInt()})');
         }
       });
     }
@@ -903,7 +903,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                     selectedPaymentMethodInfo: _paymentMethods.isEmpty
                         ? null
                         : _paymentMethods.firstWhere(
-                            (m) => m.id == _selectedPaymentMethod,
+                            (m) => m.type.toInt().toString() == _selectedPaymentMethod,
                             orElse: () => _paymentMethods.first,
                           ),
                     onNoteChanged: (note) {
@@ -1105,10 +1105,10 @@ class _CheckoutViewState extends State<CheckoutView> {
                         ),
                   onTap: () {
                     debugPrint(
-                      'Checkout: Chon phuong thuc thanh toan [${method.id}] - ${method.name}',
+                      'Checkout: Chon phuong thuc thanh toan [${method.type.toInt()}] - ${method.name}',
                     );
                     setState(() {
-                      _selectedPaymentMethod = method.id;
+                      _selectedPaymentMethod = method.type.toInt().toString();
                     });
                     Navigator.pop(sheetContext);
                   },

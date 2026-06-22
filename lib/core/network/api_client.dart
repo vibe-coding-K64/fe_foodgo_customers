@@ -65,8 +65,8 @@ class AuthInterceptor extends Interceptor {
     try {
       final dio = Dio(BaseOptions(
         baseUrl: ApiClient._baseUrl,
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
+        connectTimeout: const Duration(seconds: 60),
+        receiveTimeout: const Duration(seconds: 60),
       ));
 
       final response = await dio.post<Map<String, dynamic>>(
@@ -111,8 +111,8 @@ class AuthInterceptor extends Interceptor {
   Future<void> _retryPendingRequests() async {
     final dio = Dio(BaseOptions(
       baseUrl: ApiClient._baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
+      connectTimeout: const Duration(seconds: 60),
+      receiveTimeout: const Duration(seconds: 60),
     ));
 
     for (final req in _pendingRequests) {
@@ -191,8 +191,8 @@ class ApiClient {
     _dio ??= Dio(
       BaseOptions(
         baseUrl: _baseUrl,
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
+        connectTimeout: const Duration(seconds: 60),
+        receiveTimeout: const Duration(seconds: 60),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

@@ -122,6 +122,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
 
   ///Go API reverse geocoding cho vi tri hien tai.
   Future<void> _onPositionChanged(LatLng position) async {
+    debugPrint('MapPicker _onPositionChanged: lat=${position.latitude}, lng=${position.longitude}');
     _requestedLatLng = position;
     setState(() => _isFetchingAddress = true);
     try {
@@ -155,6 +156,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       );
       final latLng = LatLng(position.latitude, position.longitude);
+      debugPrint('MapPicker _getCurrentLocation: GPS lat=${position.latitude}, lng=${position.longitude}');
       _isProgrammaticMove = true;
       _mapController.move(latLng, 16);
       _onPositionChanged(latLng);
@@ -208,6 +210,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
     _searchController.text = result.displayName;
     final target = LatLng(result.lat, result.lng);
 
+    debugPrint('MapPicker _onSelectSearchResult: lat=${result.lat}, lng=${result.lng}, name=${result.displayName}');
     _isProgrammaticMove = true;
     _currentPosition = target;
     setState(() => _searchResults = []);
@@ -222,7 +225,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
 
   ///Khi nguoi dung bam "Xac nhan".
   void _onConfirm() {
-    debugPrint('MapPicker: Xac nhan lat=${_currentPosition.latitude}, '
+    debugPrint('MapPicker _onConfirm: lat=${_currentPosition.latitude}, '
         'lng=${_currentPosition.longitude}, address=$_formattedAddress');
     Navigator.pop(context, {
       'lat': _currentPosition.latitude,
@@ -231,41 +234,73 @@ class _MapPickerPageState extends State<MapPickerPage> {
     });
   }
 
-  ///Dong ho tro hien thi dia chi.
+  ///Dong ho tro hien thi dia chi + toa do.
   Widget _buildAddressPreview() {
     if (_isFetchingAddress) {
-      return Row(
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+          Row(
+            children: [
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  context.t('address_form_fetching_address'),
+                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 10),
+          const SizedBox(height: 4),
           Text(
-            context.t('address_form_fetching_address'),
-            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            '${_currentPosition.latitude.toStringAsFixed(6)}, ${_currentPosition.longitude.toStringAsFixed(6)}',
+            style: const TextStyle(fontSize: 11, color: AppColors.textHint),
           ),
         ],
       );
     }
     if (_formattedAddress.isEmpty) {
-      return Text(
-        context.t('address_form_no_results'),
-        style: const TextStyle(fontSize: 13, color: AppColors.textHint),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.t('address_form_no_results'),
+            style: const TextStyle(fontSize: 13, color: AppColors.textHint),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${_currentPosition.latitude.toStringAsFixed(6)}, ${_currentPosition.longitude.toStringAsFixed(6)}',
+            style: const TextStyle(fontSize: 11, color: AppColors.textHint),
+          ),
+        ],
       );
     }
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(Icons.location_on, size: 16, color: AppColors.primary),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            _formattedAddress,
-            style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+        Row(
+          children: [
+            const Icon(Icons.location_on, size: 16, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                _formattedAddress,
+                style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '${_currentPosition.latitude.toStringAsFixed(6)}, ${_currentPosition.longitude.toStringAsFixed(6)}',
+          style: const TextStyle(fontSize: 11, color: AppColors.textHint),
         ),
       ],
     );
@@ -292,7 +327,9 @@ class _MapPickerPageState extends State<MapPickerPage> {
                 } else if (event is MapEventMoveEnd) {
                   if (_isMoving && !_isProgrammaticMove && _didInitialFetch) {
                     _isMoving = false;
-                    _onPositionChanged(event.camera.center);
+                    final newPos = event.camera.center;
+                    _currentPosition = newPos;
+                    _onPositionChanged(newPos);
                   }
                 }
               },

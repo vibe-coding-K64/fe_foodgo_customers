@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:fe_foodgo_customers/core/constants/app_colors.dart';
 import 'package:fe_foodgo_customers/core/localization/language_service.dart';
+import 'package:fe_foodgo_customers/core/utils/auth_storage.dart';
 import 'package:fe_foodgo_customers/core/utils/snackbar_helper.dart';
 import 'package:fe_foodgo_customers/features/order/models/order_model.dart';
 import 'package:fe_foodgo_customers/features/order/services/order_service.dart';
@@ -13,6 +15,7 @@ import 'package:fe_foodgo_customers/features/activity/views/driver_chat_view.dar
 import 'package:fe_foodgo_customers/features/activity/views/order_tracking_map_view.dart';
 import 'package:fe_foodgo_customers/features/activity/views/food_review_view.dart';
 import 'package:fe_foodgo_customers/features/activity/views/widgets/cancel_order_dialog.dart';
+import 'package:fe_foodgo_customers/features/activity/services/driver_chat_firestore_service.dart';
 
 ///=============================================================================
 /// SECTION: VIEW
@@ -910,24 +913,16 @@ class _OrderDetailViewState extends State<OrderDetailView> {
     String methodText;
     IconData methodIcon;
 
-    switch (order.paymentMethod) {
-      case 'cash':
+    switch (int.tryParse(order.paymentMethod) ?? 0) {
+      case 1:
         methodText = ctx.t('order_cash_on_delivery');
         methodIcon = Icons.payments_outlined;
         break;
-      case 'momo':
-        methodText = ctx.t('order_payment_momo');
+      case 2:
+        methodText = ctx.t('order_wallet');
         methodIcon = Icons.account_balance_wallet_outlined;
         break;
-      case 'zalo':
-        methodText = ctx.t('order_payment_zalopay');
-        methodIcon = Icons.account_balance_wallet_outlined;
-        break;
-      case 'vnpay':
-        methodText = ctx.t('order_payment_vnpay');
-        methodIcon = Icons.account_balance_wallet_outlined;
-        break;
-      case 'card':
+      case 3:
         methodText = ctx.t('payment_card');
         methodIcon = Icons.credit_card_outlined;
         break;
@@ -1136,6 +1131,13 @@ class _OrderDetailViewState extends State<OrderDetailView> {
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () {
+                          final driverId = order.driverId;
+                          if (driverId == null || driverId.isEmpty) {
+                            debugPrint(
+                              'OrderDetailView: Khong the mo ban do — driverId null/empty',
+                            );
+                            return;
+                          }
                           debugPrint(
                             'OrderDetailView: Mo ban do theo doi tai xe [${order.driverName}]',
                           );
@@ -1144,7 +1146,7 @@ class _OrderDetailViewState extends State<OrderDetailView> {
                             MaterialPageRoute(
                               builder: (context) => OrderTrackingMapView(
                                 orderId: order.id,
-                                driverId: order.driverId ?? '',
+                                driverId: driverId,
                                 driverName: order.driverName ?? '',
                                 driverPhone: order.driverPhone ?? '',
                                 vehiclePlate: order.vehiclePlate ?? '',
@@ -1153,8 +1155,8 @@ class _OrderDetailViewState extends State<OrderDetailView> {
                                 storeLat: order.storeLat,
                                 storeLng: order.storeLng,
                                 storeName: order.storeName,
-                                addressLat: order.addressLat,
-                                addressLng: order.addressLng,
+                                deliveryLat: order.deliveryLat,
+                                deliveryLng: order.deliveryLng,
                                 receiverName: order.receiverName ?? order.addressName,
                               ),
                             ),
@@ -1172,7 +1174,7 @@ class _OrderDetailViewState extends State<OrderDetailView> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () => _callDriver(context, order.driverPhone ?? ''),
@@ -1189,6 +1191,23 @@ class _OrderDetailViewState extends State<OrderDetailView> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _openDriverChat(context, order),
+                    icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                    label: Text(context.t('order_chat_driver')),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ],
@@ -1450,6 +1469,48 @@ class _OrderDetailViewState extends State<OrderDetailView> {
         );
       }
     }
+  }
+
+  void _openDriverChat(BuildContext context, OrderModel order) async {
+    final driverId = order.driverId;
+    if (driverId == null || driverId.isEmpty) {
+      debugPrint(
+        'OrderDetailView: Khong the mo chat — driverId null/empty',
+      );
+      return;
+    }
+
+    final userId = AuthStorage.getUserId();
+    if (userId == null || userId.isEmpty) {
+      debugPrint('OrderDetailView: Chua dang nhap, khong the mo chat');
+      return;
+    }
+
+    final userName = AuthStorage.getUser()?['fullName'] as String? ??
+        AuthStorage.getUser()?['name'] as String? ??
+        'Khach hang';
+
+    debugPrint(
+      'OrderDetailView: Mo chat voi tai xe [${order.driverName}]',
+    );
+
+    const service = DriverChatFirestoreService();
+    final conversation = await service.getConversationByOrderId(order.id);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => DriverChatView(
+          conversationId: conversation?.id,
+          orderId: order.id,
+          driverId: driverId,
+          driverName: order.driverName ?? 'Tai xe',
+          vehiclePlate: order.vehiclePlate ?? '',
+          driverPhone: order.driverPhone ?? '',
+          driverAvatarUrl: '',
+        ),
+      ),
+    );
   }
 
   String _formatPrice(double price, BuildContext ctx) {

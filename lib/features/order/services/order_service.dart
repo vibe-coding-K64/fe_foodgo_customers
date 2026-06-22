@@ -169,28 +169,31 @@ class OrderService {
 
       var order = OrderModel.fromFirestore(docSnapshot);
 
-      // Join address tu customer_profiles/{userId}/addresses/{addressId}.
-      final addressId = docSnapshot.data()?['addressId'] as String?;
-      if (addressId != null && addressId.isNotEmpty) {
-        try {
-          final addrDoc = await _firestore
-              .collection('customer_profiles')
-              .doc(order.userId)
-              .collection('addresses')
-              .doc(addressId)
-              .get();
-          if (addrDoc.exists) {
-            final addrData = addrDoc.data()!;
-            order = order.copyWith(
-              addressName: addrData['name'] as String?,
-              addressLat: (addrData['lat'] as num?)?.toDouble(),
-              addressLng: (addrData['lng'] as num?)?.toDouble(),
-              receiverName: addrData['receiverName'] as String?,
-              receiverPhone: addrData['receiverPhone'] as String?,
-            );
+      // Lay deliveryLat/Lng tu document orders truoc — day la nguon chinh xac nhat.
+      // Chi lay tu address sub-collection khi orders khong co deliveryLat/Lng.
+      if (docSnapshot.data()?['deliveryLat'] == null || docSnapshot.data()?['deliveryLng'] == null) {
+        final addressId = docSnapshot.data()?['addressId'] as String?;
+        if (addressId != null && addressId.isNotEmpty) {
+          try {
+            final addrDoc = await _firestore
+                .collection('customer_profiles')
+                .doc(order.userId)
+                .collection('addresses')
+                .doc(addressId)
+                .get();
+            if (addrDoc.exists) {
+              final addrData = addrDoc.data()!;
+              order = order.copyWith(
+                addressName: addrData['name'] as String?,
+                deliveryLat: (addrData['lat'] as num?)?.toDouble(),
+                deliveryLng: (addrData['lng'] as num?)?.toDouble(),
+                receiverName: addrData['receiverName'] as String?,
+                receiverPhone: addrData['receiverPhone'] as String?,
+              );
+            }
+          } catch (e) {
+            debugPrint('OrderService: Loi khi lay address: $e');
           }
-        } catch (e) {
-          debugPrint('OrderService: Loi khi lay address: $e');
         }
       }
 
