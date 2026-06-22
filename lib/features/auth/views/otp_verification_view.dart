@@ -138,6 +138,7 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
     try {
       if (widget.verifyType == 'forgot_password') {
         final result = await AuthService.verifyOtp(widget.contactInfo, _currentOtp);
+        debugPrint('OtpVerificationView: verifyOtp FORGOT_PASSWORD thanh cong - tempToken: ${result.tempToken}');
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
@@ -163,6 +164,7 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
         );
       }
     } on AuthException catch (e) {
+      debugPrint('OtpVerificationView: AuthException = ${e.message}');
       if (!mounted) return;
       setState(() => _isLoading = false);
       showAppToast(
