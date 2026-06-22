@@ -46,8 +46,8 @@ class OrderTrackingMapView extends StatefulWidget {
   final String? storeName;
 
   /// Toa do dia chi giao hang (noi khach dat).
-  final double? addressLat;
-  final double? addressLng;
+  final double? deliveryLat;
+  final double? deliveryLng;
   final String? receiverName;
 
   const OrderTrackingMapView({
@@ -62,8 +62,8 @@ class OrderTrackingMapView extends StatefulWidget {
     this.storeLat,
     this.storeLng,
     this.storeName,
-    this.addressLat,
-    this.addressLng,
+    this.deliveryLat,
+    this.deliveryLng,
     this.receiverName,
   });
 
@@ -106,6 +106,7 @@ class _OrderTrackingMapViewState extends State<OrderTrackingMapView> {
         ? LatLng(widget.driverLat!, widget.driverLng!)
         : null;
     debugPrint('OrderTrackingMapView initState: driverLat=${widget.driverLat}, driverLng=${widget.driverLng}, _driverLocation=$_driverLocation');
+    debugPrint('OrderTrackingMapView initState: deliveryLat=${widget.deliveryLat}, deliveryLng=${widget.deliveryLng}, storeLat=${widget.storeLat}, storeLng=${widget.storeLng}');
     _initDeviceLocation();
     _subscribeDriverLocation();
   }
@@ -181,10 +182,12 @@ class _OrderTrackingMapViewState extends State<OrderTrackingMapView> {
     LatLng? dest;
 
     // Neu co dia chi khach -> tinh theo no, nguoc lai dung store
-    if (widget.addressLat != null && widget.addressLng != null) {
-      dest = LatLng(widget.addressLat!, widget.addressLng!);
+    if (widget.deliveryLat != null && widget.deliveryLng != null) {
+      dest = LatLng(widget.deliveryLat!, widget.deliveryLng!);
+      debugPrint('OrderTrackingMapView _updateEta: su dung deliveryLat=${widget.deliveryLat}, deliveryLng=${widget.deliveryLng}');
     } else if (widget.storeLat != null && widget.storeLng != null) {
       dest = LatLng(widget.storeLat!, widget.storeLng!);
+      debugPrint('OrderTrackingMapView _updateEta: khong co delivery, su dung storeLat=${widget.storeLat}, storeLng=${widget.storeLng}');
     }
 
     if (dest != null) {
@@ -205,11 +208,12 @@ class _OrderTrackingMapViewState extends State<OrderTrackingMapView> {
   Future<void> _fetchRoute() async {
     if (_driverLocation == null) return;
 
-    final dest = (widget.addressLat != null && widget.addressLng != null)
-        ? LatLng(widget.addressLat!, widget.addressLng!)
+    final dest = (widget.deliveryLat != null && widget.deliveryLng != null)
+        ? LatLng(widget.deliveryLat!, widget.deliveryLng!)
         : (widget.storeLat != null && widget.storeLng != null)
             ? LatLng(widget.storeLat!, widget.storeLng!)
             : null;
+    debugPrint('OrderTrackingMapView _fetchRoute: deliveryLat=${widget.deliveryLat}, deliveryLng=${widget.deliveryLng}, dest=$dest');
     if (dest == null) return;
 
     // Debounce: chi goi lai sau 10 giay
@@ -241,9 +245,11 @@ class _OrderTrackingMapViewState extends State<OrderTrackingMapView> {
     if (widget.storeLat != null && widget.storeLng != null) {
       points.add(LatLng(widget.storeLat!, widget.storeLng!));
     }
-    if (widget.addressLat != null && widget.addressLng != null) {
-      points.add(LatLng(widget.addressLat!, widget.addressLng!));
+    if (widget.deliveryLat != null && widget.deliveryLng != null) {
+      points.add(LatLng(widget.deliveryLat!, widget.deliveryLng!));
     }
+
+    debugPrint('OrderTrackingMapView _fitBounds: points count=${points.length}, deliveryLat=${widget.deliveryLat}, deliveryLng=${widget.deliveryLng}');
 
     if (points.isEmpty) return;
 
@@ -291,10 +297,10 @@ class _OrderTrackingMapViewState extends State<OrderTrackingMapView> {
     }
 
     // 2. Vi tri khach dat hang — icon nguoi
-    if (widget.addressLat != null && widget.addressLng != null) {
+    if (widget.deliveryLat != null && widget.deliveryLng != null) {
       result.add(
           Marker(
-          point: LatLng(widget.addressLat!, widget.addressLng!),
+          point: LatLng(widget.deliveryLat!, widget.deliveryLng!),
           width: 44,
           height: 80,
           child: _buildLabeledMarker(
@@ -465,8 +471,8 @@ class _OrderTrackingMapViewState extends State<OrderTrackingMapView> {
     if (widget.storeLat != null && widget.storeLng != null) {
       return LatLng(widget.storeLat!, widget.storeLng!);
     }
-    if (widget.addressLat != null && widget.addressLng != null) {
-      return LatLng(widget.addressLat!, widget.addressLng!);
+    if (widget.deliveryLat != null && widget.deliveryLng != null) {
+      return LatLng(widget.deliveryLat!, widget.deliveryLng!);
     }
     if (_deviceLocation != null) return _deviceLocation!;
     // Mac dinh: TP.HCM

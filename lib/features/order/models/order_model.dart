@@ -90,7 +90,7 @@ class OrderItemModel {
 /// - driverId, driverName, driverPhone, vehiclePlate
 ///
 /// Cac truong address (tu address sub-collection):
-/// - addressId, addressName, addressLat, addressLng
+/// - addressId, addressName, deliveryLat, deliveryLng
 /// - receiverName, receiverPhone
 class OrderModel {
   final String id;
@@ -121,8 +121,8 @@ class OrderModel {
   final String? userAvatar;
   final String? addressId;
   final String? addressName;
-  final double? addressLat;
-  final double? addressLng;
+  final double? deliveryLat;
+  final double? deliveryLng;
   final String? receiverName;
   final String? receiverPhone;
   final DateTime? deletedAt;
@@ -156,8 +156,8 @@ class OrderModel {
     this.userAvatar,
     this.addressId,
     this.addressName,
-    this.addressLat,
-    this.addressLng,
+        this.deliveryLat,
+        this.deliveryLng,
     this.receiverName,
     this.receiverPhone,
     this.deletedAt,
@@ -253,8 +253,8 @@ class OrderModel {
         userAvatar: _parseStringNullable(data['userAvatar']),
         addressId: _parseStringNullable(data['addressId']),
         addressName: _parseStringNullable(data['addressName']),
-        addressLat: (data['addressLat'] as num?)?.toDouble(),
-        addressLng: (data['addressLng'] as num?)?.toDouble(),
+        deliveryLat: (data['deliveryLat'] as num?)?.toDouble(),
+        deliveryLng: (data['deliveryLng'] as num?)?.toDouble(),
         receiverName: _parseStringNullable(data['receiverName']),
         receiverPhone: _parseStringNullable(data['receiverPhone']),
         deletedAt: _parseDateTime(data['deletedAt']),
@@ -307,8 +307,8 @@ class OrderModel {
     String? userAvatar,
     String? addressId,
     String? addressName,
-    double? addressLat,
-    double? addressLng,
+    double? deliveryLat,
+    double? deliveryLng,
     String? receiverName,
     String? receiverPhone,
     DateTime? deletedAt,
@@ -342,8 +342,8 @@ class OrderModel {
       userAvatar: userAvatar ?? this.userAvatar,
       addressId: addressId ?? this.addressId,
       addressName: addressName ?? this.addressName,
-      addressLat: addressLat ?? this.addressLat,
-      addressLng: addressLng ?? this.addressLng,
+      deliveryLat: deliveryLat ?? this.deliveryLat,
+      deliveryLng: deliveryLng ?? this.deliveryLng,
       receiverName: receiverName ?? this.receiverName,
       receiverPhone: receiverPhone ?? this.receiverPhone,
       deletedAt: deletedAt ?? this.deletedAt,
