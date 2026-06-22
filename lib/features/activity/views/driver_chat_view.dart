@@ -1,25 +1,30 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/language_service.dart';
+import '../../../core/utils/auth_storage.dart';
+import '../../../core/utils/snackbar_helper.dart';
+import '../services/driver_chat_firestore_service.dart';
 
 ///=============================================================================
 /// SECTION: MODELS
 ///=============================================================================
 
-/// Loai tin nhan.
 enum ChatMessageType {
-  text,    // Tin nhan text thong thuong.
-  image,   // Tin nhan chua hinh anh.
-  location, // Tin nhan chua vi tri.
+  text,
+  image,
+  location,
+  system,
 }
 
-/// Nguoi gui tin nhan.
 enum ChatSender {
-  driver,  // Tai xe.
-  user,    // Khach hang.
+  driver,
+  user,
 }
 
-/// Model mot tin nhan trong cuoc tro chuyen.
 class ChatMessageModel {
   final String id;
   final String content;
@@ -36,41 +41,45 @@ class ChatMessageModel {
   });
 }
 
-/// Model cuoc tro chuyen voi tai xe.
-class DriverChatModel {
-  final String driverName;
-  final String vehiclePlate;
-  final String driverPhone;
-  final String driverAvatarUrl;
-  final List<ChatMessageModel> messages;
-
-  const DriverChatModel({
-    required this.driverName,
-    required this.vehiclePlate,
-    required this.driverPhone,
-    required this.driverAvatarUrl,
-    required this.messages,
-  });
-}
-
 ///=============================================================================
 /// SECTION: VIEW
 ///=============================================================================
 
 /// Man hinh chat voi tai xe.
 ///
-/// Hien thi cuoc tro chuyen giua khach hang va tai xe, bao gom:
-///   - AppBar voi thong tin tai xe va nut goi dien.
-///   - Danh sach tin nhan (bong bong trai / phai).
-///   - Thanh tin nhan mau (Quick Replies).
-///   - Vung nhap tin nhan + nut gui.
-/// Bat phim duoc xu ly tot nho SafeArea va Column co MainAxisSize.min.
+/// Doc tin nhan real-time tu Firestore bang onSnapshot.
+/// Giao tiep: DriverChatFirestoreService.
 class DriverChatView extends StatefulWidget {
-  final DriverChatModel chat;
+  /// ID cua conversation trong Firestore. Co the rong neu chua co.
+  final String? conversationId;
+
+  /// ID don hang lien quan.
+  final String orderId;
+
+  /// ID tai xe.
+  final String driverId;
+
+  /// Ten tai xe hien thi tren AppBar.
+  final String driverName;
+
+  /// Bien so xe.
+  final String vehiclePlate;
+
+  /// So dien thoai tai xe.
+  final String driverPhone;
+
+  /// URL avatar tai xe.
+  final String driverAvatarUrl;
 
   const DriverChatView({
     super.key,
-    required this.chat,
+    this.conversationId,
+    required this.orderId,
+    required this.driverId,
+    required this.driverName,
+    required this.vehiclePlate,
+    required this.driverPhone,
+    this.driverAvatarUrl = '',
   });
 
   @override
@@ -78,30 +87,90 @@ class DriverChatView extends StatefulWidget {
 }
 
 class _DriverChatViewState extends State<DriverChatView> {
-  /// Danh sach tin nhan cua cuoc tro chuyen (Stateful de co the them tin nhan).
-  late List<ChatMessageModel> _messages;
+  static const _chatService = DriverChatFirestoreService();
 
-  /// Controller cua o nhap tin nhan.
+  List<ChatMessageModel> _messages = [];
+  bool _loading = true;
+  StreamSubscription<List<ChatMessageInfo>>? _sub;
+
+  String? _conversationId;
+
   final TextEditingController _textController = TextEditingController();
-
-  /// ScrollController de tu dong cuon xuong khi co tin nhan moi.
   final ScrollController _scrollController = ScrollController();
+
+  String get _userId => AuthStorage.getUserId() ?? '';
+  String get _userName {
+    final user = AuthStorage.getUser();
+    return user?['fullName'] as String? ??
+           user?['name'] as String? ??
+           'Khach hang';
+  }
 
   @override
   void initState() {
     super.initState();
-    // Copy mock data sang state de co the modify (khi gui tin nhan).
-    _messages = List.from(widget.chat.messages);
+    _conversationId = widget.conversationId;
+    if (_conversationId != null) {
+      _startListening(_conversationId!);
+    } else {
+      setState(() => _loading = false);
+    }
+  }
+
+  void _startListening(String conversationId) {
+    _sub?.cancel();
+    _sub = _chatService.watchMessages(conversationId).listen(
+      (messages) {
+        if (!mounted) return;
+        setState(() {
+          _messages = messages.map(_toChatModel).toList();
+          _loading = false;
+        });
+        _scrollToBottom();
+      },
+      onError: (e) {
+        debugPrint('DriverChatView: Loi stream messages — $e');
+        if (mounted) {
+          setState(() => _loading = false);
+        }
+      },
+    );
+    _chatService.markAsRead(conversationId);
+  }
+
+  ChatMessageModel _toChatModel(ChatMessageInfo info) {
+    ChatMessageType type;
+    switch (info.type.toUpperCase()) {
+      case 'IMAGE':
+        type = ChatMessageType.image;
+        break;
+      case 'LOCATION':
+        type = ChatMessageType.location;
+        break;
+      case 'SYSTEM':
+        type = ChatMessageType.system;
+        break;
+      default:
+        type = ChatMessageType.text;
+    }
+
+    return ChatMessageModel(
+      id: info.id,
+      content: info.content,
+      timestamp: info.createdAt,
+      sender: info.isFromDriver ? ChatSender.driver : ChatSender.user,
+      type: type,
+    );
   }
 
   @override
   void dispose() {
+    _sub?.cancel();
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  /// Tu dong cuon xuong cuoi danh sach tin nhan.
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -114,40 +183,67 @@ class _DriverChatViewState extends State<DriverChatView> {
     });
   }
 
-  /// Gui tin nhan text cua nguoi dung.
-  void _sendMessage() {
+  void _sendMessage() async {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
+    _textController.clear();
 
-    final newMessage = ChatMessageModel(
-      id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
+    final msg = await _chatService.sendMessage(
+      orderId: widget.orderId,
+      customerId: _userId,
+      customerName: _userName,
       content: text,
-      timestamp: DateTime.now(),
-      sender: ChatSender.user,
-      type: ChatMessageType.text,
     );
 
-    setState(() {
-      _messages.add(newMessage);
-    });
-    _textController.clear();
-    _scrollToBottom();
+    if (msg == null) {
+      if (mounted) {
+        showAppToast(
+          context,
+          message: context.t('error_unknown'),
+          type: AppToastType.error,
+        );
+      }
+      return;
+    }
+
+    // Neu chua co conversation, bat dau lang nghe tu conversationId backend tra ve.
+    if (_conversationId == null && msg.conversationId.isNotEmpty) {
+      _conversationId = msg.conversationId;
+      _startListening(_conversationId!);
+    }
   }
 
-  /// Gui tin nhan mau (Quick Reply).
-  void _sendQuickReply(String text) {
-    final newMessage = ChatMessageModel(
-      id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
+  void _sendQuickReply(String text) async {
+    final msg = await _chatService.sendMessage(
+      orderId: widget.orderId,
+      customerId: _userId,
+      customerName: _userName,
       content: text,
-      timestamp: DateTime.now(),
-      sender: ChatSender.user,
-      type: ChatMessageType.text,
     );
 
-    setState(() {
-      _messages.add(newMessage);
-    });
-    _scrollToBottom();
+    if (msg == null) {
+      if (mounted) {
+        showAppToast(
+          context,
+          message: context.t('error_unknown'),
+          type: AppToastType.error,
+        );
+      }
+      return;
+    }
+
+    if (_conversationId == null && msg.conversationId.isNotEmpty) {
+      _conversationId = msg.conversationId;
+      _startListening(_conversationId!);
+    }
+  }
+
+  void _callDriver() async {
+    if (widget.driverPhone.isEmpty) return;
+    final uri = Uri(scheme: 'tel', path: widget.driverPhone);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
   }
 
   @override
@@ -158,23 +254,14 @@ class _DriverChatViewState extends State<DriverChatView> {
       body: SafeArea(
         child: Column(
           children: [
-            // Vung hien thi danh sach tin nhan (Expanded de fill phan con lai).
-            Expanded(
-              child: _buildMessageList(),
-            ),
-            // Thanh Quick Replies (cuon ngang).
+            Expanded(child: _buildMessageList()),
             _buildQuickReplyBar(),
-            // Vung nhap tin nhan.
             _buildInputArea(),
           ],
         ),
       ),
     );
   }
-
-  ///=============================================================================
-  /// APP BAR
-  ///=============================================================================
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
@@ -183,20 +270,16 @@ class _DriverChatViewState extends State<DriverChatView> {
       elevation: 1,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
-        onPressed: () {
-          debugPrint('DriverChatView: Nguoi dung bam nut Back');
-          Navigator.pop(context);
-        },
+        onPressed: () => Navigator.pop(context),
       ),
       title: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Avatar tai xe.
-          widget.chat.driverAvatarUrl.isNotEmpty
+          widget.driverAvatarUrl.isNotEmpty
               ? CircleAvatar(
                   radius: 18,
                   backgroundColor: AppColors.surfaceVariant,
-                  backgroundImage: NetworkImage(widget.chat.driverAvatarUrl),
+                  backgroundImage: NetworkImage(widget.driverAvatarUrl),
                   onBackgroundImageError: (_, __) {},
                 )
               : CircleAvatar(
@@ -209,12 +292,11 @@ class _DriverChatViewState extends State<DriverChatView> {
                   ),
                 ),
           const SizedBox(width: 10),
-          // Ten tai xe va bien so xe.
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.chat.driverName,
+                widget.driverName,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -222,10 +304,9 @@ class _DriverChatViewState extends State<DriverChatView> {
                 ),
               ),
               Text(
-                widget.chat.vehiclePlate,
+                widget.vehiclePlate,
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.normal,
                   color: AppColors.textSecondary,
                 ),
               ),
@@ -235,30 +316,42 @@ class _DriverChatViewState extends State<DriverChatView> {
       ),
       centerTitle: true,
       actions: [
-        // Nut goi dien cho tai xe.
         IconButton(
           icon: const Icon(Icons.phone_outlined),
-          onPressed: () {
-            debugPrint('DriverChatView: Nguoi dung bam goi dien cho tai xe [${widget.chat.driverPhone}]');
-          },
+          onPressed: _callDriver,
           tooltip: context.t('driver_chat_call_btn'),
         ),
       ],
     );
   }
 
-  ///=============================================================================
-  /// DANH SACH TIN NHAN
-  ///=============================================================================
-
   Widget _buildMessageList() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     if (_messages.isEmpty) {
       return Center(
-        child: Text(
-          context.t('driver_chat_input_hint'),
-          style: TextStyle(
-            fontSize: 14,
-            color: AppColors.textHint,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.chat_bubble_outline,
+                size: 48,
+                color: AppColors.textHint,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                context.t('driver_chat_input_hint'),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textHint,
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -272,8 +365,6 @@ class _DriverChatViewState extends State<DriverChatView> {
         final message = _messages[index];
         final isUser = message.sender == ChatSender.user;
 
-        // Kiem tra xem co can hien thi avatar khong (chi hien khi can nhom).
-        // Hien thi avatar/ten khi nguoi gui thay doi.
         final showSenderInfo = index == 0 ||
             _messages[index - 1].sender != message.sender;
 
@@ -281,15 +372,11 @@ class _DriverChatViewState extends State<DriverChatView> {
           message: message,
           isUser: isUser,
           showSenderInfo: showSenderInfo,
-          avatarUrl: widget.chat.driverAvatarUrl,
+          avatarUrl: widget.driverAvatarUrl,
         );
       },
     );
   }
-
-  ///=============================================================================
-  /// QUICK REPLY BAR
-  ///=============================================================================
 
   Widget _buildQuickReplyBar() {
     final quickReplies = [
@@ -317,10 +404,7 @@ class _DriverChatViewState extends State<DriverChatView> {
               child: ActionChip(
                 label: Text(
                   reply,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.primary,
-                  ),
+                  style: TextStyle(fontSize: 13, color: AppColors.primary),
                 ),
                 backgroundColor: AppColors.primary.withOpacity(0.08),
                 side: BorderSide(color: AppColors.primary.withOpacity(0.3)),
@@ -328,10 +412,7 @@ class _DriverChatViewState extends State<DriverChatView> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                onPressed: () {
-                  debugPrint('DriverChatView: Nguoi dung bam quick reply: [$reply]');
-                  _sendQuickReply(reply);
-                },
+                onPressed: () => _sendQuickReply(reply),
               ),
             );
           }).toList(),
@@ -339,10 +420,6 @@ class _DriverChatViewState extends State<DriverChatView> {
       ),
     );
   }
-
-  ///=============================================================================
-  /// VUNG NHAP TIN NHAN
-  ///=============================================================================
 
   Widget _buildInputArea() {
     return Container(
@@ -364,28 +441,6 @@ class _DriverChatViewState extends State<DriverChatView> {
       ),
       child: Row(
         children: [
-          // Nut dinh kem (hinh anh / vi tri).
-          GestureDetector(
-            onTap: () {
-              debugPrint('DriverChatView: Nguoi dung bam nut dinh kem');
-              _showAttachOptions(context);
-            },
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Icon(
-                Icons.attach_file,
-                size: 20,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          // O nhap tin nhan.
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -396,16 +451,10 @@ class _DriverChatViewState extends State<DriverChatView> {
                 controller: _textController,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _sendMessage(),
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: AppColors.textPrimary,
-                ),
+                style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
                 decoration: InputDecoration(
                   hintText: context.t('driver_chat_input_hint'),
-                  hintStyle: TextStyle(
-                    fontSize: 15,
-                    color: AppColors.textHint,
-                  ),
+                  hintStyle: TextStyle(fontSize: 15, color: AppColors.textHint),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 10,
@@ -416,12 +465,8 @@ class _DriverChatViewState extends State<DriverChatView> {
             ),
           ),
           const SizedBox(width: 8),
-          // Nut gui tin nhan.
           GestureDetector(
-            onTap: () {
-              debugPrint('DriverChatView: Nguoi dung bam nut gui');
-              _sendMessage();
-            },
+            onTap: _sendMessage,
             child: Container(
               width: 40,
               height: 40,
@@ -429,11 +474,7 @@ class _DriverChatViewState extends State<DriverChatView> {
                 color: AppColors.primary,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(
-                Icons.send,
-                size: 18,
-                color: Colors.white,
-              ),
+              child: const Icon(Icons.send, size: 18, color: Colors.white),
             ),
           ),
         ],
@@ -441,119 +482,17 @@ class _DriverChatViewState extends State<DriverChatView> {
     );
   }
 
-  /// Hien thi bottom sheet cho cac tuy chon dinh kem.
-  void _showAttachOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Nut gui vi tri.
-                ListTile(
-                  leading: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.location_on_outlined,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  title: Text(
-                    context.t('order_delivery_address'),
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  subtitle: Text(
-                    context.t('driver_chat_location_sent'),
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  onTap: () {
-                    debugPrint('DriverChatView: Nguoi dung chon gui vi tri');
-                    Navigator.pop(context);
-                    final locationMsg = ChatMessageModel(
-                      id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
-                      content: context.t('driver_chat_location_sent'),
-                      timestamp: DateTime.now(),
-                      sender: ChatSender.user,
-                      type: ChatMessageType.location,
-                    );
-                    setState(() {
-                      _messages.add(locationMsg);
-                    });
-                    _scrollToBottom();
-                  },
-                ),
-                const Divider(height: 1),
-                // Nut gui hinh anh.
-                ListTile(
-                  leading: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.image_outlined,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  title: Text(
-                    context.t('driver_chat_send_image'),
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  subtitle: Text(
-                    context.t('driver_chat_image_sent'),
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  onTap: () {
-                    debugPrint('DriverChatView: Nguoi dung chon gui hinh anh');
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 }
 
 ///=============================================================================
 /// SECTION: CHAT BUBBLE WIDGET
 ///=============================================================================
 
-/// Widget bong bong tin nhan.
-///
-/// Hien thi noi dung tin nhan voi bong bong trai (tai xe) hoac phai (khach).
 class _ChatBubbleWidget extends StatelessWidget {
   final ChatMessageModel message;
-  final bool isUser;      // True: khach (ben phai), False: tai xe (ben trai).
-  final bool showSenderInfo; // Co hien thi avatar/ten khong.
-  final String avatarUrl; // URL avatar cua tai xe.
+  final bool isUser;
+  final bool showSenderInfo;
+  final String avatarUrl;
 
   const _ChatBubbleWidget({
     required this.message,
@@ -574,7 +513,6 @@ class _ChatBubbleWidget extends StatelessWidget {
             isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // Avatar tai xe (chi hien thi khi la tin nhan cua tai xe va can showSenderInfo).
           if (!isUser && showSenderInfo) ...[
             CircleAvatar(
               radius: 14,
@@ -588,9 +526,8 @@ class _ChatBubbleWidget extends StatelessWidget {
             ),
             const SizedBox(width: 8),
           ] else if (!isUser) ...[
-            const SizedBox(width: 36), // Khoang trong de can chinh avatar.
+            const SizedBox(width: 36),
           ],
-          // Noi dung bong bong.
           Flexible(
             child: Column(
               crossAxisAlignment:
@@ -598,13 +535,9 @@ class _ChatBubbleWidget extends StatelessWidget {
               children: [
                 _buildBubbleContent(context),
                 const SizedBox(height: 2),
-                // Thoi gian gui tin nhan.
                 Text(
                   _formatTime(message.timestamp),
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textHint,
-                  ),
+                  style: TextStyle(fontSize: 11, color: AppColors.textHint),
                 ),
               ],
             ),
@@ -615,17 +548,12 @@ class _ChatBubbleWidget extends StatelessWidget {
   }
 
   Widget _buildBubbleContent(BuildContext context) {
-    // Neu la tin nhan vi tri.
     if (message.type == ChatMessageType.location) {
       return _buildLocationBubble(context);
     }
-
-    // Neu la tin nhan hinh anh.
     if (message.type == ChatMessageType.image) {
       return _buildImageBubble();
     }
-
-    // Tin nhan text thong thuong.
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -721,52 +649,7 @@ class _ChatBubbleWidget extends StatelessWidget {
     );
   }
 
-  /// Format thoi gian thanh chuoi (VD: "14:30").
   String _formatTime(DateTime dt) {
     return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 }
-
-///=============================================================================
-/// SECTION: MOCK DATA
-///=============================================================================
-
-/// Mock data cuoc tro chuyen voi tai xe.
-final mockDriverChat = DriverChatModel(
-  driverName: 'Le Van B',
-  vehiclePlate: '59A-123.45',
-  driverPhone: '091 234 5678',
-  driverAvatarUrl: '',
-  messages: [
-    ChatMessageModel(
-      id: 'msg_1',
-      content: 'Toi dang lay mon tu cua hang nhe.',
-      timestamp: DateTime.now().subtract(const Duration(minutes: 25)),
-      sender: ChatSender.driver,
-    ),
-    ChatMessageModel(
-      id: 'msg_2',
-      content: 'Ok ban, cam on ban.',
-      timestamp: DateTime.now().subtract(const Duration(minutes: 23)),
-      sender: ChatSender.user,
-    ),
-    ChatMessageModel(
-      id: 'msg_3',
-      content: 'Toi da lay mon xong roi, dang len duong nhe.',
-      timestamp: DateTime.now().subtract(const Duration(minutes: 20)),
-      sender: ChatSender.driver,
-    ),
-    ChatMessageModel(
-      id: 'msg_4',
-      content: 'Ban o dau roi?',
-      timestamp: DateTime.now().subtract(const Duration(minutes: 18)),
-      sender: ChatSender.user,
-    ),
-    ChatMessageModel(
-      id: 'msg_5',
-      content: 'Toi dang o duong Nguyen Hue, gan den roi ban nhe.',
-      timestamp: DateTime.now().subtract(const Duration(minutes: 15)),
-      sender: ChatSender.driver,
-    ),
-  ],
-);
