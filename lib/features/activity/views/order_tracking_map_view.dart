@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:fe_foodgo_customers/core/constants/app_colors.dart';
 import 'package:fe_foodgo_customers/core/localization/language_service.dart';
+import 'package:fe_foodgo_customers/core/services/osrm_service.dart';
 
 /// Man hinh theo doi vi tri don hang tren ban do that.
 ///
@@ -88,6 +89,15 @@ class _OrderTrackingMapViewState extends State<OrderTrackingMapView> {
   /// Thoi gian du kien (phut), tinh tu toc do ~30km/h.
   int? _etaMinutes;
 
+  /// Tuyen duong tu tai xe den khach hang (OSRM polyline).
+  List<LatLng>? _routePoints;
+
+  /// Co dang goi OSRM lay route khong.
+  bool _isRouteLoading = false;
+
+  /// Timestamp (ms) lan cuoi goi OSRM, de debounce.
+  int _lastRouteFetchMs = 0;
+
   @override
   void initState() {
     super.initState();
@@ -160,6 +170,7 @@ class _OrderTrackingMapViewState extends State<OrderTrackingMapView> {
         });
         _updateEta();
         _fitBounds();
+        _fetchRoute();
       }
     });
   }
@@ -186,6 +197,38 @@ class _OrderTrackingMapViewState extends State<OrderTrackingMapView> {
       _distanceToCustomer = meters;
       // Ước tính: 30km/h ≈ 8.33m/s → ETA phút
       _etaMinutes = (meters / 500).ceil().clamp(1, 99);
+    }
+  }
+
+  /// Lay tuyen duong OSRM tu tai xe den khach.
+  /// Co debounce: chi goi lai neu da qua 10 giay.
+  Future<void> _fetchRoute() async {
+    if (_driverLocation == null) return;
+
+    final dest = (widget.addressLat != null && widget.addressLng != null)
+        ? LatLng(widget.addressLat!, widget.addressLng!)
+        : (widget.storeLat != null && widget.storeLng != null)
+            ? LatLng(widget.storeLat!, widget.storeLng!)
+            : null;
+    if (dest == null) return;
+
+    // Debounce: chi goi lai sau 10 giay
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    if (nowMs - _lastRouteFetchMs < 10000 && _routePoints != null) return;
+    _lastRouteFetchMs = nowMs;
+
+    if (mounted) setState(() => _isRouteLoading = true);
+
+    final points = await OSRMService.getRoute(
+      origin: _driverLocation!,
+      destination: dest,
+    );
+
+    if (mounted) {
+      setState(() {
+        _routePoints = points;
+        _isRouteLoading = false;
+      });
     }
   }
 
@@ -381,6 +424,16 @@ class _OrderTrackingMapViewState extends State<OrderTrackingMapView> {
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.example.fe_foodgo_customers',
               ),
+              if (_routePoints != null && _routePoints!.isNotEmpty)
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: _routePoints!,
+                      strokeWidth: 5,
+                      color: AppColors.primary,
+                    ),
+                  ],
+                ),
               MarkerLayer(markers: _markers),
             ],
           ),

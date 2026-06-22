@@ -1136,6 +1136,14 @@ class _OrderDetailViewState extends State<OrderDetailView> {
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () {
+                          // Chi mo map khi co driverId (tai xe da duoc gan)
+                          final driverId = order.driverId;
+                          if (driverId == null || driverId.isEmpty) {
+                            debugPrint(
+                              'OrderDetailView: Khong the mo ban do — driverId null/empty',
+                            );
+                            return;
+                          }
                           debugPrint(
                             'OrderDetailView: Mo ban do theo doi tai xe [${order.driverName}]',
                           );
@@ -1144,7 +1152,7 @@ class _OrderDetailViewState extends State<OrderDetailView> {
                             MaterialPageRoute(
                               builder: (context) => OrderTrackingMapView(
                                 orderId: order.id,
-                                driverId: order.driverId ?? '',
+                                driverId: driverId,
                                 driverName: order.driverName ?? '',
                                 driverPhone: order.driverPhone ?? '',
                                 vehiclePlate: order.vehiclePlate ?? '',
